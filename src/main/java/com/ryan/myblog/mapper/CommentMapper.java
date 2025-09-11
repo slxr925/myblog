@@ -1,0 +1,32 @@
+package com.ryan.myblog.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ryan.myblog.entity.Comment;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+/**
+ * 评论Mapper接口
+ */
+@Mapper
+public interface CommentMapper extends BaseMapper<Comment> {
+    
+    /**
+     * 分页查询评论列表（包含用户信息）
+     */
+    IPage<Comment> selectCommentPage(Page<Comment> page, 
+                                   @Param("blogId") Long blogId,
+                                   @Param("status") Integer status);
+    
+    /**
+     * 增加点赞数
+     */
+    void incrementLikeCount(@Param("id") Long id);
+    
+    /**
+     * 减少点赞数
+     */
+    void decrementLikeCount(@Param("id") Long id);
+}

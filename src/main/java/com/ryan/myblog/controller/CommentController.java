@@ -1,0 +1,143 @@
+package com.ryan.myblog.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.ryan.myblog.common.PageRequest;
+import com.ryan.myblog.common.Result;
+import com.ryan.myblog.dto.CommentSaveDTO;
+import com.ryan.myblog.service.CommentService;
+import com.ryan.myblog.vo.CommentVO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 评论控制器
+ */
+@RestController
+@RequestMapping("/api/comment")
+@RequiredArgsConstructor
+public class CommentController {
+    
+    private final CommentService commentService;
+    
+    /**
+     * 发布评论
+     */
+    @PostMapping
+    public Result<Void> saveComment(@Validated @RequestBody CommentSaveDTO commentSaveDTO) {
+        try {
+            Long userId = getCurrentUserId();
+            commentService.saveComment(commentSaveDTO, userId);
+            return Result.success();
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取博客评论列表（树形结构）
+     */
+    @GetMapping("/tree/{blogId}")
+    public Result<List<CommentVO>> getCommentTree(@PathVariable Long blogId,
+                                                 @RequestParam(defaultValue = "1") Integer status) {
+        List<CommentVO> comments = commentService.getCommentTree(blogId, status);
+        return Result.success(comments);
+    }
+    
+    /**
+     * 分页查询评论列表
+     */
+    @GetMapping("/page")
+    public Result<IPage<CommentVO>> getCommentPage(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam Long blogId,
+            @RequestParam(required = false) Integer status) {
+        
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+        
+        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status);
+        return Result.success(result);
+    }
+    
+    /**
+     * 审核评论（管理员功能）
+     */
+    @PostMapping("/{id}/audit")
+    public Result<Void> auditComment(@PathVariable Long id, 
+                                   @RequestParam Integer status) {
+        try {
+            Long operatorId = getCurrentUserId();
+            commentService.auditComment(id, status, operatorId);
+            return Result.success();
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 删除评论
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> deleteComment(@PathVariable Long id) {
+        try {
+            Long operatorId = getCurrentUserId();
+            commentService.deleteComment(id, operatorId);
+            return Result.success();
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 点赞/取消点赞评论
+     */
+    @PostMapping("/{id}/like")
+    public Result<Void> toggleCommentLike(@PathVariable Long id) {
+        try {
+            Long userId = getCurrentUserId();
+            commentService.toggleCommentLike(id, userId);
+            return Result.success();
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取评论详情
+     */
+    @GetMapping("/{id}")
+    public Result<CommentVO> getCommentById(@PathVariable Long id) {
+        CommentVO comment = commentService.getCommentById(id);
+        if (comment == null) {
+            return Result.error("评论不存在");
+        }
+        return Result.success(comment);
+    }
+    
+    /**
+     * 统计博客评论数
+     */
+    @GetMapping("/count/{blogId}")
+    public Result<Long> countComments(@PathVariable Long blogId) {
+        Long count = commentService.countCommentsByBlogId(blogId);
+        return Result.success(count);
+    }
+    
+    /**
+     * 获取当前用户ID
+     */
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Long) {
+            return (Long) authentication.getPrincipal();
+        }
+        throw new RuntimeException("用户未登录");
+    }
+}

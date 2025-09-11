@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ryan.myblog.mapper.CommentMapper">
+
+    <!-- 分页查询评论列表（包含用户信息） -->
+    <select id="selectCommentPage" resultType="com.ryan.myblog.entity.Comment">
+        SELECT c.id, c.blog_id, c.user_id, c.parent_id, c.reply_user_id, 
+               c.content, c.status, c.like_count, c.create_time, c.update_time, c.deleted
+        FROM tb_comment c
+        WHERE c.deleted = 0
+        <if test="blogId != null">
+            AND c.blog_id = #{blogId}
+        </if>
+        <if test="status != null">
+            AND c.status = #{status}
+        </if>
+        ORDER BY c.create_time DESC
+    </select>
+
+    <!-- 增加点赞数 -->
+    <update id="incrementLikeCount">
+        UPDATE tb_comment 
+        SET like_count = like_count + 1, update_time = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 减少点赞数 -->
+    <update id="decrementLikeCount">
+        UPDATE tb_comment 
+        SET like_count = GREATEST(like_count - 1, 0), update_time = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: myblog-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: myblog
+      MYSQL_USER: myblog
+      MYSQL_PASSWORD: myblog123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./src/main/resources/sql:/docker-entrypoint-initdb.d
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - myblog-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: myblog-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ""
+    networks:
+      - myblog-network
+
+  # 可选：添加phpMyAdmin管理MySQL
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: myblog-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: 123456
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    networks:
+      - myblog-network
+
+  # 可选：添加Redis Commander管理Redis
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: myblog-redis-commander
+    restart: always
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8082:8081"
+    depends_on:
+      - redis
+    networks:
+      - myblog-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  myblog-network:
+    driver: bridge
