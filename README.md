@@ -1,194 +1,177 @@
-# MyBlog - 个人博客系统
+# MyBlog 博客系统
 
-基于 Spring Boot 3、JDK 21 和 MySQL 8.4 构建的现代化个人博客系统。
+基于 Spring Boot 3、React 18 和本地数据库构建的现代化博客管理系统。
 
-## 技术栈
+## 🚀 技术栈
 
 ### 后端
-- **Java 21** - 最新的 LTS 版本
-- **Spring Boot 3.5.5** - 主框架
-- **Spring Security** - 安全认证
-- **MyBatis Plus** - 数据访问层
-- **MySQL 8.4** - 数据库
-- **Redis** - 缓存和会话存储
-- **JWT** - 身份认证
-- **Maven** - 项目管理
+- **Java 21**
+- **Spring Boot 3.5.5**
+- **MyBatis Plus 3.5.9** 
+- **MySQL 8.4+**
+- **Redis 7.0+**
+- **Elasticsearch 8.x**
+- **Spring Security + JWT**
 
-### 数据库
-- **MySQL 8.4** - 主数据库
-- **Redis 7** - 缓存数据库
+### 前端
+- **React 18**
+- **Ant Design Pro 6**
+- **Umi 4**
+- **TypeScript**
 
-## 功能特性
+## 📋 环境要求
 
-- ✅ 用户注册、登录、权限管理
-- ✅ 博客文章的增删改查
-- ✅ 文章分类管理
-- ✅ 标签系统
-- ✅ 评论系统
-- ✅ 文章点赞功能
-- ✅ 文章阅读量统计
-- ✅ JWT 身份认证
-- ✅ Redis 缓存优化
-- ✅ 分页查询支持
-- ✅ 软删除机制
+### 必需软件
+1. **JDK 21+**
+2. **Maven 3.8+**
+3. **MySQL 8.4+**
+4. **Redis 7.0+**
+5. **Elasticsearch 8.x**
+6. **Node.js 18+**
 
-## 项目结构
+### 数据库配置
 
-```
-src/main/java/com/ryan/myblog/
-├── common/           # 通用类
-├── config/           # 配置类
-├── controller/       # 控制器层
-├── dto/             # 数据传输对象
-├── entity/          # 实体类
-├── mapper/          # 数据访问层
-├── service/         # 业务逻辑层
-├── utils/           # 工具类
-└── vo/              # 视图对象
+#### 1. MySQL 配置
+```sql
+-- 创建数据库
+CREATE DATABASE myblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-src/main/resources/
-├── mapper/          # MyBatis XML映射文件
-├── sql/             # 数据库初始化脚本
-└── application.yml  # 应用配置
+-- 创建用户（可选）
+CREATE USER 'myblog'@'localhost' IDENTIFIED BY 'myblog123';
+GRANT ALL PRIVILEGES ON myblog.* TO 'myblog'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-## 快速开始
+#### 2. Redis 配置
+确保 Redis 服务在默认端口 6379 运行：
+```bash
+# macOS (使用 Homebrew)
+brew install redis
+brew services start redis
 
-### 环境要求
+# Ubuntu/Debian
+sudo apt-get install redis-server
+sudo systemctl start redis-server
 
-- JDK 21+
-- Maven 3.8+
-- Docker & Docker Compose
+# 验证 Redis 是否运行
+redis-cli ping
+```
+
+#### 3. Elasticsearch 配置
+确保 Elasticsearch 服务在端口 9200 运行：
+```bash
+# macOS (使用 Homebrew)
+brew install elasticsearch
+brew services start elasticsearch
+
+# 验证 ES 是否运行
+curl http://localhost:9200
+```
+
+## 🎯 快速启动
 
 ### 1. 克隆项目
-
 ```bash
 git clone <repository-url>
 cd myblog
 ```
 
-### 2. 启动数据库服务
-
-使用 Docker Compose 启动 MySQL 和 Redis：
-
-```bash
-docker-compose up -d
-```
-
-这将启动以下服务：
-- MySQL 8.4 (端口: 3306)
-- Redis 7 (端口: 6379)
-- phpMyAdmin (端口: 8081) - MySQL 管理界面
-- Redis Commander (端口: 8082) - Redis 管理界面
-
-### 3. 数据库初始化
-
-数据库和表结构会在 MySQL 容器启动时自动创建和初始化。
-
-初始用户：
-- 管理员: `admin` / `admin123`
-- 普通用户: `testuser` / `user123`
-
-### 4. 启动应用
-
-```bash
-mvn spring-boot:run
-```
-
-应用将在 http://localhost:8080 启动
-
-## API 接口
-
-### 用户相关
-- POST `/api/user/register` - 用户注册
-- POST `/api/user/login` - 用户登录
-- GET `/api/user/info` - 获取用户信息
-
-### 博客相关
-- GET `/api/blog/page` - 分页查询博客列表
-- GET `/api/blog/{id}` - 查询博客详情
-- POST `/api/blog` - 创建博客
-- PUT `/api/blog/{id}` - 更新博客
-- DELETE `/api/blog/{id}` - 删除博客
-- POST `/api/blog/{id}/like` - 点赞/取消点赞
-- POST `/api/blog/{id}/publish` - 发布博客
-- POST `/api/blog/{id}/unpublish` - 下线博客
-
-### 分类相关
-- GET `/api/category/list` - 获取所有分类
-- POST `/api/category` - 创建分类
-- PUT `/api/category` - 更新分类
-- DELETE `/api/category/{id}` - 删除分类
-
-### 标签相关
-- GET `/api/tag/list` - 获取所有标签
-- POST `/api/tag` - 创建标签
-- PUT `/api/tag` - 更新标签
-- DELETE `/api/tag/{id}` - 删除标签
-
-## 配置说明
-
-### 数据库配置
-
-修改 `application.yml` 中的数据库连接信息：
-
+### 2. 配置数据库连接
+根据您的本地环境修改 `src/main/resources/application.yml`：
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/myblog?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
+    url: jdbc:mysql://localhost:3306/myblog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root  # 修改为您的MySQL用户名
+    password: root123  # 修改为您的MySQL密码
 ```
 
-### JWT 配置
-
-```yaml
-jwt:
-  secret: myBlogSecretKeyForJWTTokenGeneration2024!@#$%
-  expiration: 604800 # 7天，单位秒
-```
-
-### Redis 配置
-
-```yaml
-spring:
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 0
-```
-
-## 开发指南
-
-### 添加新功能
-
-1. 在 `entity` 包中创建实体类
-2. 在 `mapper` 包中创建 Mapper 接口和 XML 文件
-3. 在 `service` 包中创建服务接口和实现类
-4. 在 `controller` 包中创建控制器
-5. 添加相应的 DTO 和 VO 类
-
-### 数据库迁移
-
-数据库变更脚本放在 `src/main/resources/sql/` 目录下。
-
-## 部署
-
-### 构建镜像
-
+### 3. 启动后端服务
 ```bash
-mvn clean package
+# 使用Maven启动
+./mvnw spring-boot:run
+
+# 或者编译后运行
+./mvnw clean package
+java -jar target/myblog-0.0.1-SNAPSHOT.jar
 ```
 
-### 生产环境配置
+### 4. 启动前端服务
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-创建 `application-prod.yml` 文件，配置生产环境的数据库、Redis 等信息。
+## 🔗 访问地址
 
-## 许可证
+- **后端API**: http://localhost:9999
+- **前端管理后台**: http://localhost:3000
+- **API文档**: http://localhost:9999/swagger-ui.html
+- **接口健康检查**: http://localhost:9999/actuator/health
 
-MIT License
+## 📁 项目结构
 
-## 贡献
+```
+myblog/
+├── src/main/java/com/ryan/myblog/
+│   ├── controller/     # 控制器层
+│   ├── service/        # 业务逻辑层
+│   ├── mapper/         # 数据访问层
+│   ├── entity/         # 实体类
+│   ├── dto/           # 数据传输对象
+│   ├── vo/            # 视图对象
+│   ├── config/        # 配置类
+│   └── utils/         # 工具类
+├── src/main/resources/
+│   ├── mapper/        # MyBatis XML映射文件
+│   ├── sql/          # SQL初始化脚本
+│   └── application.yml # 应用配置
+└── frontend/         # React前端项目
+    ├── src/
+    ├── package.json
+    └── .umirc.ts
+```
 
-欢迎提交 Issue 和 Pull Request！
+## 🔧 开发说明
+
+### 数据库初始化
+首次启动时，应用会自动创建数据表结构。如需初始化测试数据，可以执行 `src/main/resources/sql/` 目录下的SQL脚本。
+
+### API测试
+项目集成了Swagger UI，启动后访问 http://localhost:9999/swagger-ui.html 查看和测试所有API接口。
+
+### 缓存配置
+Redis用于缓存热点数据和会话存储，确保Redis服务正常运行以获得最佳性能。
+
+### 搜索功能
+Elasticsearch用于全文搜索功能，确保ES服务正常运行以使用搜索相关功能。
+
+## 🐛 故障排除
+
+### 常见问题
+
+1. **数据库连接失败**
+   - 检查MySQL服务是否启动
+   - 验证数据库用户名密码
+   - 确认数据库myblog已创建
+
+2. **Redis连接失败**
+   - 检查Redis服务是否在6379端口运行
+   - 使用 `redis-cli ping` 测试连接
+
+3. **Elasticsearch连接失败**
+   - 检查ES服务是否在9200端口运行
+   - 使用 `curl http://localhost:9200` 测试连接
+
+4. **前端启动失败**
+   - 确保Node.js版本 >= 18
+   - 删除node_modules后重新安装: `rm -rf node_modules && npm install`
+
+## 📄 许可证
+
+[MIT License](LICENSE)
+
+## 🤝 贡献
+
+欢迎提交Issue和Pull Request!

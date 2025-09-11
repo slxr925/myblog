@@ -34,6 +34,38 @@ services:
     networks:
       - myblog-network
 
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: myblog-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - myblog-network
+
+  # Kibana (可选：ES管理界面)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: myblog-kibana
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - myblog-network
+
   # 可选：添加phpMyAdmin管理MySQL
   phpmyadmin:
     image: phpmyadmin:latest
@@ -67,6 +99,7 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  es_data:
 
 networks:
   myblog-network:
