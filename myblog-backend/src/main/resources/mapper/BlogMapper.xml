@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ryan.myblog.mapper.BlogMapper">
+
+    <resultMap id="BlogDetailMap" type="com.ryan.myblog.vo.BlogDetailVO">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="summary" property="summary"/>
+        <result column="content" property="content"/>
+        <result column="cover_img" property="coverImg"/>
+        <result column="author_id" property="authorId"/>
+        <result column="author_name" property="authorName"/>
+        <result column="author_avatar" property="authorAvatar"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="status" property="status"/>
+        <result column="is_top" property="isTop"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="comment_count" property="commentCount"/>
+        <result column="publish_time" property="publishTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectBlogPage" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="tagId != null">
+            AND b.id IN (SELECT blog_id FROM tb_blog_tag WHERE tag_id = #{tagId})
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (b.title LIKE CONCAT('%', #{keyword}, '%') OR b.summary LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null">
+            AND b.status = #{status}
+        </if>
+        ORDER BY b.is_top DESC, b.create_time DESC
+    </select>
+
+    <select id="selectBlogDetail" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.id = #{id} AND b.deleted = 0
+    </select>
+
+    <update id="incrementViewCount">
+        UPDATE tb_blog SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementLikeCount">
+        UPDATE tb_blog SET like_count = like_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decrementLikeCount">
+        UPDATE tb_blog SET like_count = like_count - 1 WHERE id = #{id} AND like_count > 0
+    </update>
+
+    <select id="selectRelatedBlogs" resultMap="BlogDetailMap">
+        SELECT DISTINCT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
+        WHERE b.deleted = 0 AND b.status = 1 AND b.id != #{blogId}
+        AND (
+            b.category_id = #{categoryId}
+            <if test="tagIds != null and tagIds.size() > 0">
+                OR bt.tag_id IN
+                <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">
+                    #{tagId}
+                </foreach>
+            </if>
+        )
+        ORDER BY
+            CASE WHEN b.category_id = #{categoryId} THEN 1 ELSE 2 END,
+            b.view_count DESC, b.publish_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectPreviousBlog" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0 AND b.status = 1
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        AND b.id &lt; #{blogId}
+        ORDER BY b.id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectNextBlog" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0 AND b.status = 1
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        AND b.id &gt; #{blogId}
+        ORDER BY b.id ASC
+        LIMIT 1
+    </select>
+
+    <select id="selectHotBlogs" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0 AND b.status = 1
+        ORDER BY b.view_count DESC, b.like_count DESC, b.publish_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectLatestBlogs" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0 AND b.status = 1
+        ORDER BY b.publish_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectBlogsByCategory" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0 AND b.status = 1 AND b.category_id = #{categoryId}
+        ORDER BY b.publish_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectBlogsByTags" resultMap="BlogDetailMap">
+        SELECT DISTINCT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        INNER JOIN tb_blog_tag bt ON b.id = bt.blog_id
+        WHERE b.deleted = 0 AND b.status = 1
+        <if test="excludeBlogId != null">
+            AND b.id != #{excludeBlogId}
+        </if>
+        AND bt.tag_id IN
+        <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">
+            #{tagId}
+        </foreach>
+        ORDER BY b.publish_time DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
