@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=application-test")
 public class GeneratePasswordHashTest {
 
     @Autowired
