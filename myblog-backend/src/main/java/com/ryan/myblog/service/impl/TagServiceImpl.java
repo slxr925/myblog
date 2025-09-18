@@ -9,6 +9,7 @@ import com.ryan.myblog.service.TagService;
 import com.ryan.myblog.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -56,6 +57,7 @@ public class TagServiceImpl implements TagService {
     }
     
     @Override
+    @Transactional
     public void saveTag(Tag tag) {
         // 检查标签名是否已存在
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
@@ -64,16 +66,17 @@ public class TagServiceImpl implements TagService {
         if (existTag != null) {
             throw new RuntimeException("标签名称已存在");
         }
-        
+
         tag.setCreateTime(LocalDateTime.now());
         tag.setUpdateTime(LocalDateTime.now());
         tagMapper.insert(tag);
-        
+
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("tag:*", "标签新增");
     }
-    
+
     @Override
+    @Transactional
     public void updateTag(Tag tag) {
         // 检查标签名是否已存在（排除自己）
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
@@ -83,18 +86,19 @@ public class TagServiceImpl implements TagService {
         if (existTag != null) {
             throw new RuntimeException("标签名称已存在");
         }
-        
+
         tag.setUpdateTime(LocalDateTime.now());
         tagMapper.updateById(tag);
-        
+
         // 更新缓存版本
         cacheConsistencyService.updateCacheVersion("tag:*");
     }
-    
+
     @Override
+    @Transactional
     public void deleteTag(Long id) {
         tagMapper.deleteById(id);
-        
+
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("tag:*", "标签删除");
     }

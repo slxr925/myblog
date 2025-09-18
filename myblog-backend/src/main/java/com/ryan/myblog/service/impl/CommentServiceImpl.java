@@ -7,12 +7,16 @@ import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.dto.CommentSaveDTO;
 import com.ryan.myblog.entity.Comment;
 import com.ryan.myblog.entity.User;
+import com.ryan.myblog.entity.UserLike;
 import com.ryan.myblog.mapper.CommentMapper;
+import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.service.CommentService;
 import com.ryan.myblog.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
@@ -24,14 +28,17 @@ import java.util.stream.Collectors;
 /**
  * 评论服务实现类
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
     
     private final CommentMapper commentMapper;
     private final UserMapper userMapper;
+    private final UserLikeMapper userLikeMapper;
     
     @Override
+    @Transactional
     public void saveComment(CommentSaveDTO commentSaveDTO, Long userId) {
         Comment comment = new Comment();
         comment.setBlogId(commentSaveDTO.getBlogId());
@@ -43,7 +50,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setLikeCount(0);
         comment.setCreateTime(LocalDateTime.now());
         comment.setUpdateTime(LocalDateTime.now());
-        
+
         commentMapper.insert(comment);
     }
     
@@ -125,27 +132,68 @@ public class CommentServiceImpl implements CommentService {
     }
     
     @Override
+    @Transactional
     public void deleteComment(Long id, Long operatorId) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
             throw new RuntimeException("评论不存在");
         }
-        
+
         // 检查权限：只有评论者本人或管理员可以删除
         User operator = userMapper.selectById(operatorId);
-        if (!comment.getUserId().equals(operatorId) && 
+        if (!comment.getUserId().equals(operatorId) &&
             (operator == null || operator.getRole() != 1)) {
             throw new RuntimeException("无权限删除此评论");
         }
-        
+
         commentMapper.deleteById(id);
     }
     
     @Override
+    @Transactional
     public void toggleCommentLike(Long id, Long userId) {
-        // 这里简化处理，直接增加点赞数
-        // 实际项目中应该维护用户点赞记录表，避免重复点赞
-        commentMapper.incrementLikeCount(id);
+        // 检查评论是否存在
+        Comment comment = commentMapper.selectById(id);
+        if (comment == null) {
+            throw new RuntimeException("评论不存在");
+        }
+
+        // 查询用户点赞记录
+        UserLike existingLike = userLikeMapper.selectByUserAndTarget(userId, "comment", id);
+
+        if (existingLike == null) {
+            // 第一次点赞，创建点赞记录
+            UserLike newLike = new UserLike();
+            newLike.setUserId(userId);
+            newLike.setTargetType("comment");
+            newLike.setTargetId(id);
+            newLike.setStatus(1); // 点赞
+            newLike.setCreateTime(LocalDateTime.now());
+            newLike.setUpdateTime(LocalDateTime.now());
+            userLikeMapper.insert(newLike);
+
+            // 增加评论点赞数
+            commentMapper.incrementLikeCount(id);
+
+            log.info("用户 {} 点赞评论 {}", userId, id);
+        } else {
+            // 已有点赞记录，切换状态
+            Integer newStatus = existingLike.getStatus() == 1 ? 0 : 1;
+            existingLike.setStatus(newStatus);
+            existingLike.setUpdateTime(LocalDateTime.now());
+            userLikeMapper.updateById(existingLike);
+
+            // 更新评论点赞数
+            if (newStatus == 1) {
+                // 之前是取消点赞，现在重新点赞
+                commentMapper.incrementLikeCount(id);
+                log.info("用户 {} 重新点赞评论 {}", userId, id);
+            } else {
+                // 之前是点赞，现在取消点赞
+                commentMapper.decrementLikeCount(id);
+                log.info("用户 {} 取消点赞评论 {}", userId, id);
+            }
+        }
     }
     
     @Override

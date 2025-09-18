@@ -13,8 +13,10 @@ import com.ryan.myblog.mapper.TagMapper;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
+import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.vo.BlogDetailVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 /**
  * 博客服务实现类（简化版）
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BlogServiceImpl implements BlogService {
@@ -35,6 +38,7 @@ public class BlogServiceImpl implements BlogService {
     private final TagMapper tagMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
+    private final SecurityUtils securityUtils;
     
     @Override
     @Transactional
@@ -111,22 +115,31 @@ public class BlogServiceImpl implements BlogService {
     }
     
     @Override
-    public void deleteBlog(Long id, Long authorId) {
+    @Transactional
+    public void deleteBlog(Long id, Long operatorId) {
         Blog blog = blogMapper.selectById(id);
         if (blog == null) {
             throw new RuntimeException("博客不存在");
         }
-        if (!blog.getAuthorId().equals(authorId)) {
+
+        // 权限检查：管理员可以删除任意博客，普通用户只能删除自己的博客
+        boolean hasPermission = checkBlogPermission(blog.getAuthorId(), operatorId);
+        if (!hasPermission) {
+            log.warn("用户 {} 尝试删除博客 {} 失败，权限不足", operatorId, id);
             throw new RuntimeException("无权限删除此博客");
         }
-        
+
+        // 记录删除操作
+        log.info("用户 {} 删除博客 {} (作者: {}, 标题: {})",
+                 operatorId, id, blog.getAuthorId(), blog.getTitle());
+
         blogMapper.deleteById(id);
         blogTagMapper.deleteByBlogId(id);
-        
+
         // 清除缓存
         clearBlogCache(id);
         clearBlogCaches();
-        
+
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("blog:*", "博客删除");
     }
@@ -365,5 +378,19 @@ public class BlogServiceImpl implements BlogService {
         cacheService.deleteByPattern("blog:category:*");
         // 清除标签相关缓存
         cacheService.deleteByPattern("blog:tags:*");
+    }
+
+    /**
+     * 检查博客操作权限
+     * 管理员可以操作任意博客，普通用户只能操作自己的博客
+     */
+    private boolean checkBlogPermission(Long blogAuthorId, Long operatorId) {
+        // 如果是作者本人，有权限
+        if (blogAuthorId.equals(operatorId)) {
+            return true;
+        }
+
+        // 如果是管理员，有权限
+        return securityUtils.isAdmin();
     }
 }

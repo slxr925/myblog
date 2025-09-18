@@ -1,10 +1,12 @@
 package com.ryan.myblog.utils;
 
+import com.ryan.myblog.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -13,18 +15,21 @@ import java.util.Date;
 
 /**
  * JWT工具类
+ *
+ * 安全特性：
+ * 1. 使用配置属性类管理JWT配置
+ * 2. 支持密钥强度验证
+ * 3. 生产环境强制使用安全密钥
  */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtils {
-    
-    @Value("${jwt.secret}")
-    private String secret;
-    
-    @Value("${jwt.expiration}")
-    private Long expiration;
+
+    private final JwtProperties jwtProperties;
     
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
     
     /**
@@ -32,7 +37,7 @@ public class JwtUtils {
      */
     public String generateToken(Long userId, String username) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration * 1000);
+        Date expiryDate = new Date(now.getTime() + jwtProperties.getExpiration() * 1000);
         
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))

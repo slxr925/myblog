@@ -25,8 +25,9 @@ public interface BlogService {
     
     /**
      * 删除博客
+     * 支持管理员删除任意博客，普通用户只能删除自己的博客
      */
-    void deleteBlog(Long id, Long authorId);
+    void deleteBlog(Long id, Long operatorId);
     
     /**
      * 分页查询博客列表

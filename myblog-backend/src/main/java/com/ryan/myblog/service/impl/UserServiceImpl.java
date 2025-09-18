@@ -7,10 +7,13 @@ import com.ryan.myblog.entity.User;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.JwtUtils;
+import com.ryan.myblog.utils.PasswordValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +21,7 @@ import java.time.LocalDateTime;
  * 用户服务实现类
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     
@@ -26,32 +30,55 @@ public class UserServiceImpl implements UserService {
     private final JwtUtils jwtUtils;
     
     @Override
+    @Transactional
     public void register(UserRegisterDTO userRegisterDTO) {
         // 检查用户名是否已存在
         User existUser = userMapper.selectByUsername(userRegisterDTO.getUsername());
         if (existUser != null) {
             throw new RuntimeException("用户名已存在");
         }
-        
+
         // 检查邮箱是否已存在
         existUser = userMapper.selectByEmail(userRegisterDTO.getEmail());
         if (existUser != null) {
             throw new RuntimeException("邮箱已被注册");
         }
-        
+
+        // 验证密码强度（生产环境使用完整验证）
+        String activeProfile = System.getProperty("spring.profiles.active", "dev");
+        boolean isProduction = "prod".equalsIgnoreCase(activeProfile);
+
+        PasswordValidator.PasswordValidationResult passwordResult;
+        if (isProduction) {
+            // 生产环境使用完整验证
+            passwordResult = PasswordValidator.validate(
+                    userRegisterDTO.getPassword(),
+                    userRegisterDTO.getUsername(),
+                    userRegisterDTO.getEmail()
+            );
+        } else {
+            // 开发环境使用基础验证
+            passwordResult = PasswordValidator.validateBasic(userRegisterDTO.getPassword());
+        }
+
+        if (!passwordResult.isValid()) {
+            throw new RuntimeException(passwordResult.getMessage());
+        }
+
         // 创建新用户
         User user = new User();
         user.setUsername(userRegisterDTO.getUsername());
         user.setPassword(passwordEncoder.encode(userRegisterDTO.getPassword()));
         user.setEmail(userRegisterDTO.getEmail());
-        user.setNickname(StringUtils.isBlank(userRegisterDTO.getNickname()) ? 
-                        userRegisterDTO.getUsername() : userRegisterDTO.getNickname());
+        user.setNickname(StringUtils.isBlank(userRegisterDTO.getNickname()) ?
+                userRegisterDTO.getUsername() : userRegisterDTO.getNickname());
         user.setStatus(0); // 正常状态
         user.setRole(0); // 普通用户
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
-        
+
         userMapper.insert(user);
+        log.info("用户注册成功：{}，密码强度：{}", userRegisterDTO.getUsername(), passwordResult.getMessage());
     }
     
     @Override
@@ -87,6 +114,7 @@ public class UserServiceImpl implements UserService {
     }
     
     @Override
+    @Transactional
     public void updateUser(User user) {
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);

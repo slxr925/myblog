@@ -4,10 +4,15 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.dto.BlogSaveDTO;
+import com.ryan.myblog.dto.BlogUpdateDTO;
 import com.ryan.myblog.service.BlogService;
+import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.vo.BlogDetailVO;
 import com.ryan.myblog.vo.BlogDetailEnhancedVO;
+import com.ryan.myblog.vo.BlogListVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
@@ -18,12 +23,14 @@ import java.util.List;
 /**
  * 博客控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/blog")
 @RequiredArgsConstructor
 public class BlogController {
-    
+
     private final BlogService blogService;
+    private final SecurityUtils securityUtils;
     
     /**
      * 分页查询博客列表

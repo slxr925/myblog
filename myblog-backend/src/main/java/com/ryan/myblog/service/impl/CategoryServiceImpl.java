@@ -8,6 +8,7 @@ import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,39 +63,42 @@ public class CategoryServiceImpl implements CategoryService {
     }
     
     @Override
+    @Transactional
     public void saveCategory(Category category) {
         category.setCreateTime(LocalDateTime.now());
         category.setUpdateTime(LocalDateTime.now());
         categoryMapper.insert(category);
-        
+
         // 清除分类列表缓存
         clearCategoryListCache();
-        
+
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("category:*", "分类新增");
     }
-    
+
     @Override
+    @Transactional
     public void updateCategory(Category category) {
         category.setUpdateTime(LocalDateTime.now());
         categoryMapper.updateById(category);
-        
+
         // 清除相关缓存
         clearCategoryCache(category.getId());
         clearCategoryListCache();
-        
+
         // 更新缓存版本
         cacheConsistencyService.updateCacheVersion("category:*");
     }
-    
+
     @Override
+    @Transactional
     public void deleteCategory(Long id) {
         categoryMapper.deleteById(id);
-        
+
         // 清除相关缓存
         clearCategoryCache(id);
         clearCategoryListCache();
-        
+
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("category:*", "分类删除");
     }
