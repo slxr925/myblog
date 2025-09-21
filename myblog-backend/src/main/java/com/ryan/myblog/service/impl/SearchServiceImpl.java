@@ -2,6 +2,7 @@ package com.ryan.myblog.service.impl;
 
 import com.ryan.myblog.entity.BlogDocument;
 import com.ryan.myblog.service.SearchService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.data.elasticsearch.core.query.Query;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,13 +27,20 @@ import java.util.stream.Collectors;
 @Service
 public class SearchServiceImpl implements SearchService {
     
-    private final ElasticsearchOperations elasticsearchOperations;
-    private final boolean elasticsearchEnabled;
-    
-    public SearchServiceImpl(ElasticsearchOperations elasticsearchOperations) {
-        this(elasticsearchOperations, true);
+    private ElasticsearchOperations elasticsearchOperations;
+    private boolean elasticsearchEnabled;
+
+    public SearchServiceImpl() {
+        this.elasticsearchOperations = null;
+        this.elasticsearchEnabled = false;
     }
-    
+
+    @Autowired(required = false)
+    public SearchServiceImpl(ElasticsearchOperations elasticsearchOperations) {
+        this.elasticsearchOperations = elasticsearchOperations;
+        this.elasticsearchEnabled = elasticsearchOperations != null;
+    }
+
     public SearchServiceImpl(ElasticsearchOperations elasticsearchOperations, boolean elasticsearchEnabled) {
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchEnabled = elasticsearchEnabled;

@@ -2,24 +2,31 @@
 app:
   elasticsearch:
     enabled: false  # 暂时禁用ES，等安装完成后启用
+  # 自定义文件上传配置
+  upload:
+    path: ${UPLOAD_PATH:/app/uploads}
+    url-prefix: ${UPLOAD_URL_PREFIX:/uploads}
+    max-file-size: ${UPLOAD_MAX_FILE_SIZE_MB:10}
+    max-image-size: ${UPLOAD_MAX_IMAGE_SIZE_MB:5}
+    secure-mode: ${UPLOAD_SECURE_MODE:true}
 
 spring:
   application:
     name: myblog
-  
+
   # 数据源配置 - 使用环境变量增强安全性
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:myblog}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=${DB_SSL:false}&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    password: ${DB_PASSWORD:}  # 从环境变量或本地配置文件读取，默认空值
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
       idle-timeout: 300000
       connection-timeout: 20000
       max-lifetime: 1200000
-        
+
   # JPA配置
   jpa:
     hibernate:
@@ -29,18 +36,18 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-  
+
   # SQL初始化配置
   sql:
     init:
       mode: never  # 生产环境不自动初始化
-    
+
   # Redis配置 - 使用环境变量增强安全性
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:}  # 从环境变量或本地配置文件读取，默认空值
       database: ${REDIS_DATABASE:0}
       timeout: ${REDIS_TIMEOUT:3000ms}
       lettuce:
@@ -49,12 +56,14 @@ spring:
           max-idle: ${REDIS_POOL_MAX_IDLE:8}
           min-idle: ${REDIS_POOL_MIN_IDLE:0}
           max-wait: ${REDIS_POOL_MAX_WAIT:-1ms}
-  
+      # 临时配置，避免Redis连接失败导致应用无法启动
+      connect-timeout: 1000ms
+
   # Elasticsearch配置 - 暂时禁用，等ES安装完成后启用
   # elasticsearch:
   #   uris: http://localhost:9200
-  #   username: 
-  #   password: 
+  #   username:
+  #   password:
   #   connection-timeout: 10s
   #   socket-timeout: 60s
 
@@ -81,17 +90,17 @@ mybatis-plus:
       logic-not-delete-value: 0
   type-aliases-package: com.ryan.myblog.entity
 
-# 日志配置
+# 日志配置 - 基础配置，详细级别在本地配置文件中设置
 logging:
   level:
-    com.ryan.myblog: debug
-    com.ryan.myblog.mapper: debug
+    com.ryan.myblog: info  # 生产环境使用info级别
+    com.ryan.myblog.mapper: info
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n'
 
 # JWT配置
 jwt:
-  secret: ${JWT_SECRET:myBlogSecretKeyForJWTTokenGeneration2024!@#$%}
+  secret: ${JWT_SECRET:}  # 从环境变量或本地配置文件读取，默认空值
   expiration: ${JWT_EXPIRATION:604800} # 7天，单位秒
 
 # 文件上传配置
@@ -99,15 +108,11 @@ spring.servlet.multipart:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:10MB}
   max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:100MB}
 
-# 自定义文件上传配置
-app:
-  upload:
-    path: ${UPLOAD_PATH:/app/uploads}
-    url-prefix: ${UPLOAD_URL_PREFIX:/uploads}
-    max-file-size: ${UPLOAD_MAX_FILE_SIZE_MB:10}
-    max-image-size: ${UPLOAD_MAX_IMAGE_SIZE_MB:5}
-    secure-mode: ${UPLOAD_SECURE_MODE:true}
-
 # 服务器配置
 server:
   port: 9999
+
+# 多环境配置
+# 开发环境使用：--spring.profiles.active=local
+# 生产环境使用：--spring.profiles.active=prod
+# 配置文件优先级：application-local.yml > 环境变量 > application.yml默认值

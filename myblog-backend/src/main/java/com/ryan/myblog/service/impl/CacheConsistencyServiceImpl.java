@@ -1,6 +1,7 @@
 package com.ryan.myblog.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.CacheService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class CacheConsistencyServiceImpl implements CacheConsistencyService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final CacheService cacheService;
     private final RedisMessageListenerContainer messageListenerContainer;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     
     private static final String VERSION_KEY_PREFIX = "cache:version:";
     private static final String UPDATE_TIME_KEY_PREFIX = "cache:update_time:";

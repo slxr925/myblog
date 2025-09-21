@@ -5,6 +5,7 @@ import com.ryan.myblog.service.FileUploadService;
 import com.ryan.myblog.utils.PathSecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +28,7 @@ import java.util.*;
  */
 @Slf4j
 @Service
+@Primary
 @RequiredArgsConstructor
 public class SecureFileUploadServiceImpl implements FileUploadService {
 
