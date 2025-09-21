@@ -1,5 +1,6 @@
 package com.ryan.myblog.config;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,32 @@ public class JwtProperties {
 
     @PostConstruct
     public void validate() {
+        // 尝试从.env文件加载环境变量
+        try {
+            Dotenv dotenv = Dotenv.configure()
+                    .directory("./")
+                    .ignoreIfMissing()
+                    .load();
+            
+            // 如果secret字段为空，尝试从环境变量或.env文件加载
+            if (secret == null || secret.isEmpty()) {
+                String envSecret = System.getenv("JWT_SECRET");
+                if (envSecret == null || envSecret.isEmpty()) {
+                    envSecret = dotenv.get("JWT_SECRET");
+                }
+                if (envSecret != null && !envSecret.isEmpty()) {
+                    this.secret = envSecret;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("无法加载.env文件: {}", e.getMessage());
+        }
+        
+        // 调试信息
+        log.info("JWT_SECRET from System.getProperty: {}", System.getProperty("JWT_SECRET"));
+        log.info("JWT_SECRET from System.getenv: {}", System.getenv("JWT_SECRET"));
+        log.info("JWT secret field value: {}", secret);
+        
         // 生产环境安全检查
         String activeProfile = System.getProperty("spring.profiles.active", "dev");
         boolean isProduction = "prod".equalsIgnoreCase(activeProfile);

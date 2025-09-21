@@ -110,7 +110,7 @@ spring.servlet.multipart:
 
 # 服务器配置
 server:
-  port: 9999
+  port: 9525
 
 # 多环境配置
 # 开发环境使用：--spring.profiles.active=local
