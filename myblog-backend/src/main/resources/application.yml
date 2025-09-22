@@ -11,8 +11,18 @@ app:
     secure-mode: ${UPLOAD_SECURE_MODE:true}
 
 spring:
+  profiles:
+    active: local
+
   application:
     name: myblog
+
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:myblog}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
 
   # JPA配置
   jpa:
@@ -45,14 +55,6 @@ spring:
           max-wait: ${REDIS_POOL_MAX_WAIT:-1ms}
       # 临时配置，避免Redis连接失败导致应用无法启动
       connect-timeout: 1000ms
-
-  # Elasticsearch配置 - 暂时禁用，等ES安装完成后启用
-  # elasticsearch:
-  #   uris: http://localhost:9200
-  #   username:
-  #   password:
-  #   connection-timeout: 10s
-  #   socket-timeout: 60s
 
   # Jackson配置
   jackson:
@@ -97,7 +99,13 @@ spring.servlet.multipart:
 
 # 服务器配置
 server:
-  port: 9525
+  port: 9005
+
+# Actuator配置
+management:
+  health:
+    elasticsearch:
+      enabled: false  # 禁用Elasticsearch健康检查
 
 # 多环境配置
 # 开发环境使用：--spring.profiles.active=local
