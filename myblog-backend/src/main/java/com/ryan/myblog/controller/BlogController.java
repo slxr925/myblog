@@ -105,6 +105,7 @@ public class BlogController {
      * 保存博客
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> saveBlog(@Validated @RequestBody BlogSaveDTO blogSaveDTO) {
         Long authorId = getCurrentUserId();
         blogService.saveBlog(blogSaveDTO, authorId);
@@ -115,6 +116,7 @@ public class BlogController {
      * 更新博客
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateBlog(@PathVariable Long id,
                                   @Validated @RequestBody BlogSaveDTO blogSaveDTO) {
         Long authorId = getCurrentUserId();
@@ -126,6 +128,7 @@ public class BlogController {
      * 删除博客
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteBlog(@PathVariable Long id) {
         Long authorId = getCurrentUserId();
         blogService.deleteBlog(id, authorId);

@@ -5,6 +5,7 @@ import com.ryan.myblog.entity.Tag;
 import com.ryan.myblog.service.TagService;
 import com.ryan.myblog.vo.TagVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,6 +45,7 @@ public class TagController {
      * 保存标签
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> saveTag(@RequestBody Tag tag) {
         try {
             tagService.saveTag(tag);
@@ -57,6 +59,7 @@ public class TagController {
      * 更新标签
      */
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateTag(@RequestBody Tag tag) {
         try {
             tagService.updateTag(tag);
@@ -70,6 +73,7 @@ public class TagController {
      * 删除标签
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteTag(@PathVariable Long id) {
         try {
             tagService.deleteTag(id);

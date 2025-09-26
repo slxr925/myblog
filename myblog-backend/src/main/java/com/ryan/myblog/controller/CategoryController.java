@@ -4,6 +4,7 @@ import com.ryan.myblog.common.Result;
 import com.ryan.myblog.entity.Category;
 import com.ryan.myblog.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,6 +41,7 @@ public class CategoryController {
      * 保存分类
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> saveCategory(@RequestBody Category category) {
         categoryService.saveCategory(category);
         return Result.success();
@@ -49,6 +51,7 @@ public class CategoryController {
      * 更新分类
      */
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateCategory(@RequestBody Category category) {
         categoryService.updateCategory(category);
         return Result.success();
@@ -58,6 +61,7 @@ public class CategoryController {
      * 删除分类
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return Result.success();

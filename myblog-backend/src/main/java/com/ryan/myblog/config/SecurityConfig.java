@@ -2,6 +2,7 @@ package com.ryan.myblog.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -46,14 +48,30 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/register", "/api/user/login").permitAll()
                 // 允许查看博客列表和详情
                 .requestMatchers("/api/blog/page", "/api/blog/{id}").permitAll()
+                // 允许搜索功能
+                .requestMatchers("/api/search/**").permitAll()
                 // 允许查看分类和标签
                 .requestMatchers("/api/category/list", "/api/tag/list").permitAll()
                 // 允许健康检查和欢迎页面
                 .requestMatchers("/api/health", "/api/welcome").permitAll()
-                // 允许访问Swagger文档
+                // 允许访问Swagger和Knife4j文档
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                .requestMatchers("/doc.html", "/webjars/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll()
                 // 允许访问缓存测试接口（仅用于开发测试）
                 .requestMatchers("/api/cache/**").permitAll()
+                // 管理员专用接口
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // 博客管理接口需要管理员权限
+                .requestMatchers("/api/blog/save", "/api/blog/update", "/api/blog/delete/**").hasRole("ADMIN")
+                // 分类管理接口需要管理员权限
+                .requestMatchers("/api/category/save", "/api/category/update", "/api/category/delete/**").hasRole("ADMIN")
+                // 标签管理接口需要管理员权限
+                .requestMatchers("/api/tag/save", "/api/tag/update", "/api/tag/delete/**").hasRole("ADMIN")
+                // 文件上传需要登录（管理员和普通用户都可以）
+                .requestMatchers("/api/file/upload").hasRole("ADMIN")
+                // 评论和点赞需要登录（管理员和普通用户都可以）
+                .requestMatchers("/api/comment/**").authenticated()
+                .requestMatchers("/api/like/**").authenticated()
                 // 其他请求需要认证
                 .anyRequest().authenticated()
             )

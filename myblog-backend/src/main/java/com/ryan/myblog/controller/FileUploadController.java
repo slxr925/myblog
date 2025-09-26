@@ -23,7 +23,7 @@ public class FileUploadController {
     private final FileUploadService fileUploadService;
     
     @PostMapping("/image")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, String>> uploadImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "type", defaultValue = "content") String type) {
@@ -72,7 +72,7 @@ public class FileUploadController {
     }
     
     @PostMapping("/editor/image")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> uploadEditorImage(
             @RequestParam("file") MultipartFile file) {
         

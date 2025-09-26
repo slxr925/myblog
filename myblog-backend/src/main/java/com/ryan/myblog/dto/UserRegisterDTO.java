@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintValidatorContext;
 import jakarta.validation.Payload;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -33,6 +34,13 @@ public class UserRegisterDTO {
 
     @Size(max = 50, message = "昵称长度不能超过50位")
     private String nickname;
+
+    /**
+     * 用户角色：0-普通用户，1-管理员
+     * 默认注册为普通用户
+     */
+    @NotNull(message = "角色不能为空")
+    private Integer role = 0;
 
     /**
      * 密码强度验证注解

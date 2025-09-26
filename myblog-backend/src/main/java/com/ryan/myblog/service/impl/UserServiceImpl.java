@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
         user.setNickname(StringUtils.isBlank(userRegisterDTO.getNickname()) ?
                 userRegisterDTO.getUsername() : userRegisterDTO.getNickname());
         user.setStatus(0); // 正常状态
-        user.setRole(0); // 普通用户
+        user.setRole(userRegisterDTO.getRole() != null ? userRegisterDTO.getRole() : 0); // 使用传入的角色，默认为普通用户
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
 

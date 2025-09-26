@@ -99,7 +99,7 @@ spring.servlet.multipart:
 
 # 服务器配置
 server:
-  port: 9005
+  port: 9007
 
 # Actuator配置
 management:
@@ -107,7 +107,51 @@ management:
     elasticsearch:
       enabled: false  # 禁用Elasticsearch健康检查
 
+# Knife4j/SpringDoc配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.ryan.myblog.controller
+
+# Knife4j增强配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-swagger-models: true
+    enable-document-manage: true
+    enable-reload-cache-parameter: false
+    enable-version: false
+    enable-request-cache: true
+    enable-filter-multipart-apis: false
+    enable-filter-multipart-api-method-type: false
+    enable-host: false
+    enable-host-text: ""
+    enable-dynamic-parameter: false
+    enable-debug: true
+    enable-footer: true
+    enable-footer-custom: true
+    footer-custom-content: "MyBlog API Documentation"
+    enable-search: false
+    enable-open-api: true
+    enable-group: true
+    enable-parameter-filter: false
+    enable-response-filter: false
+    enable-parameter-model: true
+    enable-response-model: true
+    enable-menu-filter: false
+    enable-model-name-suffix: false
+    enable-model-name-prefix: false
+    enable-request-mapping-cache: false
+    enable-bearer-auth: true
+
 # 多环境配置
 # 开发环境使用：--spring.profiles.active=local
 # 生产环境使用：--spring.profiles.active=prod
-# 配置文件优先级：application-local.yml > 环境变量 > application.yml默认值
