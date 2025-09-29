@@ -1,0 +1,76 @@
+/* Markdown内容样式 */
+
+.markdown-content {
+  @apply text-gray-900 dark:text-gray-100 leading-relaxed;
+}
+
+/* 代码块样式 */
+.markdown-content pre {
+  @apply bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto my-4 border border-gray-200 dark:border-gray-700;
+}
+
+.markdown-content code {
+  @apply bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0 rounded-none;
+}
+
+/* 语法高亮容器样式 */
+.syntax-highlighter {
+  @apply rounded-lg overflow-hidden shadow-sm;
+}
+
+.syntax-highlighter pre {
+  @apply m-0 p-4 overflow-x-auto;
+}
+
+.syntax-highlighter code {
+  @apply bg-transparent p-0 text-sm font-mono leading-relaxed;
+}
+
+/* 行号样式 */
+.syntax-highlighter .linenumber {
+  @apply text-gray-500 dark:text-gray-400 select-none mr-4 inline-block min-w-[2rem] text-right;
+}
+
+/* 响应式代码块 */
+@media (max-width: 768px) {
+  .syntax-highlighter pre {
+    @apply text-xs p-3;
+  }
+  
+  .syntax-highlighter .linenumber {
+    @apply min-w-[1.5rem] mr-2;
+  }
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .syntax-highlighter {
+    @apply bg-gray-900;
+  }
+}
+
+/* 复制按钮样式 */
+.code-copy-button {
+  @apply absolute top-2 right-2 p-2 bg-white/80 dark:bg-gray-900/80 hover:bg-white dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded opacity-0 transition-opacity duration-200;
+}
+
+.syntax-highlighter:hover .code-copy-button {
+  @apply opacity-100;
+}
+
+/* 滚动条样式 */
+.markdown-content pre::-webkit-scrollbar {
+  @apply h-2;
+}
+
+.markdown-content pre::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800 rounded;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb {
+  @apply bg-gray-400/30 dark:bg-gray-600/30 rounded hover:bg-gray-400/50 dark:hover:bg-gray-600/50;
+}

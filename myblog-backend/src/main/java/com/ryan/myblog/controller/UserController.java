@@ -6,6 +6,7 @@ import com.ryan.myblog.dto.UserRegisterDTO;
 import com.ryan.myblog.entity.User;
 import com.ryan.myblog.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
     
     private final UserService userService;
@@ -35,7 +37,9 @@ public class UserController {
      */
     @PostMapping("/login")
     public Result<String> login(@Validated @RequestBody UserLoginDTO userLoginDTO) {
+        log.info("用户登录请求：{}", userLoginDTO.getUsername());
         String token = userService.login(userLoginDTO);
+        log.info("用户登录成功，返回token，长度：{}", token.length());
         return Result.success(token);
     }
     

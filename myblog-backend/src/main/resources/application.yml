@@ -99,7 +99,7 @@ spring.servlet.multipart:
 
 # 服务器配置
 server:
-  port: 9007
+  port: 8081 
 
 # Actuator配置
 management:

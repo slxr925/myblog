@@ -83,24 +83,31 @@ public class UserServiceImpl implements UserService {
     
     @Override
     public String login(UserLoginDTO userLoginDTO) {
+        log.info("用户登录请求：{}", userLoginDTO.getUsername());
+        
         // 查询用户
         User user = userMapper.selectByUsername(userLoginDTO.getUsername());
         if (user == null) {
+            log.warn("用户不存在：{}", userLoginDTO.getUsername());
             throw new RuntimeException("用户名或密码错误");
         }
         
         // 验证密码
         if (!passwordEncoder.matches(userLoginDTO.getPassword(), user.getPassword())) {
+            log.warn("密码错误：{}", userLoginDTO.getUsername());
             throw new RuntimeException("用户名或密码错误");
         }
         
         // 检查用户状态
         if (user.getStatus() == 1) {
+            log.warn("用户已被禁用：{}", userLoginDTO.getUsername());
             throw new RuntimeException("用户已被禁用");
         }
         
         // 生成JWT令牌
-        return jwtUtils.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtils.generateToken(user.getId(), user.getUsername());
+        log.info("用户登录成功：{}，token长度：{}", userLoginDTO.getUsername(), token.length());
+        return token;
     }
     
     @Override

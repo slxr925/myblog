@@ -1,4 +1,4 @@
-package com.ryan.myblog.test;
+package com.ryan.myblog;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
