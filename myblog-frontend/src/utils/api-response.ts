@@ -111,7 +111,7 @@ export async function handleBatchApiResponse<T>(
 ): Promise<ApiResult<T>[]> {
   const results = await Promise.allSettled(apiCalls)
   
-  return results.map((result, index) => {
+  return results.map((result) => {
     if (result.status === 'fulfilled') {
       const apiResponse = result.value.data
       if (apiResponse.code === 200 || apiResponse.code === 0) {

@@ -1,7 +1,5 @@
 // 错误处理工具
 
-import { AxiosError } from 'axios'
-
 // 错误类型定义
 export interface AppError {
   code: string

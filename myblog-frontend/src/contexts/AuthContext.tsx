@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import type { User, AuthState, UserLoginDTO, UserRegisterDTO } from '../types/api';
+import { Role } from '../types/api';
 import { api } from '../utils/api';
 
 // 认证状态类型
@@ -145,10 +146,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('AuthContext: 登录成功');
       } catch (userError) {
         console.error('AuthContext: 获取用户信息失败', userError);
-        // 如果获取用户信息失败，仍然认为登录成功，但用户信息为空
+        // 如果获取用户信息失败，仍然认为登录成功，但使用默认用户信息
+        const defaultUser: User = {
+          id: 0,
+          username: loginData.username,
+          email: '',
+          status: 0,
+          role: Role.USER
+        };
         dispatch({
           type: 'LOGIN_SUCCESS',
-          payload: { user: null, token },
+          payload: { user: defaultUser, token },
         });
       }
     } catch (error: any) {

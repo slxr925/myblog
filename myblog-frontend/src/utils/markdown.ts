@@ -106,7 +106,7 @@ export function extractHeadings(content: string): Array<{
  * @returns 添加了ID的Markdown内容
  */
 export function addHeadingIds(content: string): string {
-  return content.replace(/^(#{1,6})\s+(.+)$/gm, (match, hashes, title) => {
+  return content.replace(/^(#{1,6})\s+(.+)$/gm, (hashes, title) => {
     const id = title
       .toLowerCase()
       .replace(/[^\w\u4e00-\u9fa5\s-]/g, '')

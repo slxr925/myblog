@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
+import { api } from '../utils/api';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -30,11 +31,23 @@ const Profile: React.FC = () => {
     );
   }
 
-  const handleSave = () => {
-    // 这里应该调用API更新用户信息
-    console.log('保存用户信息:', formData);
-    setIsEditing(false);
-    // TODO: 调用更新用户信息的API
+  const handleSave = async () => {
+    try {
+      console.log('保存用户信息:', formData);
+      await api.user.updateUserInfo(formData);
+      
+      // 更新本地用户信息
+      const updatedUser = { ...user, ...formData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // 刷新认证上下文中的用户信息
+      window.location.reload(); // 简单刷新页面以更新用户信息
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('保存用户信息失败:', error);
+      alert('保存失败，请稍后重试');
+    }
   };
 
   const handleCancel = () => {
@@ -191,13 +204,13 @@ const Profile: React.FC = () => {
                 <CardTitle>快速操作</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => alert('修改密码功能开发中')}>
                   修改密码
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => alert('隐私设置功能开发中')}>
                   隐私设置
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => alert('通知设置功能开发中')}>
                   通知设置
                 </Button>
               </CardContent>

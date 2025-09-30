@@ -145,7 +145,7 @@ export const api = {
     getHotBlogs: async (limit = 5): Promise<BlogPost[]> => {
       try {
         const response = await api.blog.getHot(limit);
-        return response.data.data.map(transformBlogDetailVOToBlogPost);
+        return response.data.map(transformBlogDetailVOToBlogPost);
       } catch (error) {
         console.error('获取热门博客失败:', error);
         return [];
@@ -156,7 +156,7 @@ export const api = {
     getLatestBlogs: async (limit = 5): Promise<BlogPost[]> => {
       try {
         const response = await api.blog.getLatest(limit);
-        return response.data.data.map(transformBlogDetailVOToBlogPost);
+        return response.data.map(transformBlogDetailVOToBlogPost);
       } catch (error) {
         console.error('获取最新博客失败:', error);
         return [];

@@ -7,6 +7,7 @@ import { Card, CardContent } from '../ui/card';
 import { useAuth } from '../../contexts/AuthContext';
 import { Role } from '../../types/api';
 import { useNavigate } from 'react-router-dom';
+import { User, Settings, LogOut } from 'lucide-react';
 
 interface UserMenuProps {
   className?: string;
