@@ -247,6 +247,16 @@ export const api = {
     updateUserInfo: async (userData: Partial<User>): Promise<ApiResponse<void>> => {
       return apiClient.put('/user/info', userData);
     },
+
+    // 修改密码
+    changePassword: async (passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }): Promise<ApiResponse<void>> => {
+      return apiClient.post('/user/change-password', passwordData);
+    },
+
+    // 用户登出
+    logout: async (): Promise<ApiResponse<void>> => {
+      return apiClient.post('/user/logout');
+    },
   },
 
   comment: {

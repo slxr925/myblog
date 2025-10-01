@@ -206,9 +206,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // 用户登出
-  const logout = (): void => {
-    api.auth.clearAuth();
-    dispatch({ type: 'LOGOUT' });
+  const logout = async (): Promise<void> => {
+    try {
+      // 调用后端登出API
+      await api.user.logout();
+    } catch (error) {
+      console.error('登出API调用失败:', error);
+    } finally {
+      // 清除前端认证信息
+      api.auth.clearAuth();
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   // 刷新用户信息

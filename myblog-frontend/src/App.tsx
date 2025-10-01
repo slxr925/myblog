@@ -14,10 +14,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AuthModal } from './components/auth/AuthModal'
 import { UserMenu } from './components/auth/UserMenu'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
-import { Dashboard } from './pages/Dashboard'
-import { Admin } from './pages/Admin'
 import Profile from './pages/Profile'
-import { Role } from './types/api'
 
 interface PersonalBlogProps {
   authorName?: string
@@ -31,7 +28,7 @@ const PersonalBlog: React.FC<PersonalBlogProps> = ({
   authorAvatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
 }) => {
   const navigate = useNavigate()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [posts, setPosts] = useState<BlogPost[]>([])
@@ -39,6 +36,15 @@ const PersonalBlog: React.FC<PersonalBlogProps> = ({
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+
+  // 检查URL参数，如果是从受保护页面重定向过来的，显示登录模态框
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromProtected = urlParams.get('fromProtected')
+    if (fromProtected && !isAuthenticated) {
+      setIsAuthModalOpen(true)
+    }
+  }, [isAuthenticated])
 
   // 获取所有标签
   const allTags = Array.from(new Set(posts.flatMap(post => post.tags)))
@@ -140,19 +146,10 @@ const PersonalBlog: React.FC<PersonalBlogProps> = ({
             </motion.h1>
             <nav className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>首页</Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/about')}>关于</Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/contact')}>联系</Button>
               {isAuthenticated && (
-                <>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-                    控制台
-                  </Button>
-                  {user?.role === Role.ADMIN && (
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
-                      管理员
-                    </Button>
-                  )}
-                </>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
+                  个人资料
+                </Button>
               )}
               <div className="flex items-center space-x-2">
                 {isAuthenticated ? (
@@ -466,30 +463,8 @@ const AppWrapper = () => {
           <Routes>
             {/* 公开路由 */}
             <Route path="/" element={<PersonalBlog />} />
-            <Route path="/about" element={<div className="container mx-auto px-4 py-8"><h1 className="text-2xl font-bold">关于我</h1></div>} />
-            <Route path="/contact" element={<div className="container mx-auto px-4 py-8"><h1 className="text-2xl font-bold">联系我</h1></div>} />
 
             {/* 需要认证的路由 */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* 需要管理员权限的路由 */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRole={Role.ADMIN}>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* 个人资料页面 */}
             <Route
               path="/profile"
               element={

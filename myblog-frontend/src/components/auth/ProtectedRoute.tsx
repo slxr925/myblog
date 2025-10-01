@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole,
-  redirectTo = '/login',
+  redirectTo = '/',
 }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
@@ -25,9 +25,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // 如果用户未认证，重定向到登录页
+  // 如果用户未认证，重定向到首页并传递参数显示认证模态框
   if (!isAuthenticated) {
-    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+    const redirectPath = redirectTo === '/login' ? '/?fromProtected=true' : redirectTo;
+    return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
   // 如果需要特定角色权限，检查用户角色

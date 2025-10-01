@@ -2,6 +2,7 @@ package com.ryan.myblog.config;
 
 import com.ryan.myblog.common.Role;
 import com.ryan.myblog.entity.User;
+import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
@@ -32,6 +33,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtUtils jwtUtils;
+    private final SessionService sessionService;
     
     @Autowired
     private ApplicationContext applicationContext;
@@ -78,6 +80,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     // 设置到Security上下文
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    
+                    // 保存或刷新Redis会话
+                    sessionService.saveSession(token, userId);
                 }
             } catch (Exception e) {
                 // 如果token解析或用户查询失败，记录日志但不抛出异常

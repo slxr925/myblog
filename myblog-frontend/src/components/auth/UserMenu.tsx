@@ -105,21 +105,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </div>
                   </div>
 
-                  {/* 用户统计信息 */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="text-center p-2 bg-muted rounded">
-                      <div className="font-medium">注册时间</div>
-                      <div className="text-muted-foreground">
-                        {user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'}
-                      </div>
-                    </div>
-                    <div className="text-center p-2 bg-muted rounded">
-                      <div className="font-medium">账户状态</div>
-                      <div className={`text-muted-foreground ${user.status === 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {user.status === 0 ? '正常' : '已禁用'}
-                      </div>
-                    </div>
-                  </div>
+                  
 
                   {/* 个人简介 */}
                   {user.bio && (
@@ -140,18 +126,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       <User className="w-4 h-4 mr-2" />
                       个人资料
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/dashboard');
-                      }}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      控制台
-                    </Button>
+                    {user.role === Role.ADMIN && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setIsOpen(false);
+                          navigate('/dashboard');
+                        }}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        控制台
+                      </Button>
+                    )}
                     <Button
                       variant="destructive"
                       size="sm"

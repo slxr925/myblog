@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,15 +9,27 @@ import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
 import { api } from '../utils/api';
+import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [formData, setFormData] = useState({
     nickname: user?.nickname || '',
     email: user?.email || '',
     bio: user?.bio || '',
   });
+
+  // 当用户信息更新时，同步更新表单数据
+  React.useEffect(() => {
+    setFormData({
+      nickname: user?.nickname || '',
+      email: user?.email || '',
+      bio: user?.bio || '',
+    });
+  }, [user]);
 
   if (!user) {
     return (
@@ -36,12 +49,8 @@ const Profile: React.FC = () => {
       console.log('保存用户信息:', formData);
       await api.user.updateUserInfo(formData);
       
-      // 更新本地用户信息
-      const updatedUser = { ...user, ...formData };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
       // 刷新认证上下文中的用户信息
-      window.location.reload(); // 简单刷新页面以更新用户信息
+      await refreshUser();
       
       setIsEditing(false);
     } catch (error) {
@@ -49,6 +58,8 @@ const Profile: React.FC = () => {
       alert('保存失败，请稍后重试');
     }
   };
+
+  
 
   const handleCancel = () => {
     setFormData({
@@ -70,6 +81,29 @@ const Profile: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       className="min-h-screen bg-background"
     >
+      {/* 导航栏 */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50"
+      >
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <motion.h1
+              className="text-2xl font-bold text-foreground"
+              whileHover={{ scale: 1.05 }}
+            >
+              个人资料
+            </motion.h1>
+            <nav className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                首页
+              </Button>
+            </nav>
+          </div>
+        </div>
+      </motion.header>
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">个人资料</h1>
@@ -168,18 +202,23 @@ const Profile: React.FC = () => {
                       <Button variant="outline" onClick={handleCancel}>取消</Button>
                     </>
                   ) : (
-                    <Button onClick={() => setIsEditing(true)}>编辑资料</Button>
+                    <>
+                      <Button onClick={() => setIsEditing(true)}>编辑资料</Button>
+                      <Button variant="outline" onClick={() => setIsChangingPassword(true)}>
+                        修改密码
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* 右侧：统计信息 */}
+          {/* 右侧：账户信息 */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>账户状态</CardTitle>
+                <CardTitle>账户信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
@@ -198,26 +237,15 @@ const Profile: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>快速操作</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" onClick={() => alert('修改密码功能开发中')}>
-                  修改密码
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => alert('隐私设置功能开发中')}>
-                  隐私设置
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => alert('通知设置功能开发中')}>
-                  通知设置
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
+
+      {/* 修改密码模态框 */}
+      <ChangePasswordModal
+        isOpen={isChangingPassword}
+        onClose={() => setIsChangingPassword(false)}
+      />
     </motion.div>
   );
 };

@@ -5,6 +5,7 @@ import com.ryan.myblog.dto.UserLoginDTO;
 import com.ryan.myblog.dto.UserRegisterDTO;
 import com.ryan.myblog.entity.User;
 import com.ryan.myblog.mapper.UserMapper;
+import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.JwtUtils;
 import com.ryan.myblog.utils.PasswordValidator;
@@ -28,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+    private final SessionService sessionService;
     
     @Override
     @Transactional
@@ -106,6 +108,10 @@ public class UserServiceImpl implements UserService {
         
         // 生成JWT令牌
         String token = jwtUtils.generateToken(user.getId(), user.getUsername());
+        
+        // 保存用户会话到Redis
+        sessionService.saveSession(token, user.getId());
+        
         log.info("用户登录成功：{}，token长度：{}", userLoginDTO.getUsername(), token.length());
         return token;
     }
@@ -125,5 +131,38 @@ public class UserServiceImpl implements UserService {
     public void updateUser(User user) {
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
+    }
+    
+    @Override
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        // 获取用户信息
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 验证当前密码
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("当前密码错误");
+        }
+        
+        // 验证新密码是否与原密码相同
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new RuntimeException("新密码不能与原密码相同");
+        }
+        
+        // 验证新密码强度
+        PasswordValidator.PasswordValidationResult passwordResult = PasswordValidator.validateBasic(newPassword);
+        if (!passwordResult.isValid()) {
+            throw new RuntimeException(passwordResult.getMessage());
+        }
+        
+        // 更新密码
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
+        
+        log.info("用户密码修改成功：{}", user.getUsername());
     }
 }

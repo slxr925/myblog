@@ -2,6 +2,7 @@ package com.ryan.myblog.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,16 +37,20 @@ public class SecurityConfig {
         http
             // 禁用CSRF
             .csrf(AbstractHttpConfigurer::disable)
+            // 启用CORS
+            .cors(cors -> cors.configure(http))
             // 设置会话管理为无状态
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
+                // 允许所有OPTIONS请求（CORS预检）
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 允许访问主页和静态资源
                 .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                 // 允许访问静态资源
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                 // 允许用户注册和登录
-                .requestMatchers("/api/user/register", "/api/user/login").permitAll()
+                .requestMatchers("/api/user/register", "/api/user/login", "/api/user/logout").permitAll()
                 // 允许查看博客列表和详情
                 .requestMatchers("/api/blog/page", "/api/blog/{id}").permitAll()
                 // 允许搜索功能
@@ -72,6 +77,10 @@ public class SecurityConfig {
                 // 评论和点赞需要登录（管理员和普通用户都可以）
                 .requestMatchers("/api/comment/**").authenticated()
                 .requestMatchers("/api/like/**").authenticated()
+                // 用户信息接口需要认证（包括GET和PUT）
+                .requestMatchers("/api/user/info").authenticated()
+                // 修改密码接口需要认证
+                .requestMatchers("/api/user/change-password").authenticated()
                 // 其他请求需要认证
                 .anyRequest().authenticated()
             )

@@ -1,6 +1,6 @@
 // API接口测试
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import type { BlogDetailVO, CommentVO, CommentCreateDTO, ApiResponse } from '../../types/api'
 
 describe('API Type Definitions', () => {

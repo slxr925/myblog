@@ -109,6 +109,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         response: error.response?.data,
         status: error.response?.status
       });
+      
+      // 显示错误信息给用户
+      let errorMessage = '注册失败，请稍后重试';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
