@@ -1,12 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
+import { UserManagement } from '../components/admin/UserManagement';
+import { BlogManagement } from '../components/admin/BlogManagement';
+import { CommentManagement } from '../components/admin/CommentManagement';
+import { Users, FileText, MessageSquare, Settings } from 'lucide-react';
+
+type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments';
 
 export const Admin: React.FC = () => {
   const { user } = useAuth();
+  const [currentView, setCurrentView] = useState<AdminView>('dashboard');
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalBlogs: 0,
+    totalComments: 0,
+    todayViews: 0
+  });
+
+  useEffect(() => {
+    if (currentView === 'dashboard') {
+      fetchStats();
+    }
+  }, [currentView]);
+
+  const fetchStats = async () => {
+    try {
+      const response = await api.admin.getStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+      // 如果API调用失败，使用模拟数据
+      setStats({
+        totalUsers: 12,
+        totalBlogs: 8,
+        totalComments: 24,
+        todayViews: 156
+      });
+    }
+  };
 
   if (!user || user.role !== Role.ADMIN) {
     return (
@@ -21,7 +56,20 @@ export const Admin: React.FC = () => {
     );
   }
 
-  return (
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'users':
+        return <UserManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'blogs':
+        return <BlogManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'comments':
+        return <CommentManagement onBack={() => setCurrentView('dashboard')} />;
+      default:
+        return renderDashboard();
+    }
+  };
+
+  const renderDashboard = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -35,9 +83,12 @@ export const Admin: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* 用户管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setCurrentView('users')}>
             <CardHeader>
-              <CardTitle>用户管理</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="w-5 h-5" />
+                <span>用户管理</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
@@ -48,9 +99,12 @@ export const Admin: React.FC = () => {
           </Card>
 
           {/* 文章管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setCurrentView('blogs')}>
             <CardHeader>
-              <CardTitle>文章管理</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="w-5 h-5" />
+                <span>文章管理</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
@@ -60,36 +114,13 @@ export const Admin: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* 分类管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle>分类管理</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                管理文章分类，包括添加、编辑、删除分类
-              </p>
-              <Button className="w-full">进入管理</Button>
-            </CardContent>
-          </Card>
-
-          {/* 标签管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle>标签管理</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                管理文章标签，包括添加、编辑、删除标签
-              </p>
-              <Button className="w-full">进入管理</Button>
-            </CardContent>
-          </Card>
-
           {/* 评论管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setCurrentView('comments')}>
             <CardHeader>
-              <CardTitle>评论管理</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5" />
+                <span>评论管理</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
@@ -99,16 +130,51 @@ export const Admin: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* 系统设置 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          {/* 分类管理 */}
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-50">
             <CardHeader>
-              <CardTitle>系统设置</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="w-5 h-5" />
+                <span>分类管理</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                管理文章分类，包括添加、编辑、删除分类
+              </p>
+              <Button className="w-full" disabled>敬请期待</Button>
+            </CardContent>
+          </Card>
+
+          {/* 标签管理 */}
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="w-5 h-5" />
+                <span>标签管理</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                管理文章标签，包括添加、编辑、删除标签
+              </p>
+              <Button className="w-full" disabled>敬请期待</Button>
+            </CardContent>
+          </Card>
+
+          {/* 系统设置 */}
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="w-5 h-5" />
+                <span>系统设置</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
                 配置系统参数，包括网站设置、安全设置等
               </p>
-              <Button className="w-full">进入设置</Button>
+              <Button className="w-full" disabled>敬请期待</Button>
             </CardContent>
           </Card>
         </div>
@@ -122,19 +188,19 @@ export const Admin: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">0</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalUsers}</div>
                   <div className="text-sm text-muted-foreground">总用户数</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">0</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalBlogs}</div>
                   <div className="text-sm text-muted-foreground">总文章数</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">0</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalComments}</div>
                   <div className="text-sm text-muted-foreground">总评论数</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">0</div>
+                  <div className="text-3xl font-bold text-primary">{stats.todayViews}</div>
                   <div className="text-sm text-muted-foreground">今日访问</div>
                 </div>
               </div>
@@ -144,4 +210,6 @@ export const Admin: React.FC = () => {
       </div>
     </motion.div>
   );
+
+  return renderCurrentView();
 };

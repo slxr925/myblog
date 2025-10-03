@@ -321,6 +321,53 @@ export const api = {
     },
   },
 
+  admin: {
+    // 获取用户列表
+    getUsers: async (params?: PageParams): Promise<ApiResponse<PageResponse<User>>> => {
+      return apiClient.get('/admin/users', { params });
+    },
+
+    // 更新用户状态
+    updateUserStatus: async (userId: number, status: number): Promise<ApiResponse<void>> => {
+      return apiClient.put(`/admin/users/${userId}/status`, { status });
+    },
+
+    // 获取文章列表
+    getBlogs: async (params?: PageParams): Promise<ApiResponse<PageResponse<BlogDetailVO>>> => {
+      return apiClient.get('/admin/blogs', { params });
+    },
+
+    // 更新文章状态
+    updateBlogStatus: async (blogId: number, status: number): Promise<ApiResponse<void>> => {
+      return apiClient.put(`/admin/blogs/${blogId}/status`, { status });
+    },
+
+    // 删除文章
+    deleteBlog: async (blogId: number): Promise<ApiResponse<void>> => {
+      return apiClient.delete(`/admin/blogs/${blogId}`);
+    },
+
+    // 获取评论列表
+    getComments: async (params?: PageParams): Promise<ApiResponse<PageResponse<CommentVO>>> => {
+      return apiClient.get('/admin/comments', { params });
+    },
+
+    // 删除评论
+    deleteComment: async (commentId: number): Promise<ApiResponse<void>> => {
+      return apiClient.delete(`/admin/comments/${commentId}`);
+    },
+
+    // 获取系统统计
+    getStats: async (): Promise<ApiResponse<{
+      totalUsers: number;
+      totalBlogs: number;
+      totalComments: number;
+      todayViews: number;
+    }>> => {
+      return apiClient.get('/admin/stats');
+    },
+  },
+
   auth: {
     // 保存认证信息到本地存储
     saveAuth: (token: string, user: User): void => {
@@ -333,7 +380,7 @@ export const api = {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      
+
       return {
         user,
         token,

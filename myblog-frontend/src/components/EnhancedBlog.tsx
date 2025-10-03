@@ -227,13 +227,13 @@ const BlogPostCard: React.FC<{
 interface EnhancedBlogProps {
   authorName?: string;
   authorBio?: string;
-  authorAvatar?: string;
+  //authorAvatar?: string;
 }
 
 const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
-  authorName = "徐冉",
-  authorBio = "全栈开发工程师，专注于现代Web技术栈。热爱分享技术心得和编程经验。",
-  authorAvatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+  authorName = "Ryan",
+  authorBio = "Java开发工程师，AI应用开发转型中，一起努力成长。",
+  //authorAvatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -458,13 +458,12 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
   return (
     <div className="min-h-screen w-full relative bg-white">
-      {/* 移除动态背景，使用白色背景更适合阅读 */}
 
       {/* Navigation */}
       <nav className="relative z-50 p-6">
-        <div className="bg-gray-50/80 backdrop-blur-xl border border-gray-200 rounded-xl max-w-7xl mx-auto">
+        <div className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-xl max-w-7xl mx-auto shadow-sm">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-gray-800">{authorName}的博客</h1>
+            <h1 className="text-2xl font-bold text-gray-800">{authorName}'s Blog</h1>
 
             <div className="hidden md:flex items-center gap-6">
               <Button variant="ghost" className="text-gray-700 hover:bg-gray-100" onClick={() => navigate('/')}>
@@ -505,26 +504,70 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-40 px-6 py-20 text-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-4xl mx-auto">
-          <div className="p-12">
-            <h2 className="text-5xl md:text-6xl font-bold text-gray-800 mb-6 animate-fade-in">
-              欢迎
+      <section className="relative z-40 px-6 py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-4xl mx-auto">
+            <h2 className="text-5xl font-bold text-gray-800 mb-6 leading-tight">
+              Welcome.
             </h2>
-            <p className="text-xl text-gray-600 mb-8 animate-fade-in-delay">
-              分享技术见解、设计思考和创意灵感
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              {authorBio}
             </p>
-            <div className="flex gap-4 justify-center">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => document.getElementById('blog-posts')?.scrollIntoView({ behavior: 'smooth' })}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+                onClick={() => navigate('/blog')}
+              >
                 开始阅读
+                <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+              <Button
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-3 text-lg"
+                onClick={() => navigate('/profile')}
+              >
                 了解更多
               </Button>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Featured Post */}
+      {featuredPost && (
+        <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm max-w-4xl mx-auto border border-blue-100">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-4">
+                <Badge className="bg-blue-100 text-blue-800 font-semibold">
+                  ⭐ 精选文章
+                </Badge>
+                <span className="text-sm text-gray-600">{featuredPost.date}</span>
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-4 hover:text-blue-600 transition-colors cursor-pointer" onClick={() => handlePostClick(featuredPost.id)}>
+                {featuredPost.title}
+              </h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">{featuredPost.excerpt}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <span className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {featuredPost.readTime}
+                  </span>
+                  <span className="flex items-center">
+                    <Eye className="w-4 h-4 mr-1" />
+                    {featuredPost.views}
+                  </span>
+                </div>
+                <Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold group" onClick={() => handlePostClick(featuredPost.id)}>
+                  阅读更多
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Search and Filter */}
       <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
@@ -566,42 +609,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
           </div>
         </div>
       </section>
-
-      {/* Featured Post */}
-      {featuredPost && (
-        <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg max-w-4xl mx-auto">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-4">
-                <Badge className="bg-yellow-400 text-yellow-900 font-semibold">
-                  ⭐ 精选文章
-                </Badge>
-                <span className="text-sm text-blue-100">{featuredPost.date}</span>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-4 hover:text-yellow-300 transition-colors cursor-pointer" onClick={() => handlePostClick(featuredPost.id)}>
-                {featuredPost.title}
-              </h3>
-              <p className="text-blue-100 mb-6 leading-relaxed">{featuredPost.excerpt}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-blue-100">
-                  <span className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {featuredPost.readTime}
-                  </span>
-                  <span className="flex items-center">
-                    <Eye className="w-4 h-4 mr-1" />
-                    {featuredPost.views}
-                  </span>
-                </div>
-                <Button className="bg-white text-blue-600 hover:bg-yellow-400 hover:text-blue-700 font-semibold group" onClick={() => handlePostClick(featuredPost.id)}>
-                  阅读更多
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Blog Posts Grid */}
       <section id="blog-posts" className="relative z-40 px-6 py-12 max-w-7xl mx-auto">
@@ -658,7 +665,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
             </div>
 
             <div className="mt-8 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
-              © 2025 徐冉的博客. All rights reserved.
+              © 2025 {authorName}的博客. All rights reserved.
             </div>
           </div>
         </div>

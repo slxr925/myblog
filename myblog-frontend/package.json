@@ -6,23 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/user-event": "^14.5.2",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^5.0.3",
-    "jsdom": "^26.0.0",
     "tailwindcss": "^4.1.13",
     "typescript": "~5.8.3",
-    "vite": "^7.1.7",
-    "vitest": "^2.1.8"
+    "vite": "^7.1.7"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",

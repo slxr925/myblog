@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import Profile from './pages/Profile'
 import BlogDetail from './pages/BlogDetail'
 import EnhancedBlog from './components/EnhancedBlog'
+import { Admin } from './pages/Admin'
 
 const AppWrapper = () => {
   return (
@@ -23,6 +24,14 @@ const AppWrapper = () => {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Admin />
                 </ProtectedRoute>
               }
             />
