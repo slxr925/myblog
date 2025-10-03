@@ -169,3 +169,26 @@ export enum BlogStatus {
   PUBLISHED = 1,
   OFFLINE = 2
 }
+
+// 每日统计数据
+export interface DailyStatsDTO {
+  date: string;
+  newUsers: number;
+  newBlogs: number;
+  newComments: number;
+  totalViews: number;
+}
+
+// 管理员统计数据
+export interface AdminStatsDTO {
+  totalUsers: number;
+  totalBlogs: number;
+  totalComments: number;
+  totalLikes: number;
+  todayViews: number;
+  todayNewUsers: number;
+  todayNewBlogs: number;
+  todayNewComments: number;
+  weeklyStats: DailyStatsDTO[];
+  monthlyStats: DailyStatsDTO[];
+}

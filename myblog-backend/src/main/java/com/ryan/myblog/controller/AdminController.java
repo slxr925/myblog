@@ -1,7 +1,9 @@
 package com.ryan.myblog.controller;
 
 import com.ryan.myblog.common.Result;
+import com.ryan.myblog.dto.AdminStatsDTO;
 import com.ryan.myblog.entity.User;
+import com.ryan.myblog.service.AdminStatsService;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.UserRoleUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +21,25 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminController {
-    
+
     private final UserService userService;
-    
+    private final AdminStatsService adminStatsService;
+
+    /**
+     * 获取管理员统计数据
+     */
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<AdminStatsDTO> getStats() {
+        try {
+            AdminStatsDTO stats = adminStatsService.getAdminStats();
+            return Result.success("获取统计数据成功", stats);
+        } catch (Exception e) {
+            log.error("获取统计数据失败", e);
+            return Result.error("获取统计数据失败: " + e.getMessage());
+        }
+    }
+
     /**
      * 获取所有用户列表（仅管理员）
      */
@@ -32,7 +50,7 @@ public class AdminController {
         // 暂时返回空列表，需要根据实际业务实现
         return Result.success("获取用户列表成功", null);
     }
-    
+
     /**
      * 获取管理员仪表板数据
      */
@@ -43,7 +61,7 @@ public class AdminController {
         // 包括博客统计、用户统计等
         return Result.success("获取仪表板数据成功", null);
     }
-    
+
     /**
      * 检查当前用户是否为管理员
      */

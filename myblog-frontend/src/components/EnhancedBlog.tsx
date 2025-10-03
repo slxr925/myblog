@@ -9,6 +9,7 @@ import type { BlogPost } from '../types/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './auth/AuthModal';
 import { UserMenu } from './auth/UserMenu';
+import { AnimatedLights } from './effects/AnimatedLights';
 import { useNavigate } from 'react-router-dom';
 
 // Glass Effect Component
@@ -254,7 +255,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
         console.log('开始获取博客数据...');
 
         // 直接调用基础API，不使用转换函数
-        const response = await api.blog.getLatest(10);
+        const response = await api.blog.getLatest(4);
         console.log('原始API响应:', response);
         console.log('response.data:', response.data);
 
@@ -458,6 +459,8 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
   return (
     <div className="min-h-screen w-full relative bg-white">
+      {/* Dynamic Light Effects */}
+      <AnimatedLights />
 
       {/* Navigation */}
       <nav className="relative z-50 p-6">

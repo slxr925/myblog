@@ -1,11 +1,11 @@
 import axios from 'axios';
-import type { 
-  ApiResponse, 
-  PageParams, 
-  PageResponse, 
-  BlogDetailVO, 
+import type {
+  ApiResponse,
+  PageParams,
+  PageResponse,
+  BlogDetailVO,
   BlogDetailEnhancedVO,
-  Category, 
+  Category,
   TagVO,
   BlogPost,
   User,
@@ -13,7 +13,8 @@ import type {
   UserLoginDTO,
   AuthState,
   CommentVO,
-  CommentCreateDTO
+  CommentCreateDTO,
+  AdminStatsDTO
 } from '../types/api';
 
 // 创建axios实例
@@ -358,12 +359,7 @@ export const api = {
     },
 
     // 获取系统统计
-    getStats: async (): Promise<ApiResponse<{
-      totalUsers: number;
-      totalBlogs: number;
-      totalComments: number;
-      todayViews: number;
-    }>> => {
+    getStats: async (): Promise<ApiResponse<AdminStatsDTO>> => {
       return apiClient.get('/admin/stats');
     },
   },

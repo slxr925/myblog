@@ -3,22 +3,30 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
-import { Role } from '../types/api';
+import { Role, type AdminStatsDTO } from '../types/api';
+import { api } from '../utils/api';
 import { UserManagement } from '../components/admin/UserManagement';
 import { BlogManagement } from '../components/admin/BlogManagement';
 import { CommentManagement } from '../components/admin/CommentManagement';
-import { Users, FileText, MessageSquare, Settings } from 'lucide-react';
+import { ActivityChart } from '../components/charts/ActivityChart';
+import { Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp, Calendar } from 'lucide-react';
 
 type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments';
 
 export const Admin: React.FC = () => {
   const { user } = useAuth();
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<AdminStatsDTO>({
     totalUsers: 0,
     totalBlogs: 0,
     totalComments: 0,
-    todayViews: 0
+    totalLikes: 0,
+    todayViews: 0,
+    todayNewUsers: 0,
+    todayNewBlogs: 0,
+    todayNewComments: 0,
+    weeklyStats: [],
+    monthlyStats: []
   });
 
   useEffect(() => {
@@ -35,10 +43,16 @@ export const Admin: React.FC = () => {
       console.error('获取统计数据失败:', error);
       // 如果API调用失败，使用模拟数据
       setStats({
-        totalUsers: 12,
-        totalBlogs: 8,
-        totalComments: 24,
-        todayViews: 156
+        totalUsers: 0,
+        totalBlogs: 0,
+        totalComments: 0,
+        totalLikes: 0,
+        todayViews: 0,
+        todayNewUsers: 0,
+        todayNewBlogs: 0,
+        todayNewComments: 0,
+        weeklyStats: [],
+        monthlyStats: []
       });
     }
   };
@@ -186,22 +200,137 @@ export const Admin: React.FC = () => {
               <CardTitle>系统统计</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* 总体统计 */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="text-center p-4 bg-muted rounded">
+                  <div className="flex items-center justify-center mb-2">
+                    <Users className="w-6 h-6 text-primary mr-2" />
+                    <div className="text-3xl font-bold text-primary">{stats.totalUsers}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">总用户数</div>
+                  <div className="text-xs text-green-600 mt-1">+{stats.todayNewUsers} 今日新增</div>
+                </div>
+                <div className="text-center p-4 bg-muted rounded">
+                  <div className="flex items-center justify-center mb-2">
+                    <FileText className="w-6 h-6 text-primary mr-2" />
+                    <div className="text-3xl font-bold text-primary">{stats.totalBlogs}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">总文章数</div>
+                  <div className="text-xs text-green-600 mt-1">+{stats.todayNewBlogs} 今日新增</div>
+                </div>
+                <div className="text-center p-4 bg-muted rounded">
+                  <div className="flex items-center justify-center mb-2">
+                    <MessageSquare className="w-6 h-6 text-primary mr-2" />
+                    <div className="text-3xl font-bold text-primary">{stats.totalComments}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">总评论数</div>
+                  <div className="text-xs text-green-600 mt-1">+{stats.todayNewComments} 今日新增</div>
+                </div>
+                <div className="text-center p-4 bg-muted rounded">
+                  <div className="flex items-center justify-center mb-2">
+                    <ThumbsUp className="w-6 h-6 text-primary mr-2" />
+                    <div className="text-3xl font-bold text-primary">{stats.totalLikes}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">总点赞数</div>
+                </div>
+              </div>
+
+              {/* 今日统计 */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  今日活跃度
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded">
+                    <div className="flex items-center justify-center mb-2">
+                      <Users className="w-5 h-5 text-blue-600 mr-2" />
+                      <div className="text-2xl font-bold text-blue-600">{stats.todayNewUsers}</div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">今日新用户</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded">
+                    <div className="flex items-center justify-center mb-2">
+                      <FileText className="w-5 h-5 text-green-600 mr-2" />
+                      <div className="text-2xl font-bold text-green-600">{stats.todayNewBlogs}</div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">今日新文章</div>
+                  </div>
+                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-950 rounded">
+                    <div className="flex items-center justify-center mb-2">
+                      <MessageSquare className="w-5 h-5 text-orange-600 mr-2" />
+                      <div className="text-2xl font-bold text-orange-600">{stats.todayNewComments}</div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">今日新评论</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 活跃度趋势图表 */}
+        <div className="mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 最近7天活跃度 */}
+            <ActivityChart
+              data={stats.weeklyStats}
+              title="最近7天活跃度"
+              showLegend={true}
+            />
+
+            {/* 最近30天活跃度 */}
+            <ActivityChart
+              data={stats.monthlyStats}
+              title="最近30天活跃度"
+              showLegend={true}
+            />
+          </div>
+        </div>
+
+        {/* 详细数据概览 */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="w-5 h-5" />
+                <span>数据概览</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">{stats.totalUsers}</div>
-                  <div className="text-sm text-muted-foreground">总用户数</div>
+                  <div className="flex items-center justify-center mb-2">
+                    <Eye className="w-6 h-6 text-primary mr-2" />
+                    <div className="text-3xl font-bold text-primary">{stats.todayViews}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">今日访问量</div>
+                  <div className="text-xs text-muted-foreground mt-1">暂未实现统计</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">{stats.totalBlogs}</div>
-                  <div className="text-sm text-muted-foreground">总文章数</div>
+                  <div className="flex items-center justify-center mb-2">
+                    <ThumbsUp className="w-6 h-6 text-primary mr-2" />
+                    <div className="text-3xl font-bold text-primary">{stats.totalLikes}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">总点赞数</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">{stats.totalComments}</div>
-                  <div className="text-sm text-muted-foreground">总评论数</div>
+                  <div className="text-lg font-semibold text-primary mb-1">7天总计</div>
+                  <div className="text-2xl font-bold text-primary">
+                    {stats.weeklyStats.reduce((sum, item) => sum + item.newUsers, 0) +
+                     stats.weeklyStats.reduce((sum, item) => sum + item.newBlogs, 0) +
+                     stats.weeklyStats.reduce((sum, item) => sum + item.newComments, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">新增内容</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
-                  <div className="text-3xl font-bold text-primary">{stats.todayViews}</div>
-                  <div className="text-sm text-muted-foreground">今日访问</div>
+                  <div className="text-lg font-semibold text-primary mb-1">30天总计</div>
+                  <div className="text-2xl font-bold text-primary">
+                    {stats.monthlyStats.reduce((sum, item) => sum + item.newUsers, 0) +
+                     stats.monthlyStats.reduce((sum, item) => sum + item.newBlogs, 0) +
+                     stats.monthlyStats.reduce((sum, item) => sum + item.newComments, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">新增内容</div>
                 </div>
               </div>
             </CardContent>
