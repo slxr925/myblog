@@ -35,6 +35,7 @@ public class UserController {
     @PostMapping("/register")
     public Result<Void> register(@Validated @RequestBody UserRegisterDTO userRegisterDTO) {
         userService.register(userRegisterDTO);
+        log.info("用户注册成功：{}", userRegisterDTO.getUsername());
         return Result.success();
     }
     

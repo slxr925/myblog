@@ -61,23 +61,58 @@ apiClient.interceptors.response.use(
 
 // 工具函数：将后端BlogDetailVO转换为前端BlogPost
 const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
-  return {
+  console.log('转换博客数据:', blog.id, blog.title);
+
+  // 处理日期格式：后端返回的可能是字符串格式 "2025-10-02T22:14:38" 或数组格式 [2025,10,2,22,14,38]
+  let publishDate = '';
+  try {
+    if (blog.publishTime) {
+      let dateObj: Date;
+      if (Array.isArray(blog.publishTime)) {
+        // 处理数组格式: [2025,10,2,22,14,38]
+        const [year, month, day, hour, minute, second] = blog.publishTime;
+        dateObj = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+      } else {
+        // 处理字符串格式
+        dateObj = new Date(blog.publishTime);
+      }
+      publishDate = dateObj.toLocaleDateString('zh-CN');
+    }
+  } catch (error) {
+    console.error('日期转换错误:', error, 'publishTime:', blog.publishTime);
+    publishDate = '未知日期';
+  }
+  
+  // 处理标签
+  const tags = blog.tags ? blog.tags.map(tag => {
+    if (typeof tag === 'string') {
+      return tag;
+    } else if (tag && typeof tag === 'object' && 'name' in tag) {
+      return tag.name;
+    }
+    return '';
+  }).filter(tag => tag) : [];
+  
+  const transformedPost = {
     id: blog.id,
     title: blog.title,
-    excerpt: blog.summary,
-    content: blog.content,
-    author: blog.authorName,
-    date: blog.publishTime ? new Date(blog.publishTime).toLocaleDateString('zh-CN') : '',
-    readTime: `${Math.ceil(blog.content.length / 500)}分钟`, // 简单估算阅读时间
-    views: blog.viewCount,
-    likes: blog.likeCount,
-    comments: blog.commentCount,
-    tags: blog.tags.map(tag => tag.name),
+    excerpt: blog.summary || '',
+    content: blog.content || '',
+    author: blog.authorName || '未知作者',
+    date: publishDate,
+    readTime: `${Math.ceil((blog.content?.length || 0) / 500)}分钟`, // 简单估算阅读时间
+    views: blog.viewCount || 0,
+    likes: blog.likeCount || 0,
+    comments: blog.commentCount || 0,
+    tags: tags,
     image: blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
     featured: blog.isTop === 1,
     categoryId: blog.categoryId,
     categoryName: blog.categoryName,
   };
+  
+  console.log('转换后的文章:', transformedPost);
+  return transformedPost;
 };
 
 // API 请求工具

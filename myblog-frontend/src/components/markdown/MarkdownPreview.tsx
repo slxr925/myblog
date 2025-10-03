@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import React from 'react'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface MarkdownPreviewProps {
@@ -13,11 +13,9 @@ interface MarkdownPreviewProps {
  * Markdown预览组件
  * 用于在列表页面或卡片中显示Markdown内容的预览
  */
-export const MarkdownPreview: React.FC<MarkdownPreviewProps> = memo(({
+export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   content,
   maxHeight = '200px',
-  showLineNumbers = false,
-  enableCopy = false,
   className = ''
 }) => {
   return (
@@ -28,8 +26,6 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = memo(({
       <div className="relative">
         <MarkdownRenderer
           content={content}
-          showLineNumbers={showLineNumbers}
-          enableCopy={enableCopy}
           className="text-sm"
         />
         {/* 渐变遮罩，用于显示内容被截断 */}
@@ -42,6 +38,6 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = memo(({
       </div>
     </div>
   )
-})
+}
 
 MarkdownPreview.displayName = 'MarkdownPreview'

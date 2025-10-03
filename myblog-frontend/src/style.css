@@ -5,6 +5,7 @@
 
 /* Base imports */
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /* Custom dark variant for targeting dark mode elements */
 @custom-variant dark (&:is(.dark *));
