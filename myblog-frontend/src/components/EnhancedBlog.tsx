@@ -254,8 +254,8 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
         setLoading(true);
         console.log('开始获取博客数据...');
 
-        // 直接调用基础API，不使用转换函数
-        const response = await api.blog.getLatest(4);
+        // 直接调用基础API，获取更多文章确保包含精选文章
+        const response = await api.blog.getLatest(10);
         console.log('原始API响应:', response);
         console.log('response.data:', response.data);
 
