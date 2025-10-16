@@ -1,0 +1,123 @@
+# 生产环境 Docker Compose 配置
+version: '3.8'
+
+services:
+  # 博客后端服务
+  myblog-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myblog-backend
+    ports:
+      - "8081:8081"
+    environment:
+      # 数据库配置
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=myblog
+      - DB_USERNAME=myblog
+      - DB_PASSWORD=${DB_PASSWORD:-myblog123}
+
+      # Redis 配置
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DATABASE=0
+
+      # Elasticsearch 配置
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+
+      # JWT 配置
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - JWT_EXPIRATION=604800
+
+      # 文件上传配置
+      - UPLOAD_PATH=/app/uploads
+      - UPLOAD_URL_PREFIX=/uploads
+      - UPLOAD_MAX_FILE_SIZE=10
+      - UPLOAD_MAX_IMAGE_SIZE=5
+
+      # 应用配置
+      - SPRING_PROFILES_ACTIVE=prod
+      - WAIT_FOR_DEPENDENCIES=true
+      - APP_VERSION=latest
+
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      - mysql
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - myblog-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: myblog-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
+      - MYSQL_DATABASE=myblog
+      - MYSQL_USER=myblog
+      - MYSQL_PASSWORD=${DB_PASSWORD:-myblog123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    networks:
+      - myblog-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: myblog-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - myblog-network
+
+  # Elasticsearch 搜索引擎
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: myblog-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    networks:
+      - myblog-network
+
+# 数据卷
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# 网络
+networks:
+  myblog-network:
+    driver: bridge

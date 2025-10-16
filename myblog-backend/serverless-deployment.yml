@@ -1,0 +1,168 @@
+# ============================================
+# Serverless 平台部署配置示例
+# ============================================
+
+# Vercel 配置示例
+vercel:
+  version: 2
+  builds:
+    - src: Dockerfile
+      use: "@vercel/docker"
+  routes:
+    - src: /(.*)
+      dest: myblog-backend
+  env:
+    # 必需的环境变量
+    DB_HOST: "@db_host"
+    DB_USERNAME: "@db_username"
+    DB_PASSWORD: "@db_password"
+    DB_NAME: "@db_name"
+    JWT_SECRET: "@jwt_secret"
+
+    # 可选环境变量
+    REDIS_HOST: "@redis_host"
+    REDIS_PASSWORD: "@redis_password"
+    ELASTICSEARCH_HOST: "@elasticsearch_host"
+
+    # 应用配置
+    SPRING_PROFILES_ACTIVE: "prod"
+    SERVER_PORT: "8081"
+    WAIT_FOR_DEPENDENCIES: "false"  # Vercel 不需要等待依赖
+
+# Railway 配置示例
+railway:
+  build:
+    builder: "NIXPACKS"
+  deploy:
+    restartPolicyType: "ON_FAILURE"
+    restartPolicyMaxRetries: 10
+    startCommand: "java -jar app.jar"
+  services:
+    - name: "myblog-backend"
+      envVars:
+        - key: "SPRING_PROFILES_ACTIVE"
+          value: "prod"
+        - key: "DB_HOST"
+          value: "${{RAILWAY_PRIVATE_SERVICE_MYSQL_HOST}}"
+        - key: "DB_PORT"
+          value: "${{RAILWAY_PRIVATE_SERVICE_MYSQL_PORT}}"
+        - key: "DB_USERNAME"
+          value: "${{RAILWAY_PRIVATE_SERVICE_MYSQL_USER}}"
+        - key: "DB_PASSWORD"
+          value: "${{RAILWAY_PRIVATE_SERVICE_MYSQL_PASSWORD}}"
+        - key: "JWT_SECRET"
+          value: "${{JWT_SECRET}}"
+
+# Render 配置示例
+render:
+  services:
+    - type: web
+      name: myblog-backend
+      env: docker
+      dockerfilePath: ./Dockerfile
+      plan: free
+      envVars:
+        - key: SPRING_PROFILES_ACTIVE
+          value: prod
+        - key: DB_HOST
+          value: "${{POSTGRES_HOST}}"
+        - key: DB_USERNAME
+          value: "${{POSTGRES_USER}}"
+        - key: DB_PASSWORD
+          value: "${{POSTGRES_PASSWORD}}"
+        - key: DB_NAME
+          value: "${{POSTGRES_DB}}"
+        - key: JWT_SECRET
+          value: "${{JWT_SECRET}}"
+        - key: WAIT_FOR_DEPENDENCIES
+          value: "true"
+      healthCheckPath: /actuator/health
+      domains:
+        - myblog.onrender.com
+
+# 腾讯云 SCF 配置示例
+tencent_scf:
+  component: "@serverless/tencent-scf"
+  inputs:
+    name: myblog-backend
+    region: ap-guangzhou
+    runtime: CustomRuntime
+    handler: app.main_handler
+    codeUri: ./
+    description: "MyBlog Backend Service"
+    memorySize: 512
+    timeout: 30
+    environment:
+      variables:
+        SPRING_PROFILES_ACTIVE: prod
+        DB_HOST: "${env.DB_HOST}"
+        DB_USERNAME: "${env.DB_USERNAME}"
+        DB_PASSWORD: "${env.DB_PASSWORD}"
+        JWT_SECRET: "${env.JWT_SECRET}"
+
+# 阿里云 FC 配置示例
+aliyun_fc:
+  component: "@serverless/fc"
+  inputs:
+    region: cn-hangzhou
+    service:
+      name: myblog-backend-service
+      description: "MyBlog Backend Service"
+    function:
+      name: myblog-backend
+      description: "MyBlog Backend Function"
+      runtime: custom-runtime
+      codeUri: ./
+      handler: app.main_handler
+      memorySize: 512
+      timeout: 30
+      environmentVariables:
+        SPRING_PROFILES_ACTIVE: prod
+        DB_HOST: "${env.DB_HOST}"
+        DB_USERNAME: "${env.DB_USERNAME}"
+        DB_PASSWORD: "${env.DB_PASSWORD}"
+        JWT_SECRET: "${env.JWT_SECRET}"
+
+# AWS Lambda 配置示例
+aws_lambda:
+  component: "@serverless/aws-lambda"
+  inputs:
+    name: myblog-backend
+    region: us-east-1
+    runtime: java21
+    handler: com.ryan.myblog.MyBlogApplication::handleRequest
+    codeUri: ./
+    description: "MyBlog Backend Service"
+    memorySize: 512
+    timeout: 30
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: "${env.DB_HOST}"
+      DB_USERNAME: "${env.DB_USERNAME}"
+      DB_PASSWORD: "${env.DB_PASSWORD}"
+      JWT_SECRET: "${env.JWT_SECRET}"
+    events:
+      - apigw:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+
+# 华为云 FunctionGraph 配置示例
+huawei_cloud:
+  component: "@serverless/huawei-functiongraph"
+  inputs:
+    name: myblog-backend
+    region: cn-north-4
+    runtime: Java 21
+    codeUri: ./
+    handler: com.ryan.myblog.MyBlogApplication::handleRequest
+    description: "MyBlog Backend Service"
+    memorySize: 512
+    timeout: 30
+    environment:
+      variables:
+        SPRING_PROFILES_ACTIVE: prod
+        DB_HOST: "${env.DB_HOST}"
+        DB_USERNAME: "${env.DB_USERNAME}"
+        DB_PASSWORD: "${env.DB_PASSWORD}"
+        JWT_SECRET: "${env.JWT_SECRET}"
