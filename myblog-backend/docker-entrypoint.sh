@@ -19,26 +19,60 @@ print_error() {
     echo -e "\033[31m[ERROR]\033[0m $1"
 }
 
+# 加载本地环境变量文件
+load_env_file() {
+    local env_file="/app/.env.local"
+
+    if [ -f "$env_file" ]; then
+        print_info "加载本地环境变量文件: $env_file"
+        # 加载 .env.local 文件
+        set -a
+        . "$env_file"
+        set +a
+        print_info "本地环境变量已加载"
+    else
+        print_warn "未找到本地环境变量文件，使用默认配置"
+    fi
+}
+
 # 检查必需的环境变量
 check_required_env() {
     print_info "检查必需的环境变量..."
 
-    required_vars="DB_PASSWORD JWT_SECRET"
-    missing_vars=""
+    # 根据环境配置不同的必需变量
+    local profile=${SPRING_PROFILES_ACTIVE:-prod}
+    local required_vars=""
 
-    for var in $required_vars; do
-        if [ -z "$(eval echo \$$var)" ]; then
-            missing_vars="$missing_vars $var"
+    if [ "$profile" = "prod" ]; then
+        # 生产环境需要设置所有必需变量
+        required_vars="DB_PASSWORD JWT_SECRET"
+        missing_vars=""
+
+        for var in $required_vars; do
+            if [ -z "$(eval echo \$$var)" ]; then
+                missing_vars="$missing_vars $var"
+            fi
+        done
+
+        if [ -n "$missing_vars" ]; then
+            print_error "生产环境缺少必需的环境变量:$missing_vars"
+            print_error "请设置这些环境变量或创建 .env.local 文件"
+            print_error "参考: cp .env.example .env.local"
+            exit 1
         fi
-    done
+    else
+        # 开发环境只需要检查数据库连接
+        if [ -z "$(eval echo \$$DB_PASSWORD)" ]; then
+            print_warn "未设置 DB_PASSWORD，使用本地开发配置"
+        fi
 
-    if [ -n "$missing_vars" ]; then
-        print_error "缺少必需的环境变量:$missing_vars"
-        print_error "请在生产环境中设置这些变量"
-        exit 1
+        if [ -z "$(eval echo \$$JWT_SECRET)" ]; then
+            print_warn "未设置 JWT_SECRET，使用默认密钥（仅限开发环境）"
+            export JWT_SECRET="dev-jwt-secret-key-change-in-production"
+        fi
     fi
 
-    print_info "环境变量检查通过"
+    print_info "环境变量检查通过 ($profile 环境)"
 }
 
 # 等待依赖服务启动
@@ -144,6 +178,9 @@ optimize_jvm() {
 # 主函数
 main() {
     print_info "MyBlog Docker 容器启动中..."
+
+    # 加载本地环境变量文件
+    load_env_file
 
     # 设置默认的 Spring 配置文件
     export SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
