@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/badge';
 import { api } from '../utils/api';
 import type { BlogDetailVO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
+import { CommentSection } from '../components/comment/CommentSection';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,9 @@ const BlogDetail: React.FC = () => {
   const [blog, setBlog] = useState<BlogDetailVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 为了兼容性，保持blogData变量
+  const blogData = blog || {};
 
   useEffect(() => {
     const fetchBlogDetail = async () => {
@@ -29,9 +33,14 @@ const BlogDetail: React.FC = () => {
         const response = await api.blog.getDetail(Number(id));
         console.log('文章详情响应:', response);
         console.log('响应数据:', response.data);
-        
+
         // 直接使用响应数据
         setBlog(response.data);
+
+        // 记录博客访问
+        api.admin.trackVisit(`/blog/${id}`).catch(err =>
+          console.warn('记录博客访问失败:', err)
+        );
       } catch (err: any) {
         console.error('获取文章详情失败:', err);
         setError('获取文章详情失败，请稍后重试');
@@ -67,8 +76,6 @@ const BlogDetail: React.FC = () => {
       </div>
     );
   }
-
-  const blogData = blog;
 
   return (
     <motion.div
@@ -160,6 +167,11 @@ const BlogDetail: React.FC = () => {
           >
             <MarkdownRenderer content={blogData.content} />
           </motion.div>
+
+          {/* 评论区域 */}
+          {blog && (
+            <CommentSection blogId={blog.id} />
+          )}
 
           {/* 相关推荐 - 暂时移除，因为普通API不包含相关推荐数据 */}
         </div>

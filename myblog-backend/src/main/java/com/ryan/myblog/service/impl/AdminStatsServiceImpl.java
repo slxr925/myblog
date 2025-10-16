@@ -7,10 +7,12 @@ import com.ryan.myblog.entity.Blog;
 import com.ryan.myblog.entity.Comment;
 import com.ryan.myblog.entity.User;
 import com.ryan.myblog.entity.UserLike;
+import com.ryan.myblog.entity.VisitLog;
 import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.CommentMapper;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
+import com.ryan.myblog.mapper.VisitLogMapper;
 import com.ryan.myblog.service.AdminStatsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class AdminStatsServiceImpl implements AdminStatsService {
     private final BlogMapper blogMapper;
     private final CommentMapper commentMapper;
     private final UserLikeMapper userLikeMapper;
+    private final VisitLogMapper visitLogMapper;
 
     @Override
     public AdminStatsDTO getAdminStats() {
@@ -84,9 +87,11 @@ public class AdminStatsServiceImpl implements AdminStatsService {
             Long todayNewComments = commentMapper.selectCount(todayCommentQuery);
             stats.setTodayNewComments(todayNewComments != null ? todayNewComments : 0L);
 
-            // 今日访问量暂时使用模拟数据，因为没有访问日志表
-            // 后续可以添加访问日志表来统计真实访问量
-            stats.setTodayViews(0L);
+            // 计算今日访问量 - 使用访问日志表统计真实访问量
+            LambdaQueryWrapper<VisitLog> todayVisitQuery = new LambdaQueryWrapper<>();
+            todayVisitQuery.between(VisitLog::getVisitTime, todayStart, todayEnd);
+            Long todayViews = visitLogMapper.selectCount(todayVisitQuery);
+            stats.setTodayViews(todayViews != null ? todayViews : 0L);
 
             // 获取时间段统计数据
             stats.setWeeklyStats(getWeeklyStats());

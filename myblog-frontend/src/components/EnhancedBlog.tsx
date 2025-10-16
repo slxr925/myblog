@@ -252,32 +252,18 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        console.log('开始获取博客数据...');
-
-        // 直接调用基础API，获取更多文章确保包含精选文章
         const response = await api.blog.getLatest(10);
-        console.log('原始API响应:', response);
-        console.log('response.data:', response.data);
 
-        // 确保数据结构正确 - 真实的博客数据在response.data.data中
-        const blogData = response.data.data;
-        console.log('提取的博客数据:', blogData);
-
+        const blogData = response.data;
         if (!blogData || !Array.isArray(blogData)) {
-          console.error('数据格式不正确，期望数组，实际得到:', typeof blogData, blogData);
           throw new Error('API返回的数据格式不正确');
         }
 
-        console.log(`成功获取到 ${blogData.length} 篇博客文章`);
-
-        // 手动转换数据
         const transformedPosts = blogData.map((blog: any) => {
-          console.log('转换单个博客:', blog);
-
           // 处理日期格式
           let publishDate = '';
-          try {
-            if (blog.publishTime) {
+          if (blog.publishTime) {
+            try {
               let dateObj: Date;
               if (Array.isArray(blog.publishTime)) {
                 const [year, month, day, hour, minute, second] = blog.publishTime;
@@ -286,10 +272,9 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
                 dateObj = new Date(blog.publishTime);
               }
               publishDate = dateObj.toLocaleDateString('zh-CN');
+            } catch (error) {
+              publishDate = '未知日期';
             }
-          } catch (error) {
-            console.error('日期转换错误:', error);
-            publishDate = '未知日期';
           }
 
           // 处理标签
@@ -302,7 +287,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
             return '';
           }).filter((tag: string) => tag) : [];
 
-          const transformedPost = {
+          return {
             id: blog.id,
             title: blog.title,
             excerpt: blog.summary || '',
@@ -319,18 +304,12 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
             categoryId: blog.categoryId,
             categoryName: blog.categoryName,
           };
-
-          console.log('转换后的文章:', transformedPost);
-          return transformedPost;
         });
 
-        console.log('最终转换的文章数据:', transformedPosts);
         setPosts(transformedPosts);
         setFilteredPosts(transformedPosts);
 
       } catch (error) {
-        console.error('获取博客数据失败:', error);
-
         // 如果API失败，使用模拟数据
         const fallbackPosts = [
           {
@@ -383,7 +362,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
           }
         ];
 
-        console.log('使用备用模拟数据:', fallbackPosts);
         setPosts(fallbackPosts);
         setFilteredPosts(fallbackPosts);
       } finally {

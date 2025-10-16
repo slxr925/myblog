@@ -322,6 +322,65 @@ export const api = {
     },
   },
 
+  category: {
+    // 获取所有分类
+    getAll: async (): Promise<ApiResponse<Category[]>> => {
+      return apiClient.get('/category/list');
+    },
+
+    // 根据ID获取分类
+    getById: async (id: number): Promise<ApiResponse<Category>> => {
+      return apiClient.get(`/category/${id}`);
+    },
+
+    // 创建分类
+    create: async (categoryData: { name: string; description?: string }): Promise<ApiResponse<void>> => {
+      return apiClient.post('/category', categoryData);
+    },
+
+    // 更新分类
+    update: async (categoryData: { id: number; name: string; description?: string }): Promise<ApiResponse<void>> => {
+      return apiClient.put('/category', categoryData);
+    },
+
+    // 删除分类
+    delete: async (id: number): Promise<ApiResponse<void>> => {
+      return apiClient.delete(`/category/${id}`);
+    },
+  },
+
+  tag: {
+    // 获取所有标签
+    getAll: async (): Promise<ApiResponse<Array<{ id: number; name: string; createTime: string }>>> => {
+      return apiClient.get('/tag/list');
+    },
+
+    // 根据ID获取标签
+    getById: async (id: number): Promise<ApiResponse<{ id: number; name: string; createTime: string }>> => {
+      return apiClient.get(`/tag/${id}`);
+    },
+
+    // 创建标签
+    create: async (tagData: { name: string }): Promise<ApiResponse<void>> => {
+      return apiClient.post('/tag', tagData);
+    },
+
+    // 更新标签
+    update: async (tagData: { id: number; name: string }): Promise<ApiResponse<void>> => {
+      return apiClient.put('/tag', tagData);
+    },
+
+    // 删除标签
+    delete: async (id: number): Promise<ApiResponse<void>> => {
+      return apiClient.delete(`/tag/${id}`);
+    },
+
+    // 根据博客ID获取标签列表
+    getByBlogId: async (blogId: number): Promise<ApiResponse<TagVO[]>> => {
+      return apiClient.get(`/tag/blog/${blogId}`);
+    },
+  },
+
   admin: {
     // 获取用户列表
     getUsers: async (params?: PageParams): Promise<ApiResponse<PageResponse<User>>> => {
@@ -361,6 +420,53 @@ export const api = {
     // 获取系统统计
     getStats: async (): Promise<ApiResponse<AdminStatsDTO>> => {
       return apiClient.get('/admin/stats');
+    },
+
+    // 记录页面访问
+    trackVisit: async (page: string): Promise<ApiResponse<void>> => {
+      return apiClient.post('/admin/track-visit', { page });
+    },
+  },
+
+  upload: {
+    // 上传图片
+    uploadImage: async (file: File, type: string = 'content'): Promise<ApiResponse<{ url: string; filename: string; type: string }>> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      return apiClient.post('/upload/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    },
+
+    // 上传文件
+    uploadFile: async (file: File, type: string = 'document'): Promise<ApiResponse<{ url: string; filename: string; type: string; size: string }>> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      return apiClient.post('/upload/file', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    },
+
+    // 上传编辑器图片
+    uploadEditorImage: async (file: File): Promise<ApiResponse<{ url: string; filename: string }>> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient.post('/upload/editor/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    },
+
+    // 删除文件
+    deleteFile: async (url: string): Promise<ApiResponse<void>> => {
+      return apiClient.delete('/upload?url=' + encodeURIComponent(url));
     },
   },
 

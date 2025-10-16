@@ -8,10 +8,12 @@ import { api } from '../utils/api';
 import { UserManagement } from '../components/admin/UserManagement';
 import { BlogManagement } from '../components/admin/BlogManagement';
 import { CommentManagement } from '../components/admin/CommentManagement';
+import { CategoryManagement } from '../components/admin/CategoryManagement';
+import { TagManagement } from '../components/admin/TagManagement';
 import { ActivityChart } from '../components/charts/ActivityChart';
-import { Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp, Calendar } from 'lucide-react';
+import { Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp, Calendar, FolderOpen, Hash } from 'lucide-react';
 
-type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments';
+type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments' | 'categories' | 'tags';
 
 export const Admin: React.FC = () => {
   const { user } = useAuth();
@@ -32,6 +34,10 @@ export const Admin: React.FC = () => {
   useEffect(() => {
     if (currentView === 'dashboard') {
       fetchStats();
+      // 记录页面访问
+      api.admin.trackVisit('/admin/dashboard').catch(err =>
+        console.warn('记录访问失败:', err)
+      );
     }
   }, [currentView]);
 
@@ -78,6 +84,10 @@ export const Admin: React.FC = () => {
         return <BlogManagement onBack={() => setCurrentView('dashboard')} />;
       case 'comments':
         return <CommentManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'categories':
+        return <CategoryManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'tags':
+        return <TagManagement onBack={() => setCurrentView('dashboard')} />;
       default:
         return renderDashboard();
     }
@@ -145,10 +155,10 @@ export const Admin: React.FC = () => {
           </Card>
 
           {/* 分类管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-50">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setCurrentView('categories')}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Settings className="w-5 h-5" />
+                <FolderOpen className="w-5 h-5" />
                 <span>分类管理</span>
               </CardTitle>
             </CardHeader>
@@ -156,15 +166,15 @@ export const Admin: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 管理文章分类，包括添加、编辑、删除分类
               </p>
-              <Button className="w-full" disabled>敬请期待</Button>
+              <Button className="w-full">进入管理</Button>
             </CardContent>
           </Card>
 
           {/* 标签管理 */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-50">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setCurrentView('tags')}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Settings className="w-5 h-5" />
+                <Hash className="w-5 h-5" />
                 <span>标签管理</span>
               </CardTitle>
             </CardHeader>
@@ -172,7 +182,7 @@ export const Admin: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 管理文章标签，包括添加、编辑、删除标签
               </p>
-              <Button className="w-full" disabled>敬请期待</Button>
+              <Button className="w-full">进入管理</Button>
             </CardContent>
           </Card>
 
@@ -305,7 +315,7 @@ export const Admin: React.FC = () => {
                     <div className="text-3xl font-bold text-primary">{stats.todayViews}</div>
                   </div>
                   <div className="text-sm text-muted-foreground">今日访问量</div>
-                  <div className="text-xs text-muted-foreground mt-1">暂未实现统计</div>
+                  <div className="text-xs text-green-600 mt-1">基于页面浏览量估算</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
                   <div className="flex items-center justify-center mb-2">

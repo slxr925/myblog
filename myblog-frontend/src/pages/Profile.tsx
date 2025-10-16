@@ -10,13 +10,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
 import { api } from '../utils/api';
 import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
-import { Home, User, Mail, Lock, Edit2, Save, X } from 'lucide-react';
+import { FileUpload } from '../components/upload/FileUpload';
+import { Home, User, Mail, Lock, Edit2, Save, X, Camera } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [formData, setFormData] = useState({
     nickname: user?.nickname || '',
     email: user?.email || '',
@@ -70,6 +73,19 @@ const Profile: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAvatarUpload = async (url: string) => {
+    try {
+      setUploadingAvatar(true);
+      await api.user.updateUserInfo({ avatar: url });
+      await refreshUser();
+      setShowAvatarUpload(false);
+    } catch (error) {
+      console.error('头像上传失败:', error);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -114,12 +130,23 @@ const Profile: React.FC = () => {
               <CardContent className="space-y-6">
                 {/* 用户头像和基本信息 */}
                 <div className="flex items-center space-x-6">
-                  <Avatar className="h-24 w-24 border-2 border-gray-200">
-                    <AvatarImage src={user.avatar || '/default-avatar.png'} alt={user.nickname || user.username} />
-                    <AvatarFallback className="text-2xl">
-                      {(user.nickname || user.username).charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 border-2 border-gray-200">
+                      <AvatarImage src={user.avatar || '/default-avatar.png'} alt={user.nickname || user.username} />
+                      <AvatarFallback className="text-2xl">
+                        {(user.nickname || user.username).charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute bottom-0 right-0 rounded-full p-1 bg-white shadow-md"
+                      onClick={() => setShowAvatarUpload(true)}
+                      disabled={uploadingAvatar}
+                    >
+                      <Camera className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <div className="flex-1">
                     <h3 className="text-2xl font-semibold text-gray-800">{user.nickname || user.username}</h3>
                     <p className="text-gray-600 mb-2">{user.email}</p>
@@ -128,6 +155,34 @@ const Profile: React.FC = () => {
                     </Badge>
                   </div>
                 </div>
+
+                {/* 头像上传区域 */}
+                {showAvatarUpload && (
+                  <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-medium text-gray-800">更换头像</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAvatarUpload(false)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <FileUpload
+                      accept="image/*"
+                      maxSize={2}
+                      type="image"
+                      onUploadSuccess={handleAvatarUpload}
+                      onUploadError={(error) => console.error('头像上传失败:', error)}
+                      disabled={uploadingAvatar}
+                      className="max-w-md"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      支持 JPG、PNG、GIF 格式，建议尺寸为 200x200 像素
+                    </p>
+                  </div>
+                )}
 
                 {/* 表单字段 */}
                 <div className="space-y-4">
