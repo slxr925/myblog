@@ -1,42 +1,23 @@
 # ============================================
-# 构建阶段 - Maven 打包
+# 简化的生产环境 Dockerfile
+# 使用手工打包的 jar 文件，避免容器内构建
 # ============================================
-FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
-# 设置工作目录
-WORKDIR /app
-
-# 设置 Maven 参数
-ARG MAVEN_OPTS=-Dmaven.repo.local=/root/.m2/repository -DskipTests
-ENV MAVEN_OPTS=${MAVEN_OPTS}
-
-# 配置 Maven 阿里云镜像加速（如果在国内环境）
-COPY settings.xml /root/.m2/settings.xml
-
-# 复制 pom.xml 文件并下载依赖（利用 Docker 层缓存）
-COPY pom.xml .
-COPY settings.xml .
-
-# 下载依赖（不重复下载源码，利用缓存）
-RUN mvn dependency:go-offline -B
-
-# 复制源代码
-COPY src ./src
-
-# 打包应用
-RUN mvn clean package -B -DskipTests
-
-# ============================================
-# 运行阶段 - 最小化 JRE 镜像
-# ============================================
+# 使用官方 Alpine Linux 版本的 OpenJDK 21 JRE
 FROM eclipse-temurin:21-jre-alpine
 
-# 安装必要的系统依赖（仅 curl 用于健康检查）
+# 设置维护者信息
+LABEL maintainer="myblog-admin"
+LABEL description="MyBlog Backend Application"
+LABEL version="1.0"
+
+# 安装必要的系统工具
 RUN apk add --no-cache \
     curl \
+    tzdata \
     && rm -rf /var/cache/apk/*
 
-# 设置时区
+# 设置时区为中国标准时间
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -46,9 +27,6 @@ RUN addgroup -g 1001 -S myblog \
 
 # 设置工作目录
 WORKDIR /app
-
-# 从构建阶段复制 JAR 文件
-COPY --from=builder /app/target/myblog-*.jar app.jar
 
 # 创建必要的目录结构
 RUN mkdir -p /app/uploads/avatars \
@@ -63,28 +41,37 @@ COPY cert-initenv.sh /app/cert/initenv.sh
 RUN chmod +x /app/cert/initenv.sh \
     && chown myblog:myblog /app/cert/initenv.sh
 
+# 复制本地打包好的 JAR 文件
+# 注意：在部署前需要先运行 `mvn clean package -DskipTests`
+COPY target/myblog-0.0.1-SNAPSHOT.jar app.jar
+
+# 设置文件权限
+RUN chown myblog:myblog app.jar \
+    && chmod +x app.jar
+
 # 切换到应用用户
 USER myblog
 
-# 暴露端口
+# 暴露应用端口
 EXPOSE 8081
 
-# 设置 JVM 参数（针对微信云托管环境优化）
+# 设置 JVM 参数 - 针对微信云托管环境优化
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
                -XX:MaxRAMPercentage=60.0 \
                -XX:+UseG1GC \
                -XX:+UseStringDeduplication \
-               -Xms64m \
-               -Xmx256m \
+               -Xms128m \
+               -Xmx512m \
                -Djava.security.egd=file:/dev/./urandom \
                -Dspring.profiles.active=prod \
                -Dfile.encoding=UTF-8 \
                -Duser.timezone=Asia/Shanghai \
-               -Dspring.jpa.open-in-view=false"
+               -Dspring.jpa.open-in-view=false \
+               -Dserver.port=8081"
 
-# 健康检查 - 微信云托管优化
-HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=2 \
-    CMD curl -f http://0.0.0.0:8081/actuator/health || exit 1
+# 健康检查 - 简单可靠
+HEALTHCHECK --interval=60s --timeout=30s --start-period=120s --retries=3 \
+    CMD curl -f -s http://localhost:8081/actuator/health || exit 1
 
-# 直接启动 Java 应用
-CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# 启动命令 - 简单直接
+CMD ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
