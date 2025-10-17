@@ -11,9 +11,8 @@ app:
     secure-mode: ${UPLOAD_SECURE_MODE:true}
 
 spring:
-  config:
-    activate:
-      on-profile: prod  # 生产环境激活此配置
+  profiles:
+    active: local  # 默认激活本地开发配置
 
   application:
     name: myblog
@@ -88,9 +87,9 @@ logging:
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n'
 
-# JWT配置
+# JWT配置 - 具体配置在各profile文件中
 jwt:
-  secret: ${JWT_SECRET:}  # 从环境变量或本地配置文件读取，默认空值
+  secret: ${JWT_SECRET:}  # 从环境变量或profile配置文件读取
   expiration: ${JWT_EXPIRATION:604800} # 7天，单位秒
 
 # 文件上传配置

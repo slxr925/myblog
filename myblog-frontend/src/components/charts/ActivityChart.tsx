@@ -17,7 +17,7 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   showLegend = true
 }) => {
   // 格式化数据用于图表显示
-  const chartData = data.map(item => ({
+  const chartData = (data || []).map(item => ({
     date: new Date(item.date).toLocaleDateString('zh-CN', {
       month: 'short',
       day: 'numeric'
@@ -47,9 +47,9 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   };
 
   // 计算统计信息
-  const totalNewUsers = data.reduce((sum, item) => sum + item.newUsers, 0);
-  const totalNewBlogs = data.reduce((sum, item) => sum + item.newBlogs, 0);
-  const totalNewComments = data.reduce((sum, item) => sum + item.newComments, 0);
+  const totalNewUsers = (data || []).reduce((sum, item) => sum + item.newUsers, 0);
+  const totalNewBlogs = (data || []).reduce((sum, item) => sum + item.newBlogs, 0);
+  const totalNewComments = (data || []).reduce((sum, item) => sum + item.newComments, 0);
 
   return (
     <Card>

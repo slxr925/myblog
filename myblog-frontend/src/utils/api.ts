@@ -225,35 +225,6 @@ export const api = {
     },
   },
 
-  category: {
-    // 获取所有分类
-    getAll: async (): Promise<ApiResponse<Category[]>> => {
-      return apiClient.get('/category/list');
-    },
-
-    // 根据ID获取分类
-    getById: async (id: number): Promise<ApiResponse<Category>> => {
-      return apiClient.get(`/category/${id}`);
-    },
-  },
-
-  tag: {
-    // 获取所有标签
-    getAll: async (): Promise<ApiResponse<TagVO[]>> => {
-      return apiClient.get('/tag/list');
-    },
-
-    // 根据ID获取标签
-    getById: async (id: number): Promise<ApiResponse<TagVO>> => {
-      return apiClient.get(`/tag/${id}`);
-    },
-
-    // 根据博客ID获取标签
-    getByBlogId: async (blogId: number): Promise<ApiResponse<TagVO[]>> => {
-      return apiClient.get(`/tag/blog/${blogId}`);
-    },
-  },
-
   user: {
     // 用户注册
     register: async (userData: UserRegisterDTO): Promise<ApiResponse<void>> => {

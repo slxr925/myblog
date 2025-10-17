@@ -327,18 +327,18 @@ export const Admin: React.FC = () => {
                 <div className="text-center p-4 bg-muted rounded">
                   <div className="text-lg font-semibold text-primary mb-1">7天总计</div>
                   <div className="text-2xl font-bold text-primary">
-                    {stats.weeklyStats.reduce((sum, item) => sum + item.newUsers, 0) +
-                     stats.weeklyStats.reduce((sum, item) => sum + item.newBlogs, 0) +
-                     stats.weeklyStats.reduce((sum, item) => sum + item.newComments, 0)}
+                    {(stats.weeklyStats || []).reduce((sum, item) => sum + item.newUsers, 0) +
+                     (stats.weeklyStats || []).reduce((sum, item) => sum + item.newBlogs, 0) +
+                     (stats.weeklyStats || []).reduce((sum, item) => sum + item.newComments, 0)}
                   </div>
                   <div className="text-sm text-muted-foreground">新增内容</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded">
                   <div className="text-lg font-semibold text-primary mb-1">30天总计</div>
                   <div className="text-2xl font-bold text-primary">
-                    {stats.monthlyStats.reduce((sum, item) => sum + item.newUsers, 0) +
-                     stats.monthlyStats.reduce((sum, item) => sum + item.newBlogs, 0) +
-                     stats.monthlyStats.reduce((sum, item) => sum + item.newComments, 0)}
+                    {(stats.monthlyStats || []).reduce((sum, item) => sum + item.newUsers, 0) +
+                     (stats.monthlyStats || []).reduce((sum, item) => sum + item.newBlogs, 0) +
+                     (stats.monthlyStats || []).reduce((sum, item) => sum + item.newComments, 0)}
                   </div>
                   <div className="text-sm text-muted-foreground">新增内容</div>
                 </div>
