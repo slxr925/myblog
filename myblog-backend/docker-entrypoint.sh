@@ -35,44 +35,46 @@ load_env_file() {
     fi
 }
 
-# 检查必需的环境变量
-check_required_env() {
-    print_info "检查必需的环境变量..."
+# 检查环境变量配置
+check_env_config() {
+    print_info "检查环境配置..."
 
-    # 根据环境配置不同的必需变量
+    # 根据环境配置不同的检查逻辑
     local profile=${SPRING_PROFILES_ACTIVE:-prod}
-    local required_vars=""
 
     if [ "$profile" = "prod" ]; then
-        # 生产环境需要设置所有必需变量
-        required_vars="DB_PASSWORD JWT_SECRET"
-        missing_vars=""
+        print_info "生产环境配置检查..."
 
-        for var in $required_vars; do
-            if [ -z "$(eval echo \$$var)" ]; then
-                missing_vars="$missing_vars $var"
-            fi
-        done
-
-        if [ -n "$missing_vars" ]; then
-            print_error "生产环境缺少必需的环境变量:$missing_vars"
-            print_error "请设置这些环境变量或创建 .env.local 文件"
-            print_error "参考: cp .env.example .env.local"
-            exit 1
+        # 检查关键环境变量，但不强制失败
+        if [ -z "$DB_PASSWORD" ]; then
+            print_warn "未设置 DB_PASSWORD 环境变量，将使用生产配置文件中的默认值"
         fi
+
+        if [ -z "$JWT_SECRET" ]; then
+            print_warn "未设置 JWT_SECRET 环境变量，将使用生产配置文件中的默认值"
+            print_warn "⚠️  建议在生产环境中设置自定义 JWT_SECRET"
+        fi
+
+        # 显示重要配置信息
+        print_info "数据库主机: ${DB_HOST:-mysql}"
+        print_info "Redis 主机: ${REDIS_HOST:-redis}"
+        print_info "应用端口: ${SERVER_PORT:-8081}"
+
     else
-        # 开发环境只需要检查数据库连接
-        if [ -z "$(eval echo \$$DB_PASSWORD)" ]; then
+        print_info "开发环境配置检查..."
+
+        # 开发环境的警告信息
+        if [ -z "$DB_PASSWORD" ]; then
             print_warn "未设置 DB_PASSWORD，使用本地开发配置"
         fi
 
-        if [ -z "$(eval echo \$$JWT_SECRET)" ]; then
-            print_warn "未设置 JWT_SECRET，使用默认密钥（仅限开发环境）"
+        if [ -z "$JWT_SECRET" ]; then
+            print_warn "未设置 JWT_SECRET，使用默认开发密钥"
             export JWT_SECRET="dev-jwt-secret-key-change-in-production"
         fi
     fi
 
-    print_info "环境变量检查通过 ($profile 环境)"
+    print_info "环境配置检查完成 ($profile 环境)"
 }
 
 # 等待依赖服务启动
@@ -186,7 +188,7 @@ main() {
     export SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
 
     # 执行各项检查
-    check_required_env
+    check_env_config
     create_directories
     optimize_jvm
 

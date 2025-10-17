@@ -1,64 +1,8 @@
-# 生产环境 Docker Compose 配置
+# 基础设施服务 - Docker Compose 配置
+# Spring Boot 应用配置全部在 application-prod.yml 中
 version: '3.8'
 
 services:
-  # 博客后端服务
-  myblog-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: myblog-backend
-    ports:
-      - "8081:8081"
-    environment:
-      # 数据库配置
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_NAME=myblog
-      - DB_USERNAME=myblog
-      - DB_PASSWORD=${DB_PASSWORD:-myblog123}
-
-      # Redis 配置
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - REDIS_DATABASE=0
-
-      # Elasticsearch 配置
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
-
-      # JWT 配置
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
-      - JWT_EXPIRATION=604800
-
-      # 文件上传配置
-      - UPLOAD_PATH=/app/uploads
-      - UPLOAD_URL_PREFIX=/uploads
-      - UPLOAD_MAX_FILE_SIZE=10
-      - UPLOAD_MAX_IMAGE_SIZE=5
-
-      # 应用配置
-      - SPRING_PROFILES_ACTIVE=prod
-      - WAIT_FOR_DEPENDENCIES=true
-      - APP_VERSION=latest
-
-    volumes:
-      - ./uploads:/app/uploads
-      - ./logs:/app/logs
-    depends_on:
-      - mysql
-      - redis
-      - elasticsearch
-    restart: unless-stopped
-    networks:
-      - myblog-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   # MySQL 数据库
   mysql:
