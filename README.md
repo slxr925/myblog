@@ -173,8 +173,8 @@ sudo systemctl enable elasticsearch
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/myblog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: myblog        # 您的MySQL用户名
-    password: myblog123     # 您的MySQL密码
+    username:        # 您的MySQL用户名
+    password:      # 您的MySQL密码
 
   redis:
     host: localhost

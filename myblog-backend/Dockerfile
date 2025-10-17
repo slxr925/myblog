@@ -55,7 +55,13 @@ RUN mkdir -p /app/uploads/avatars \
             /app/uploads/images \
             /app/logs \
             /app/temp \
+            /app/cert \
     && chown -R myblog:myblog /app
+
+# 复制证书初始化脚本
+COPY cert-initenv.sh /app/cert/initenv.sh
+RUN chmod +x /app/cert/initenv.sh \
+    && chown myblog:myblog /app/cert/initenv.sh
 
 # 切换到应用用户
 USER myblog
@@ -70,8 +76,6 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
                -XX:+UseStringDeduplication \
                -Xms64m \
                -Xmx256m \
-               -XX:+UnlockExperimentalVMOptions \
-               -XX:+UseCGroupMemoryLimitForHeap \
                -Djava.security.egd=file:/dev/./urandom \
                -Dspring.profiles.active=prod \
                -Dfile.encoding=UTF-8 \

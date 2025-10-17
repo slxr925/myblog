@@ -11,8 +11,9 @@ app:
     secure-mode: ${UPLOAD_SECURE_MODE:true}
 
 spring:
-  profiles:
-    active: local
+  config:
+    activate:
+      on-profile: prod  # 生产环境激活此配置
 
   application:
     name: myblog
@@ -21,7 +22,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:myblog}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
+    username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
 
   # JPA配置
