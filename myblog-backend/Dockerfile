@@ -31,11 +31,9 @@ RUN mvn clean package -B -DskipTests
 # ============================================
 FROM eclipse-temurin:21-jre-alpine
 
-# 安装必要的系统依赖
+# 安装必要的系统依赖（仅 curl 用于健康检查）
 RUN apk add --no-cache \
     curl \
-    dumb-init \
-    netcat-openbsd \
     && rm -rf /var/cache/apk/*
 
 # 设置时区
@@ -49,22 +47,20 @@ RUN addgroup -g 1001 -S myblog \
 # 设置工作目录
 WORKDIR /app
 
-# 从构建阶段复制 JAR 文件和启动脚本
+# 从构建阶段复制 JAR 文件
 COPY --from=builder /app/target/myblog-*.jar app.jar
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
 # 创建必要的目录结构
 RUN mkdir -p /app/uploads/avatars \
             /app/uploads/images \
             /app/logs \
             /app/temp \
-    && chown -R myblog:myblog /app \
-    && chmod +x /app/docker-entrypoint.sh
+    && chown -R myblog:myblog /app
 
 # 切换到应用用户
 USER myblog
 
-# 暴露端口（Serverless 平台通常需要）
+# 暴露端口
 EXPOSE 8081
 
 # 设置 JVM 参数（针对 Serverless 环境优化）
@@ -79,16 +75,9 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
                -Dfile.encoding=UTF-8 \
                -Duser.timezone=Asia/Shanghai"
 
-# 生产环境配置
-ENV SPRING_PROFILES_ACTIVE=prod
-ENV SERVER_PORT=8081
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# 健康检查 - 优化启动时间
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8081/actuator/health || exit 1
 
-# 使用 dumb-init 作为 PID 1，执行启动脚本
-ENTRYPOINT ["dumb-init", "--"]
-
-# 启动应用
-CMD ["/app/docker-entrypoint.sh"]
+# 直接启动 Java 应用
+CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
