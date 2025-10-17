@@ -63,21 +63,24 @@ USER myblog
 # 暴露端口
 EXPOSE 8081
 
-# 设置 JVM 参数（针对 Serverless 环境优化）
+# 设置 JVM 参数（针对微信云托管环境优化）
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
-               -XX:MaxRAMPercentage=75.0 \
+               -XX:MaxRAMPercentage=60.0 \
                -XX:+UseG1GC \
                -XX:+UseStringDeduplication \
-               -Xms128m \
-               -Xmx512m \
+               -Xms64m \
+               -Xmx256m \
+               -XX:+UnlockExperimentalVMOptions \
+               -XX:+UseCGroupMemoryLimitForHeap \
                -Djava.security.egd=file:/dev/./urandom \
                -Dspring.profiles.active=prod \
                -Dfile.encoding=UTF-8 \
-               -Duser.timezone=Asia/Shanghai"
+               -Duser.timezone=Asia/Shanghai \
+               -Dspring.jpa.open-in-view=false"
 
-# 健康检查 - 优化启动时间
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8081/actuator/health || exit 1
+# 健康检查 - 微信云托管优化
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=2 \
+    CMD curl -f http://0.0.0.0:8081/actuator/health || exit 1
 
 # 直接启动 Java 应用
 CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
