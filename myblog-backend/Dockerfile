@@ -1,5 +1,5 @@
-# 使用 OpenJDK 17 JRE
-FROM openjdk:17-jre-alpine
+# 使用 OpenJDK 21 JRE
+FROM openjdk:21-jre-alpine
 
 # 设置工作目录
 WORKDIR /app
