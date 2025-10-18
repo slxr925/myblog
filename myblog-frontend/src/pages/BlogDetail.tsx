@@ -34,8 +34,14 @@ const BlogDetail: React.FC = () => {
         console.log('文章详情响应:', response);
         console.log('响应数据:', response.data);
 
-        // 直接使用响应数据
-        setBlog(response.data);
+        // 直接使用响应数据（已经通过响应拦截器提取了data部分）
+        console.log('获取到博客详情:', response);
+        console.log('内容字段:', response.content);
+        console.log('内容长度:', response.content?.length || 0);
+        console.log('内容是否为字符串:', typeof response.content === 'string');
+        console.log('内容是否为空:', !response.content);
+
+        setBlog(response);
 
         // 记录博客访问
         api.admin.trackVisit(`/blog/${id}`).catch(err =>
@@ -43,7 +49,8 @@ const BlogDetail: React.FC = () => {
         );
       } catch (err: any) {
         console.error('获取文章详情失败:', err);
-        setError('获取文章详情失败，请稍后重试');
+        console.error('错误详情:', err.response?.data || err.message);
+        setError(err.response?.data?.message || '获取文章详情失败，请稍后重试');
       } finally {
         setLoading(false);
       }
@@ -119,6 +126,16 @@ const BlogDetail: React.FC = () => {
             </h1>
             
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+              {blogData.authorName && (
+                <span className="flex items-center">
+                  <span className="font-medium">作者:</span> {blogData.authorName}
+                </span>
+              )}
+              {blogData.categoryName && (
+                <span className="flex items-center">
+                  <span className="font-medium">分类:</span> {blogData.categoryName}
+                </span>
+              )}
               <span className="flex items-center">
                 <Calendar className="w-4 h-4 mr-1" />
                 {blogData.publishTime ? new Date(blogData.publishTime).toLocaleDateString('zh-CN') : '未知日期'}
@@ -129,23 +146,24 @@ const BlogDetail: React.FC = () => {
               </span>
               <span className="flex items-center">
                 <Eye className="w-4 h-4 mr-1" />
-                {blogData.viewCount}
+                {blogData.viewCount || 0}
               </span>
               <span className="flex items-center">
                 <Heart className="w-4 h-4 mr-1" />
-                {blogData.likeCount}
+                {blogData.likeCount || 0}
               </span>
               <span className="flex items-center">
                 <MessageCircle className="w-4 h-4 mr-1" />
-                {blogData.commentCount}
+                {blogData.commentCount || 0}
               </span>
             </div>
 
-            {blogData.tags && blogData.tags.length > 0 && (
+            {blogData.tags && Array.isArray(blogData.tags) && blogData.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-6">
+                <span className="text-sm font-medium text-muted-foreground">标签:</span>
                 {blogData.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary">
-                    {typeof tag === 'string' ? tag : tag.name}
+                  <Badge key={tag.id || index} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {tag.name || (typeof tag === 'string' ? tag : '未知标签')}
                   </Badge>
                 ))}
               </div>
@@ -165,7 +183,13 @@ const BlogDetail: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="prose prose-lg max-w-none"
           >
-            <MarkdownRenderer content={blogData.content} />
+            {blogData.content ? (
+              <MarkdownRenderer content={blogData.content} />
+            ) : (
+              <div className="bg-muted/30 p-8 rounded-lg text-center">
+                <p className="text-muted-foreground">文章内容正在加载中或暂无内容</p>
+              </div>
+            )}
           </motion.div>
 
           {/* 评论区域 */}

@@ -254,10 +254,13 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
         setLoading(true);
         const response = await api.blog.getLatest(10);
 
-        const blogData = response.data;
+        // 由于响应拦截器已经提取了data部分，response就是文章数组
+        const blogData = response;
         if (!blogData || !Array.isArray(blogData)) {
           throw new Error('API返回的数据格式不正确');
         }
+
+        console.log('获取到的文章数据:', blogData);
 
         const transformedPosts = blogData.map((blog: any) => {
           // 处理日期格式

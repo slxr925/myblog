@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -34,9 +34,41 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // 防抖相关状态
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // 防抖函数
+  const debounceSearch = useCallback((value: string) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(value);
+    }, 300); // 300ms延迟
+  }, []);
+
+  // 处理搜索输入变化
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    debounceSearch(value);
+  }, [debounceSearch]);
+
+  // 只在页面变化和防抖后的搜索词变化时才获取数据
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, searchTerm]);
+  }, [currentPage, debouncedSearchTerm]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -44,7 +76,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
       const response = await api.admin.getUsers({
         page: currentPage,
         size: 12,
-        keyword: searchTerm
+        keyword: debouncedSearchTerm
       });
       console.log('API返回的完整响应:', response);
       console.log('API返回的用户数据:', response.data);
@@ -136,11 +168,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const filteredUsers = users.filter(user =>
-    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 由于后端已经处理了搜索，这里直接使用用户数据
+  // filteredUsers 改名为 displayUsers 以提高可读性
+  const displayUsers = users;
 
   if (loading) {
     return (
@@ -257,16 +287,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
               <Input
                 placeholder="搜索用户名、邮箱或昵称..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                onChange={handleSearchChange}
+                className="pl-10 pr-10"
               />
+              {searchTerm !== debouncedSearchTerm && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary opacity-50"></div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Users Grid */}
         <div className="grid gap-6">
-          {filteredUsers.length === 0 ? (
+          {displayUsers.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <div className="text-muted-foreground mb-4">
@@ -280,7 +315,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredUsers.map((user) => (
+              {displayUsers.map((user) => (
                 <motion.div
                   key={user.id}
                   initial={{ opacity: 0, scale: 0.9 }}

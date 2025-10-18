@@ -45,6 +45,14 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     console.log('API响应成功:', response.config.url, response.status);
+    console.log('响应数据结构:', response.data);
+
+    // 如果后端返回统一格式 {code, message, data}，则提取data部分
+    if (response.data && typeof response.data === 'object' && 'code' in response.data) {
+      console.log('提取后的数据:', response.data.data);
+      return response.data.data; // 返回data部分
+    }
+
     return response;
   },
   (error) => {
