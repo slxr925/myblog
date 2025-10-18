@@ -34,3 +34,4 @@ build/
 *.sh
 *.md
 *.json
+*.rdb
