@@ -46,23 +46,43 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
         size: 12,
         keyword: searchTerm
       });
+      console.log('API返回的完整响应:', response);
       console.log('API返回的用户数据:', response.data);
 
       // 处理不同的数据结构
       let userData = [];
       let totalCount = 0;
 
-      if (response.data) {
-        if (response.data.records && Array.isArray(response.data.records)) {
+      if (response && response.data) {
+        console.log('response.data 存在:', response.data);
+
+        // 处理标准API响应格式: {code, message, data: {records, total}}
+        if (response.data.data && response.data.data.records && Array.isArray(response.data.data.records)) {
+          userData = response.data.data.records;
+          totalCount = response.data.data.total || 0;
+          console.log('使用 API data.records 结构:', userData.length, 'total:', totalCount);
+        }
+        // 处理直接的records结构: {records, total}
+        else if (response.data.records && Array.isArray(response.data.records)) {
           userData = response.data.records;
           totalCount = response.data.total || 0;
-        } else if (Array.isArray(response.data)) {
+          console.log('使用 records 结构:', userData.length, 'total:', totalCount);
+        }
+        // 处理直接数组结构
+        else if (Array.isArray(response.data)) {
           userData = response.data;
           totalCount = userData.length;
+          console.log('使用数组结构:', userData.length, 'total:', totalCount);
+        } else {
+          console.log('未识别的数据结构:', typeof response.data, response.data);
         }
+      } else {
+        console.log('response.data 不存在');
       }
 
-      console.log('处理后的用户数据:', userData);
+      console.log('最终处理后的用户数据:', userData);
+      console.log('设置总用户数:', totalCount);
+
       setUsers(userData);
       setTotalUsers(totalCount);
     } catch (error) {

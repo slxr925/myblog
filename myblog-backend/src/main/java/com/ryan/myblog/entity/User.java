@@ -80,7 +80,7 @@ public class User {
     /**
      * 是否删除：0-未删除，1-已删除
      */
-    @TableLogic
+    // @TableLogic  // 暂时注释掉逻辑删除，用于调试分页问题
     @TableField("deleted")
     private Integer deleted;
 }

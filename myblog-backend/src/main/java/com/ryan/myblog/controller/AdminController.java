@@ -1,5 +1,8 @@
 package com.ryan.myblog.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.ryan.myblog.common.PageRequest;
+import com.ryan.myblog.common.PageResult;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.dto.AdminStatsDTO;
 import com.ryan.myblog.entity.User;
@@ -48,14 +51,75 @@ public class AdminController {
     }
 
     /**
-     * 获取所有用户列表（仅管理员）
+     * 分页获取用户列表（仅管理员）
      */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<List<User>> getAllUsers() {
-        // 这里需要实现获取所有用户的逻辑
-        // 暂时返回空列表，需要根据实际业务实现
-        return Result.success("获取用户列表成功", null);
+    public Result<PageResult<User>> getUsers(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "12") Integer size,
+            @RequestParam(required = false) String keyword) {
+        try {
+            log.info("管理员请求用户列表：page={}, size={}, keyword={}", page, size, keyword);
+
+            // 创建分页请求
+            PageRequest pageRequest = new PageRequest();
+            pageRequest.setPage(page);
+            pageRequest.setSize(size);
+
+            // 调用服务层获取分页数据
+            IPage<User> userPage = userService.getUserPage(pageRequest, keyword);
+
+            // 添加详细日志调试
+            log.info("MyBatis Plus返回的分页数据：current={}, size={}, total={}, records={}",
+                userPage.getCurrent(), userPage.getSize(), userPage.getTotal(), userPage.getRecords().size());
+
+            // 获取真实的总用户数
+            Long actualTotal = userService.getTotalUserCount(keyword);
+
+            // 转换为前端期望的分页结果格式
+            PageResult<User> pageResult = new PageResult<>(
+                userPage.getRecords(),
+                actualTotal, // 使用真实的总用户数
+                userPage.getCurrent(),
+                userPage.getSize()
+            );
+
+            log.info("PageResult构造完成：total={}, records={}, pages={}",
+                pageResult.getTotal(), pageResult.getRecords().size(), pageResult.getPages());
+            return Result.success("获取用户列表成功", pageResult);
+
+        } catch (Exception e) {
+            log.error("获取用户列表失败", e);
+            return Result.error("获取用户列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 更新用户状态（仅管理员）
+     */
+    @PutMapping("/users/{userId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<String> updateUserStatus(
+            @PathVariable Long userId,
+            @RequestBody Map<String, Integer> request) {
+        try {
+            Integer status = request.get("status");
+            if (status == null || (status != 0 && status != 1)) {
+                return Result.error("状态值无效，必须为0（正常）或1（禁用）");
+            }
+
+            log.info("管理员请求更新用户状态：userId={}, status={}", userId, status);
+            userService.updateUserStatus(userId, status);
+
+            String statusText = status == 0 ? "启用" : "禁用";
+            log.info("成功更新用户状态：userId={}, status={}", userId, statusText);
+            return Result.success("用户状态更新成功", null);
+
+        } catch (Exception e) {
+            log.error("更新用户状态失败：userId={}", userId, e);
+            return Result.error("更新用户状态失败: " + e.getMessage());
+        }
     }
 
     /**
