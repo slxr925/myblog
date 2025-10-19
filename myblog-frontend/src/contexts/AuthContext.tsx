@@ -213,12 +213,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 刷新用户信息
   const refreshUser = async (): Promise<void> => {
     try {
-      const response = await api.user.getCurrentUser();
-      const user = response.data;
-      
+      const user = await api.user.getCurrentUser();
+
       // 更新本地存储的用户信息
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       dispatch({ type: 'REFRESH_USER', payload: user });
     } catch (error) {
       console.error('刷新用户信息失败:', error);

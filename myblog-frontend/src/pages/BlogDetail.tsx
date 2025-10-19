@@ -40,6 +40,7 @@ const BlogDetail: React.FC = () => {
 
         setBlog(response);
         setLikeCount(response.likeCount || 0);
+        setIsLiked(response.isLiked || false);
 
         // 记录博客访问
         api.admin.trackVisit(`/blog/${id}`).catch(err =>
@@ -63,20 +64,17 @@ const BlogDetail: React.FC = () => {
 
     try {
       setIsLiking(true);
-      await api.blog.toggleLike(blog.id);
 
-      // 重新从数据库获取博客详情以确保数据同步
+      // 调用点赞API，获取操作后的状态
+      const newIsLiked = await api.blog.toggleLike(blog.id);
+
+      // 重新获取博客详情以更新点赞数量
       const response = await api.blog.getDetail(blog.id);
       setBlog(response);
-      const newLikeCount = response.likeCount || 0;
-      setLikeCount(newLikeCount);
+      setLikeCount(response.likeCount || 0);
 
-      // 基于点赞数量的变化来判断用户的实际操作
-      // 如果点赞数量增加了，说明用户进行了点赞操作
-      // 如果点赞数量减少了，说明用户进行了取消点赞操作
-      const oldLikeCount = likeCount;
-      const actuallyLiked = newLikeCount > oldLikeCount;
-      setIsLiked(actuallyLiked);
+      // 使用API返回的状态
+      setIsLiked(newIsLiked);
     } catch (error) {
       console.error('点赞失败:', error);
     } finally {

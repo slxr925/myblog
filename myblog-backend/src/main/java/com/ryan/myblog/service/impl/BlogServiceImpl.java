@@ -164,24 +164,37 @@ public class BlogServiceImpl implements BlogService {
     
     @Override
     public BlogDetailVO getBlogDetail(Long id) {
+        return getBlogDetail(id, null);
+    }
+
+    @Override
+    public BlogDetailVO getBlogDetail(Long id, Long userId) {
         // 先从缓存中获取
         String cacheKey = "blog:detail:" + id;
         BlogDetailVO blog = cacheService.get(cacheKey, BlogDetailVO.class);
-        
+
         if (blog == null) {
             // 缓存中没有，从数据库查询
             blog = blogMapper.selectBlogDetail(id);
             if (blog == null) {
                 throw new RuntimeException("博客不存在");
             }
-            
+
             // 设置标签信息
             blog.setTags(tagMapper.selectTagsByBlogId(id));
-            
+
             // 存入缓存，设置30分钟过期
             cacheService.set(cacheKey, blog, 1800);
         }
-        
+
+        // 查询用户点赞状态
+        if (userId != null) {
+            UserLike userLike = userLikeMapper.selectByUserAndTarget(userId, "blog", id);
+            blog.setIsLiked(userLike != null && userLike.getStatus() == 1);
+        } else {
+            blog.setIsLiked(false);
+        }
+
         return blog;
     }
     
@@ -193,7 +206,7 @@ public class BlogServiceImpl implements BlogService {
     
     @Override
     @Transactional
-    public void toggleLike(Long id, Long userId) {
+    public Boolean toggleLike(Long id, Long userId) {
         // 检查博客是否存在
         Blog blog = blogMapper.selectById(id);
         if (blog == null) {
@@ -243,6 +256,15 @@ public class BlogServiceImpl implements BlogService {
         // 清除相关缓存
         cacheService.delete("blog:detail:" + id);
         cacheService.deleteByPattern("blog:page:*");
+
+        // 返回操作后的点赞状态
+        if (existingLike == null) {
+            // 首次点赞，状态为true
+            return true;
+        } else {
+            // 切换状态，返回新状态
+            return existingLike.getStatus() == 1;
+        }
     }
     
     @Override

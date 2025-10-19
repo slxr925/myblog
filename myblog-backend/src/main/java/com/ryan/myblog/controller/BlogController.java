@@ -57,10 +57,18 @@ public class BlogController {
      */
     @GetMapping("/{id}")
     public Result<BlogDetailVO> getBlogDetail(@PathVariable Long id) {
-        BlogDetailVO blog = blogService.getBlogDetail(id);
-        // 增加阅读量
-        blogService.incrementViewCount(id);
-        return Result.success(blog);
+        try {
+            Long userId = getCurrentUserId();
+            BlogDetailVO blog = blogService.getBlogDetail(id, userId);
+            // 增加阅读量
+            blogService.incrementViewCount(id);
+            return Result.success(blog);
+        } catch (Exception e) {
+            // 如果用户未登录，使用普通查询
+            BlogDetailVO blog = blogService.getBlogDetail(id);
+            blogService.incrementViewCount(id);
+            return Result.success(blog);
+        }
     }
     
     /**
@@ -139,10 +147,10 @@ public class BlogController {
      * 点赞/取消点赞
      */
     @PostMapping("/{id}/like")
-    public Result<Void> toggleLike(@PathVariable Long id) {
+    public Result<Boolean> toggleLike(@PathVariable Long id) {
         Long userId = getCurrentUserId();
-        blogService.toggleLike(id, userId);
-        return Result.success();
+        Boolean isLiked = blogService.toggleLike(id, userId);
+        return Result.success(isLiked);
     }
     
     /**

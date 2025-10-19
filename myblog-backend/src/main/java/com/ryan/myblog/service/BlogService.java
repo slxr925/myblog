@@ -39,6 +39,11 @@ public interface BlogService {
      * 查询博客详情
      */
     BlogDetailVO getBlogDetail(Long id);
+
+    /**
+     * 查询博客详情（包含用户点赞状态）
+     */
+    BlogDetailVO getBlogDetail(Long id, Long userId);
     
     /**
      * 增加阅读量
@@ -47,8 +52,9 @@ public interface BlogService {
     
     /**
      * 点赞/取消点赞
+     * @return 操作后的点赞状态（true-已点赞，false-未点赞）
      */
-    void toggleLike(Long id, Long userId);
+    Boolean toggleLike(Long id, Long userId);
     
     /**
      * 发布博客
