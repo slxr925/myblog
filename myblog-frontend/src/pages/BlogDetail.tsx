@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Eye, Heart, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, Eye, Heart, MessageCircle, ArrowLeft, Share2, ThumbsUp } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import type { BlogDetailVO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
@@ -13,9 +14,13 @@ import { CommentSection } from '../components/comment/CommentSection';
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [blog, setBlog] = useState<BlogDetailVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLiking, setIsLiking] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
 
   // 为了兼容性，保持blogData变量
   const blogData = blog || {};
@@ -28,20 +33,13 @@ const BlogDetail: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        console.log('获取文章详情:', id);
         // 先尝试使用普通文章详情API，避免增强版API的问题
         const response = await api.blog.getDetail(Number(id));
-        console.log('文章详情响应:', response);
-        console.log('响应数据:', response.data);
 
         // 直接使用响应数据（已经通过响应拦截器提取了data部分）
-        console.log('获取到博客详情:', response);
-        console.log('内容字段:', response.content);
-        console.log('内容长度:', response.content?.length || 0);
-        console.log('内容是否为字符串:', typeof response.content === 'string');
-        console.log('内容是否为空:', !response.content);
 
         setBlog(response);
+        setLikeCount(response.likeCount || 0);
 
         // 记录博客访问
         api.admin.trackVisit(`/blog/${id}`).catch(err =>
@@ -58,6 +56,51 @@ const BlogDetail: React.FC = () => {
 
     fetchBlogDetail();
   }, [id]);
+
+  // 点赞处理函数
+  const handleLike = async () => {
+    if (!user || !blog || isLiking) return;
+
+    try {
+      setIsLiking(true);
+      await api.blog.toggleLike(blog.id);
+
+      // 重新从数据库获取博客详情以确保数据同步
+      const response = await api.blog.getDetail(blog.id);
+      setBlog(response);
+      const newLikeCount = response.likeCount || 0;
+      setLikeCount(newLikeCount);
+
+      // 基于点赞数量的变化来判断用户的实际操作
+      // 如果点赞数量增加了，说明用户进行了点赞操作
+      // 如果点赞数量减少了，说明用户进行了取消点赞操作
+      const oldLikeCount = likeCount;
+      const actuallyLiked = newLikeCount > oldLikeCount;
+      setIsLiked(actuallyLiked);
+    } catch (error) {
+      console.error('点赞失败:', error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  // 分享处理函数
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: blogData.title,
+          text: blogData.summary,
+          url: window.location.href,
+        });
+      } catch (error) {
+      }
+    } else {
+      // 复制链接到剪贴板
+      navigator.clipboard.writeText(window.location.href);
+      // 这里可以添加一个toast提示
+    }
+  };
 
   if (loading) {
     return (
@@ -150,7 +193,7 @@ const BlogDetail: React.FC = () => {
               </span>
               <span className="flex items-center">
                 <Heart className="w-4 h-4 mr-1" />
-                {blogData.likeCount || 0}
+                {likeCount}
               </span>
               <span className="flex items-center">
                 <MessageCircle className="w-4 h-4 mr-1" />
@@ -174,6 +217,49 @@ const BlogDetail: React.FC = () => {
                 <p className="text-foreground/80 leading-relaxed">{blogData.summary}</p>
               </div>
             )}
+
+            {/* 互动按钮区域 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="flex flex-wrap gap-4 py-4 border-y border-border"
+            >
+              <Button
+                variant={isLiked ? "default" : "outline"}
+                size="sm"
+                onClick={handleLike}
+                disabled={!user || isLiking}
+                className={`flex items-center space-x-2 ${
+                  isLiked ? "bg-red-500 hover:bg-red-600 text-white" : ""
+                }`}
+              >
+                <ThumbsUp className={`w-4 h-4 ${isLiking ? "animate-pulse" : ""}`} />
+                <span>{isLiked ? "已点赞" : "点赞"}</span>
+                <Badge variant="secondary" className="ml-1">
+                  {likeCount}
+                </Badge>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShare}
+                className="flex items-center space-x-2"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>分享</span>
+              </Button>
+
+              {!user && (
+                <p className="text-sm text-muted-foreground self-center">
+                  <a href="/login" className="text-primary hover:underline">
+                    登录
+                  </a>
+                  后可以点赞文章
+                </p>
+              )}
+            </motion.div>
           </motion.div>
 
           {/* 文章内容 */}

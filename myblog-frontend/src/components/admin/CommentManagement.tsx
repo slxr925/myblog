@@ -43,7 +43,6 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
         size: 12,
         keyword: searchTerm
       });
-      console.log('API返回的评论数据:', response.data);
 
       // 处理不同的数据结构
       let commentData = [];
@@ -59,7 +58,6 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
         }
       }
 
-      console.log('处理后的评论数据:', commentData);
       setComments(commentData);
       setTotalComments(totalCount);
     } catch (error) {

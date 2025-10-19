@@ -26,7 +26,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const validateForm = (): boolean => {
-    console.log('开始表单验证');
     const newErrors: Partial<UserRegisterDTO & { confirmPassword: string }> = {};
 
     // 用户名验证
@@ -62,7 +61,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
       newErrors.nickname = '昵称长度不能超过50位';
     }
 
-    console.log('表单验证结果:', newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -87,19 +85,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('表单提交事件触发');
     
     if (!validateForm()) {
-      console.log('表单验证失败');
       return;
     }
 
-    console.log('表单验证通过，准备提交数据:', formData);
     setIsLoading(true);
     try {
-      console.log('开始调用注册方法');
       await register(formData);
-      console.log('注册成功');
       setRegistrationSuccess(true);
       // 注册成功后不清除表单，保留用户信息方便登录
     } catch (error: any) {

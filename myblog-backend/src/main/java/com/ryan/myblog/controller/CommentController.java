@@ -49,6 +49,23 @@ public class CommentController {
     }
     
     /**
+     * 获取博客的评论列表（兼容前端API调用）
+     */
+    @GetMapping("/blog/{blogId}")
+    public Result<IPage<CommentVO>> getCommentsByBlogId(@PathVariable Long blogId,
+                                                        @RequestParam(defaultValue = "1") Integer page,
+                                                        @RequestParam(defaultValue = "10") Integer size,
+                                                        @RequestParam(required = false) Integer status) {
+
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+
+        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status != null ? status : 1);
+        return Result.success(result);
+    }
+
+    /**
      * 分页查询评论列表
      */
     @GetMapping("/page")
@@ -57,12 +74,12 @@ public class CommentController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam Long blogId,
             @RequestParam(required = false) Integer status) {
-        
+
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
         pageRequest.setSize(size);
-        
-        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status);
+
+        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status != null ? status : 1);
         return Result.success(result);
     }
     

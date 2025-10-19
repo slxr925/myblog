@@ -119,20 +119,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       dispatch({ type: 'LOGIN_START' });
       
-      console.log('AuthContext: 开始登录请求', loginData);
-      const response = await api.user.login(loginData);
-      console.log('AuthContext: 登录响应', response);
-      
+            const response = await api.user.login(loginData);
+            
       const token = response; // 响应拦截器已提取data部分，response直接是token字符串
       
       // 先保存token到localStorage，这样后续请求会自动添加Authorization头
       localStorage.setItem('token', token);
       
       // 获取用户信息
-      console.log('AuthContext: 获取用户信息');
       try {
         const userResponse = await api.user.getCurrentUser();
-        console.log('AuthContext: 用户信息响应', userResponse);
         const user = userResponse; // 响应拦截器已处理，userResponse直接是User对象
         
         // 保存完整的认证信息
@@ -143,7 +139,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           payload: { user, token },
         });
         
-        console.log('AuthContext: 登录成功');
       } catch (userError) {
         console.error('AuthContext: 获取用户信息失败', userError);
         // 如果获取用户信息失败，仍然认为登录成功，但使用默认用户信息
@@ -180,16 +175,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 用户注册
   const register = async (registerData: UserRegisterDTO): Promise<void> => {
     try {
-      console.log('AuthContext: 开始注册流程', registerData);
       dispatch({ type: 'LOGIN_START' });
       
-      console.log('AuthContext: 调用API注册方法');
       await api.user.register(registerData);
-      console.log('AuthContext: API注册成功');
       
       // 注册成功后不自动登录，重置状态
       dispatch({ type: 'SET_LOADING', payload: false });
-      console.log('AuthContext: 注册完成，请用户登录');
     } catch (error: any) {
       console.error('AuthContext: 注册失败', error);
       

@@ -49,7 +49,6 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
         keyword: searchTerm,
         status: statusFilter
       });
-      console.log('API返回的文章数据:', response.data);
 
       // 处理不同的数据结构
       let blogData = [];
@@ -65,7 +64,6 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
         }
       }
 
-      console.log('处理后的文章数据:', blogData);
       setBlogs(blogData);
       setTotalBlogs(totalCount);
     } catch (error) {

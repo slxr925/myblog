@@ -50,7 +50,6 @@ const Profile: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      console.log('保存用户信息:', formData);
       await api.user.updateUserInfo(formData);
       await refreshUser();
       setIsEditing(false);

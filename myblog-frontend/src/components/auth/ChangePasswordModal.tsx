@@ -67,7 +67,6 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         return;
       }
 
-      console.log('修改密码:', passwordData);
       await api.user.changePassword(passwordData);
       
       // 重置密码表单

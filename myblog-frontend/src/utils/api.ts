@@ -45,12 +45,8 @@ apiClient.interceptors.request.use(
 // 响应拦截器
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('API响应成功:', response.config.url, response.status);
-    console.log('响应数据结构:', response.data);
-
     // 如果后端返回统一格式 {code, message, data}，则提取data部分
     if (response.data && typeof response.data === 'object' && 'code' in response.data) {
-      console.log('提取后的数据:', response.data.data);
       return response.data.data; // 返回data部分
     }
 
@@ -71,7 +67,6 @@ apiClient.interceptors.response.use(
 
 // 工具函数：将后端BlogDetailVO转换为前端BlogPost
 const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
-  console.log('转换博客数据:', blog.id, blog.title);
 
   // 处理日期格式：后端返回的可能是字符串格式 "2025-10-02T22:14:38" 或数组格式 [2025,10,2,22,14,38]
   let publishDate = '';
@@ -120,8 +115,7 @@ const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
     categoryId: blog.categoryId,
     categoryName: blog.categoryName,
   };
-  
-  console.log('转换后的文章:', transformedPost);
+
   return transformedPost;
 };
 
@@ -237,25 +231,19 @@ export const api = {
   user: {
     // 用户注册
     register: async (userData: UserRegisterDTO): Promise<ProcessedResponse<void>> => {
-      console.log('API: 发送注册请求', userData);
       const response = await apiClient.post('/user/register', userData);
-      console.log('API: 注册请求响应', response);
       return response;
     },
 
     // 用户登录
     login: async (loginData: UserLoginDTO): Promise<ProcessedResponse<string>> => {
-      console.log('API: 发送登录请求', loginData);
       const response = await apiClient.post('/user/login', loginData);
-      console.log('API: 登录响应', response);
       return response; // 响应拦截器已处理
     },
 
     // 获取当前用户信息
     getCurrentUser: async (): Promise<ProcessedResponse<User>> => {
-      console.log('API: 获取当前用户信息');
       const response = await apiClient.get('/user/info');
-      console.log('API: 用户信息响应', response);
       return response; // 响应拦截器已处理
     },
 
@@ -277,18 +265,23 @@ export const api = {
 
   comment: {
     // 获取博客的评论列表
-    getByBlogId: async (blogId: number, params?: PageParams): Promise<ApiResponse<PageResponse<CommentVO>>> => {
+    getByBlogId: async (blogId: number, params?: PageParams): Promise<ProcessedResponse<PageResponse<CommentVO>>> => {
       return apiClient.get(`/comment/blog/${blogId}`, { params });
     },
 
     // 创建评论
-    create: async (commentData: CommentCreateDTO): Promise<ApiResponse<void>> => {
+    create: async (commentData: CommentCreateDTO): Promise<ProcessedResponse<void>> => {
       return apiClient.post('/comment', commentData);
     },
 
     // 删除评论
-    delete: async (id: number): Promise<ApiResponse<void>> => {
+    delete: async (id: number): Promise<ProcessedResponse<void>> => {
       return apiClient.delete(`/comment/${id}`);
+    },
+
+    // 点赞/取消点赞评论
+    toggleLike: async (id: number): Promise<ProcessedResponse<void>> => {
+      return apiClient.post(`/comment/${id}/like`);
     },
 
     // 获取评论详情
@@ -403,7 +396,7 @@ export const api = {
     },
 
     // 记录页面访问
-    trackVisit: async (page: string): Promise<ApiResponse<void>> => {
+    trackVisit: async (page: string): Promise<ProcessedResponse<void>> => {
       return apiClient.post('/admin/track-visit', { page });
     },
   },

@@ -41,7 +41,6 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
     try {
       setLoading(true);
       const response = await api.tag.getAll();
-      console.log('API返回的标签数据:', response.data);
 
       // 处理不同的数据结构
       let tagData = [];
@@ -53,7 +52,6 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
         }
       }
 
-      console.log('处理后的标签数据:', tagData);
       setTags(tagData);
     } catch (err) {
       setError('获取标签列表失败');

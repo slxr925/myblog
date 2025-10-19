@@ -23,6 +23,7 @@ interface CommentItemProps {
   onLike: (commentId: number) => void;
   onDelete?: (commentId: number) => void;
   isReply?: boolean;
+  user?: any;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -31,8 +32,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onLike,
   onDelete,
   isReply = false,
+  user,
 }) => {
-  const { user } = useAuth();
   const [isLiking, setIsLiking] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyContent, setReplyContent] = useState('');
@@ -46,6 +47,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const handleLike = () => {
+    if (!user) {
+      alert('请先登录后再点赞评论');
+      return;
+    }
     if (!isLiking) {
       setIsLiking(true);
       onLike(comment.id);
@@ -171,6 +176,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   onLike={onLike}
                   onDelete={onDelete}
                   isReply={true}
+                  user={user}
                 />
               ))}
             </div>
@@ -193,11 +199,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
     try {
       setLoading(true);
       const response = await api.comment.getByBlogId(blogId, { page: 1, size: 100 });
-      if (response.data && response.data.records) {
-        setComments(response.data.records);
+      if (response && response.records) {
+        setComments(response.records);
+      } else {
+        setComments([]);
       }
     } catch (error) {
       console.error('获取评论失败:', error);
+      setComments([]);
     } finally {
       setLoading(false);
     }
@@ -251,9 +260,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
 
   // 点赞评论
   const handleLikeComment = async (commentId: number) => {
+    if (!user) return;
+
     try {
-      // 这里可以添加点赞API调用
-      console.log('点赞评论:', commentId);
+      await api.comment.toggleLike(commentId);
+
+      // 重新获取评论列表以更新点赞数
+      await fetchComments();
     } catch (error) {
       console.error('点赞评论失败:', error);
     }
@@ -352,6 +365,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
               onReply={handleReply}
               onLike={handleLikeComment}
               onDelete={handleDeleteComment}
+              user={user}
             />
           ))}
         </div>

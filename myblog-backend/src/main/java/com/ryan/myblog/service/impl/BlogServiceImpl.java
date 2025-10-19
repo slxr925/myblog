@@ -7,9 +7,11 @@ import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.dto.BlogSaveDTO;
 import com.ryan.myblog.entity.Blog;
 import com.ryan.myblog.entity.BlogTag;
+import com.ryan.myblog.entity.UserLike;
 import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.BlogTagMapper;
 import com.ryan.myblog.mapper.TagMapper;
+import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
@@ -36,6 +38,7 @@ public class BlogServiceImpl implements BlogService {
     private final BlogMapper blogMapper;
     private final BlogTagMapper blogTagMapper;
     private final TagMapper tagMapper;
+    private final UserLikeMapper userLikeMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
     private final SecurityUtils securityUtils;
@@ -189,9 +192,57 @@ public class BlogServiceImpl implements BlogService {
     }
     
     @Override
+    @Transactional
     public void toggleLike(Long id, Long userId) {
-        // 简化版本，直接增加点赞数
-        blogMapper.incrementLikeCount(id);
+        // 检查博客是否存在
+        Blog blog = blogMapper.selectById(id);
+        if (blog == null) {
+            throw new RuntimeException("博客不存在");
+        }
+
+        // 查找用户点赞记录
+        UserLike existingLike = userLikeMapper.selectByUserAndTarget(userId, "blog", id);
+
+        if (existingLike == null) {
+            // 首次点赞，创建点赞记录
+            UserLike newLike = new UserLike();
+            newLike.setUserId(userId);
+            newLike.setTargetType("blog");
+            newLike.setTargetId(id);
+            newLike.setStatus(1);
+            newLike.setCreateTime(java.time.LocalDateTime.now());
+            newLike.setUpdateTime(java.time.LocalDateTime.now());
+
+            userLikeMapper.insert(newLike);
+
+            // 增加博客点赞数
+            blogMapper.incrementLikeCount(id);
+
+            log.info("用户 {} 首次点赞博客 {}", userId, id);
+        } else {
+            // 切换点赞状态
+            Integer oldStatus = existingLike.getStatus();
+            Integer newStatus = oldStatus == 1 ? 0 : 1;
+            existingLike.setStatus(newStatus);
+            existingLike.setUpdateTime(java.time.LocalDateTime.now());
+
+            userLikeMapper.updateById(existingLike);
+
+            // 更新博客点赞数
+            if (oldStatus == 1) {
+                // 之前是点赞，现在取消点赞
+                blogMapper.decrementLikeCount(id);
+                log.info("用户 {} 取消点赞博客 {}", userId, id);
+            } else {
+                // 之前是取消点赞，现在重新点赞
+                blogMapper.incrementLikeCount(id);
+                log.info("用户 {} 重新点赞博客 {}", userId, id);
+            }
+        }
+
+        // 清除相关缓存
+        cacheService.delete("blog:detail:" + id);
+        cacheService.deleteByPattern("blog:page:*");
     }
     
     @Override

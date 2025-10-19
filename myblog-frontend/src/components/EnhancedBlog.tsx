@@ -164,14 +164,8 @@ const FloatingOrbs: React.FC = () => {
 // Blog Post Card Component
 const BlogPostCard: React.FC<{
   post: BlogPost;
-  onLike: (postId: number) => void;
-  isLiked: boolean;
   onClick: (postId: number) => void;
-}> = ({ post, onLike, isLiked, onClick }) => {
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onLike(post.id);
-  };
+}> = ({ post, onClick }) => {
 
   return (
     <Card
@@ -202,13 +196,10 @@ const BlogPostCard: React.FC<{
               <Eye className="w-4 h-4 mr-1" />
               {post.views}
             </span>
-            <button
-              onClick={handleLikeClick}
-              className={`flex items-center transition-colors ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
-            >
-              <Heart className={`w-4 h-4 mr-1 ${isLiked ? 'fill-current' : ''}`} />
-              {post.likes + (isLiked ? 1 : 0)}
-            </button>
+            <span className="flex items-center text-gray-500">
+              <Heart className="w-4 h-4 mr-1" />
+              {post.likes}
+            </span>
             <span className="flex items-center">
               <MessageCircle className="w-4 h-4 mr-1" />
               {post.comments}
@@ -243,7 +234,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -260,7 +250,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
           throw new Error('API返回的数据格式不正确');
         }
 
-        console.log('获取到的文章数据:', blogData);
 
         const transformedPosts = blogData.map((blog: any) => {
           // 处理日期格式
@@ -607,8 +596,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
               <BlogPostCard
                 key={post.id}
                 post={post}
-                onLike={handleLike}
-                isLiked={likedPosts.has(post.id)}
                 onClick={handlePostClick}
               />
             ))

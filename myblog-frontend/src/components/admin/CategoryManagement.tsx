@@ -42,7 +42,6 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({ onBack }
     try {
       setLoading(true);
       const response = await api.category.getAll();
-      console.log('API返回的分类数据:', response.data);
 
       // 处理不同的数据结构
       let categoryData = [];
@@ -54,7 +53,6 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({ onBack }
         }
       }
 
-      console.log('处理后的分类数据:', categoryData);
       setCategories(categoryData);
     } catch (err) {
       setError('获取分类列表失败');
