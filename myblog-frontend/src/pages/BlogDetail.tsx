@@ -10,6 +10,7 @@ import { api } from '../utils/api';
 import type { BlogDetailVO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
+import { AuthModal } from '../components/auth/AuthModal';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ const BlogDetail: React.FC = () => {
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // 为了兼容性，保持blogData变量
   const blogData = blog || {};
@@ -251,9 +253,12 @@ const BlogDetail: React.FC = () => {
 
               {!user && (
                 <p className="text-sm text-muted-foreground self-center">
-                  <a href="/login" className="text-primary hover:underline">
+                  <button
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="text-primary hover:underline bg-transparent border-0 cursor-pointer p-0"
+                  >
                     登录
-                  </a>
+                  </button>
                   后可以点赞文章
                 </p>
               )}
@@ -284,6 +289,12 @@ const BlogDetail: React.FC = () => {
           {/* 相关推荐 - 暂时移除，因为普通API不包含相关推荐数据 */}
         </div>
       </div>
+
+      {/* 认证弹窗 */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </motion.div>
   );
 };
