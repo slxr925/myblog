@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.user.login(loginData);
       console.log('AuthContext: 登录响应', response);
       
-      const token = response.data;
+      const token = response; // 响应拦截器已提取data部分，response直接是token字符串
       
       // 先保存token到localStorage，这样后续请求会自动添加Authorization头
       localStorage.setItem('token', token);
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const userResponse = await api.user.getCurrentUser();
         console.log('AuthContext: 用户信息响应', userResponse);
-        const user = userResponse.data;
+        const user = userResponse; // 响应拦截器已处理，userResponse直接是User对象
         
         // 保存完整的认证信息
         api.auth.saveAuth(token, user);

@@ -44,7 +44,7 @@ export const Admin: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await api.admin.getStats();
-      setStats(response.data);
+      setStats(response);
     } catch (error) {
       console.error('获取统计数据失败:', error);
       // 如果API调用失败，使用模拟数据

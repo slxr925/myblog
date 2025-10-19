@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type {
   ApiResponse,
+  ProcessedResponse,
   PageParams,
   PageResponse,
   BlogDetailVO,
@@ -128,7 +129,7 @@ const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
 export const api = {
   blog: {
     // 分页获取博客列表
-    getPage: async (params?: PageParams): Promise<ApiResponse<PageResponse<BlogDetailVO>>> => {
+    getPage: async (params?: PageParams): Promise<ProcessedResponse<PageResponse<BlogDetailVO>>> => {
       return apiClient.get('/blog/page', { params });
     },
 
@@ -143,12 +144,12 @@ export const api = {
     },
 
     // 获取热门博客
-    getHot: async (limit = 10): Promise<ApiResponse<BlogDetailVO[]>> => {
+    getHot: async (limit = 10): Promise<ProcessedResponse<BlogDetailVO[]>> => {
       return apiClient.get('/blog/hot', { params: { limit } });
     },
 
     // 获取最新博客
-    getLatest: async (limit = 10): Promise<ApiResponse<BlogDetailVO[]>> => {
+    getLatest: async (limit = 10): Promise<ProcessedResponse<BlogDetailVO[]>> => {
       return apiClient.get('/blog/latest', { params: { limit } });
     },
 
@@ -171,10 +172,10 @@ export const api = {
     getBlogList: async (params?: PageParams): Promise<{ posts: BlogPost[]; total: number }> => {
       try {
         const response = await api.blog.getPage(params);
-        const posts = response.data.records.map(transformBlogDetailVOToBlogPost);
+        const posts = response.records.map(transformBlogDetailVOToBlogPost);
         return {
           posts,
-          total: response.data.total,
+          total: response.total,
         };
       } catch (error) {
         console.error('获取博客列表失败:', error);
@@ -189,7 +190,7 @@ export const api = {
     getHotBlogs: async (limit = 5): Promise<BlogPost[]> => {
       try {
         const response = await api.blog.getHot(limit);
-        return response.data.map(transformBlogDetailVOToBlogPost);
+        return response.map(transformBlogDetailVOToBlogPost);
       } catch (error) {
         console.error('获取热门博客失败:', error);
         return [];
@@ -200,7 +201,7 @@ export const api = {
     getLatestBlogs: async (limit = 5): Promise<BlogPost[]> => {
       try {
         const response = await api.blog.getLatest(limit);
-        return response.data.map(transformBlogDetailVOToBlogPost);
+        return response.map(transformBlogDetailVOToBlogPost);
       } catch (error) {
         console.error('获取最新博客失败:', error);
         return [];
@@ -235,27 +236,27 @@ export const api = {
 
   user: {
     // 用户注册
-    register: async (userData: UserRegisterDTO): Promise<ApiResponse<void>> => {
+    register: async (userData: UserRegisterDTO): Promise<ProcessedResponse<void>> => {
       console.log('API: 发送注册请求', userData);
       const response = await apiClient.post('/user/register', userData);
-      console.log('API: 注册请求响应', response.data);
-      return response.data;
+      console.log('API: 注册请求响应', response);
+      return response;
     },
 
     // 用户登录
-    login: async (loginData: UserLoginDTO): Promise<ApiResponse<string>> => {
+    login: async (loginData: UserLoginDTO): Promise<ProcessedResponse<string>> => {
       console.log('API: 发送登录请求', loginData);
       const response = await apiClient.post('/user/login', loginData);
-      console.log('API: 登录响应', response.data);
-      return response.data;
+      console.log('API: 登录响应', response);
+      return response; // 响应拦截器已处理
     },
 
     // 获取当前用户信息
-    getCurrentUser: async (): Promise<ApiResponse<User>> => {
+    getCurrentUser: async (): Promise<ProcessedResponse<User>> => {
       console.log('API: 获取当前用户信息');
       const response = await apiClient.get('/user/info');
-      console.log('API: 用户信息响应', response.data);
-      return response.data;
+      console.log('API: 用户信息响应', response);
+      return response; // 响应拦截器已处理
     },
 
     // 更新用户信息
@@ -397,7 +398,7 @@ export const api = {
     },
 
     // 获取系统统计
-    getStats: async (): Promise<ApiResponse<AdminStatsDTO>> => {
+    getStats: async (): Promise<ProcessedResponse<AdminStatsDTO>> => {
       return apiClient.get('/admin/stats');
     },
 

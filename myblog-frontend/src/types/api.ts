@@ -5,6 +5,9 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+// 响应拦截器处理后的类型（直接是data部分）
+export type ProcessedResponse<T> = T;
+
 // 分页请求参数
 export interface PageParams {
   page?: number;
