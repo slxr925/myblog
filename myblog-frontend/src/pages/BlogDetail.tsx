@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
-import type { BlogDetailVO } from '../types/api';
+import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
 import { AuthModal } from '../components/auth/AuthModal';
@@ -67,16 +67,22 @@ const BlogDetail: React.FC = () => {
     try {
       setIsLiking(true);
 
-      // 调用点赞API，获取操作后的状态
-      const newIsLiked = await api.blog.toggleLike(blog.id);
+      // 调用新的点赞API，获取详细结果
+      const result: LikeResultDTO = await api.blog.toggleLikeWithDetails(blog.id);
 
-      // 重新获取博客详情以更新点赞数量
-      const response = await api.blog.getDetail(blog.id);
-      setBlog(response);
-      setLikeCount(response.likeCount || 0);
+      // 直接使用API返回的数据更新状态
+      setIsLiked(result.isLiked);
+      setLikeCount(result.likeCount);
 
-      // 使用API返回的状态
-      setIsLiked(newIsLiked);
+      // 更新博客对象中的浏览量（保持一致）
+      if (blog) {
+        setBlog({
+          ...blog,
+          likeCount: result.likeCount,
+          viewCount: result.viewCount,
+          isLiked: result.isLiked
+        });
+      }
     } catch (error) {
       console.error('点赞失败:', error);
     } finally {

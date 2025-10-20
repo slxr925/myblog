@@ -3,6 +3,7 @@ package com.ryan.myblog.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.dto.BlogSaveDTO;
+import com.ryan.myblog.dto.LikeResultDTO;
 import com.ryan.myblog.entity.Blog;
 import com.ryan.myblog.vo.BlogDetailVO;
 
@@ -55,6 +56,12 @@ public interface BlogService {
      * @return 操作后的点赞状态（true-已点赞，false-未点赞）
      */
     Boolean toggleLike(Long id, Long userId);
+
+    /**
+     * 点赞/取消点赞（返回详细信息）
+     * @return 包含点赞状态、点赞数、浏览量的结果
+     */
+    LikeResultDTO toggleLikeWithDetails(Long id, Long userId);
     
     /**
      * 发布博客

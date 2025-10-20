@@ -15,7 +15,8 @@ import type {
   AuthState,
   CommentVO,
   CommentCreateDTO,
-  AdminStatsDTO
+  AdminStatsDTO,
+  LikeResultDTO
 } from '../types/api';
 
 // 创建axios实例
@@ -160,6 +161,14 @@ export const api = {
     // 点赞/取消点赞
     toggleLike: async (id: number): Promise<ApiResponse<void>> => {
       return apiClient.post(`/blog/${id}/like`);
+    },
+    // 点赞/取消点赞（返回详细信息）
+    toggleLikeWithDetails: async (id: number): Promise<ApiResponse<LikeResultDTO>> => {
+      return apiClient.post(`/blog/${id}/like/details`);
+    },
+    // 获取博客详情（不增加浏览量）
+    getDetailWithoutIncrement: async (id: number): Promise<ApiResponse<BlogDetailVO>> => {
+      return apiClient.get(`/blog/${id}/detail`);
     },
 
     // 获取前端格式的博客列表

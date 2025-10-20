@@ -27,6 +27,13 @@ export interface PageResponse<T> {
   pages: number;
 }
 
+// 点赞操作结果DTO
+export interface LikeResultDTO {
+  isLiked: boolean;
+  likeCount: number;
+  viewCount: number;
+}
+
 // 标签VO
 export interface TagVO {
   id: number;

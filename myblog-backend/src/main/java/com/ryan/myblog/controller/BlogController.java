@@ -5,6 +5,7 @@ import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.dto.BlogSaveDTO;
 import com.ryan.myblog.dto.BlogUpdateDTO;
+import com.ryan.myblog.dto.LikeResultDTO;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.vo.BlogDetailVO;
@@ -72,40 +73,57 @@ public class BlogController {
     }
     
     /**
+     * 查询博客详情（不增加浏览量）
+     * 用于点赞等操作后获取最新数据
+     */
+    @GetMapping("/{id}/detail")
+    public Result<BlogDetailVO> getBlogDetailWithoutIncrement(@PathVariable Long id) {
+        try {
+            Long userId = getCurrentUserId();
+            BlogDetailVO blog = blogService.getBlogDetail(id, userId);
+            return Result.success(blog);
+        } catch (Exception e) {
+            // 如果用户未登录，使用普通查询
+            BlogDetailVO blog = blogService.getBlogDetail(id);
+            return Result.success(blog);
+        }
+    }
+
+    /**
      * 查询增强版博客详情（包含推荐内容）
      */
     @GetMapping("/{id}/enhanced")
     public Result<BlogDetailEnhancedVO> getBlogDetailEnhanced(@PathVariable Long id) {
-        
+
         // 获取博客详情
         BlogDetailVO blog = blogService.getBlogDetail(id);
         if (blog == null) {
             return Result.error("博客不存在");
         }
-        
+
         // 增加阅读量
         blogService.incrementViewCount(id);
-        
+
         // 构建增强版详情
         BlogDetailEnhancedVO enhancedVO = new BlogDetailEnhancedVO();
         enhancedVO.setBlog(blog);
-        
+
         // 获取相关推荐
         enhancedVO.setRelatedBlogs(blogService.getRelatedBlogs(id, 5));
-        
+
         // 获取上下篇导航
         enhancedVO.setPreviousBlog(blogService.getPreviousBlog(id, blog.getCategoryId()));
         enhancedVO.setNextBlog(blogService.getNextBlog(id, blog.getCategoryId()));
-        
+
         // 获取热门和最新博客
         enhancedVO.setHotBlogs(blogService.getHotBlogs(5));
         enhancedVO.setLatestBlogs(blogService.getLatestBlogs(5));
-        
+
         // 获取同分类推荐
         if (blog.getCategoryId() != null) {
             enhancedVO.setCategoryBlogs(blogService.getBlogsByCategory(blog.getCategoryId(), 5));
         }
-        
+
         return Result.success(enhancedVO);
     }
     
@@ -151,6 +169,16 @@ public class BlogController {
         Long userId = getCurrentUserId();
         Boolean isLiked = blogService.toggleLike(id, userId);
         return Result.success(isLiked);
+    }
+
+    /**
+     * 点赞/取消点赞（返回详细信息）
+     */
+    @PostMapping("/{id}/like/details")
+    public Result<LikeResultDTO> toggleLikeWithDetails(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
+        LikeResultDTO result = blogService.toggleLikeWithDetails(id, userId);
+        return Result.success(result);
     }
     
     /**

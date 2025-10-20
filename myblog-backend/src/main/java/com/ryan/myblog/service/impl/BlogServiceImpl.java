@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.dto.BlogSaveDTO;
+import com.ryan.myblog.dto.LikeResultDTO;
 import com.ryan.myblog.entity.Blog;
 import com.ryan.myblog.entity.BlogTag;
 import com.ryan.myblog.entity.UserLike;
@@ -20,11 +21,13 @@ import com.ryan.myblog.vo.BlogDetailVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +45,7 @@ public class BlogServiceImpl implements BlogService {
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
     private final SecurityUtils securityUtils;
+    private final RedisTemplate<String, Object> redisTemplate;
     
     @Override
     @Transactional
@@ -200,8 +204,28 @@ public class BlogServiceImpl implements BlogService {
     
     @Override
     public void incrementViewCount(Long id) {
-        // 简化版本，直接增加阅读量
-        blogMapper.incrementViewCount(id);
+        // 使用Redis进行浏览量去重，防止同一用户短时间内重复计数
+        String viewKey = "blog:view:" + id;
+        String today = LocalDateTime.now().toLocalDate().toString();
+
+        try {
+            // 尝试设置今日访问标记，30分钟过期
+            Boolean isNewView = redisTemplate.opsForValue().setIfAbsent(
+                viewKey + ":" + today, "1", 30, TimeUnit.MINUTES
+            );
+
+            if (Boolean.TRUE.equals(isNewView)) {
+                // 只有新的访问才增加浏览量
+                blogMapper.incrementViewCount(id);
+                log.debug("博客 {} 浏览量 +1 (新访问)", id);
+            } else {
+                log.debug("博客 {} 浏览量未增加 (重复访问)", id);
+            }
+        } catch (Exception e) {
+            // 如果Redis出现异常，降级到直接增加浏览量
+            log.warn("Redis浏览量去重失败，降级处理: {}", e.getMessage());
+            blogMapper.incrementViewCount(id);
+        }
     }
     
     @Override
@@ -265,6 +289,68 @@ public class BlogServiceImpl implements BlogService {
             // 切换状态，返回新状态
             return existingLike.getStatus() == 1;
         }
+    }
+
+    @Override
+    @Transactional
+    public LikeResultDTO toggleLikeWithDetails(Long id, Long userId) {
+        // 检查博客是否存在
+        Blog blog = blogMapper.selectById(id);
+        if (blog == null) {
+            throw new RuntimeException("博客不存在");
+        }
+
+        // 查找用户点赞记录
+        UserLike existingLike = userLikeMapper.selectByUserAndTarget(userId, "blog", id);
+        Boolean finalIsLiked;
+
+        if (existingLike == null) {
+            // 首次点赞，创建点赞记录
+            UserLike newLike = new UserLike();
+            newLike.setUserId(userId);
+            newLike.setTargetType("blog");
+            newLike.setTargetId(id);
+            newLike.setStatus(1);
+            newLike.setCreateTime(java.time.LocalDateTime.now());
+            newLike.setUpdateTime(java.time.LocalDateTime.now());
+
+            userLikeMapper.insert(newLike);
+            blogMapper.incrementLikeCount(id);
+            finalIsLiked = true;
+
+            log.info("用户 {} 首次点赞博客 {}", userId, id);
+        } else {
+            // 切换点赞状态
+            Integer oldStatus = existingLike.getStatus();
+            Integer newStatus = oldStatus == 1 ? 0 : 1;
+            existingLike.setStatus(newStatus);
+            existingLike.setUpdateTime(java.time.LocalDateTime.now());
+
+            userLikeMapper.updateById(existingLike);
+
+            // 更新博客点赞数
+            if (oldStatus == 1) {
+                // 之前是点赞，现在取消点赞
+                blogMapper.decrementLikeCount(id);
+                log.info("用户 {} 取消点赞博客 {}", userId, id);
+            } else {
+                // 之前是取消点赞，现在重新点赞
+                blogMapper.incrementLikeCount(id);
+                log.info("用户 {} 重新点赞博客 {}", userId, id);
+            }
+            finalIsLiked = newStatus == 1;
+        }
+
+        // 清除相关缓存
+        cacheService.delete("blog:detail:" + id);
+        cacheService.deleteByPattern("blog:page:*");
+        cacheService.deleteByPattern("blog:hot:*");
+        cacheService.deleteByPattern("blog:latest:*");
+
+        // 获取更新后的博客数据
+        Blog updatedBlog = blogMapper.selectById(id);
+
+        return new LikeResultDTO(finalIsLiked, updatedBlog.getLikeCount(), updatedBlog.getViewCount());
     }
     
     @Override
