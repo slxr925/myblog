@@ -11,7 +11,7 @@ import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
 import { AuthModal } from '../components/auth/AuthModal';
-import ThemeToggle from '../components/theme/ThemeToggle';
+import Navigation from '../components/layout/Navigation';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -140,28 +140,10 @@ const BlogDetail: React.FC = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background"
     >
-      {/* 导航栏 */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50"
-      >
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-2 text-foreground hover:bg-accent transition-colors duration-300"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>返回首页</span>
-            </Button>
-            <h1 className="text-xl font-bold text-foreground">文章详情</h1>
-            <ThemeToggle />
-          </div>
-        </div>
-      </motion.header>
+      <Navigation
+        title="Ryan's Blog"
+        showHero={false}
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

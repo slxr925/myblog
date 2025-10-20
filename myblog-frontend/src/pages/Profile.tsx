@@ -11,7 +11,7 @@ import { Role } from '../types/api';
 import { api } from '../utils/api';
 import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
 import { FileUpload } from '../components/upload/FileUpload';
-import ThemeToggle from '../components/theme/ThemeToggle';
+import Navigation from '../components/layout/Navigation';
 import { Home, User, Mail, Lock, Edit2, Save, X, Camera } from 'lucide-react';
 
 const Profile: React.FC = () => {
@@ -90,29 +90,16 @@ const Profile: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen bg-muted/50 transition-colors duration-300"
+      className="min-h-screen bg-background transition-colors duration-300"
     >
-      {/* 导航栏 */}
-      <nav className="relative z-50 p-6">
-        <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-7xl mx-auto shadow-sm transition-colors duration-300">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-foreground transition-colors duration-300">个人资料</h1>
-            <nav className="flex items-center space-x-4">
-              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/')}>
-                <Home className="w-4 h-4 mr-2" />
-                首页
-              </Button>
-              <ThemeToggle />
-            </nav>
-          </div>
-        </div>
-      </nav>
+      <Navigation
+        title="Ryan's Blog"
+        showHero={true}
+        heroTitle="个人资料"
+        heroSubtitle="管理您的个人信息和设置"
+      />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-foreground transition-colors duration-300">个人资料</h1>
-          <p className="text-xl text-muted-foreground transition-colors duration-300">管理您的个人信息和设置</p>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左侧：个人信息 */}

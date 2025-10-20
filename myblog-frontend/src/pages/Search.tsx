@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { api } from '../utils/api';
-import ThemeToggle from '../components/theme/ThemeToggle';
+import Navigation from '../components/layout/Navigation';
 import { useNavigate } from 'react-router-dom';
 
 interface BlogPost {
@@ -176,28 +176,15 @@ const SearchPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12 transition-colors duration-300">
-      {/* 导航栏 */}
-      <div className="px-6 mb-8">
-        <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-6xl mx-auto shadow-sm transition-colors duration-300">
-          <div className="flex items-center justify-between p-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-2xl font-bold text-foreground hover:text-primary transition-colors duration-300"
-            >
-              ← 返回首页
-            </button>
-            <ThemeToggle />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background transition-colors duration-300">
+      <Navigation
+        title="Ryan's Blog"
+        showHero={true}
+        heroTitle="文章搜索"
+        heroSubtitle="探索所有技术分享、项目实战和学习心得"
+      />
 
-      <div className="max-w-6xl mx-auto px-4">
-        {/* 页面标题 */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4 transition-colors duration-300">文章搜索</h1>
-          <p className="text-lg text-muted-foreground transition-colors duration-300">探索所有技术分享、项目实战和学习心得</p>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* 搜索栏 */}
         <div className="mb-8">

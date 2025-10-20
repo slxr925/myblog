@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Menu, Home, User, Mail, Github, Twitter, Linkedin, Clock, Eye, Heart, MessageCircle, Search, Tag, ArrowRight, LogIn } from 'lucide-react';
+import { Github, Twitter, Linkedin, Clock, Eye, Heart, MessageCircle, Search, Tag, ArrowRight, Mail, User, LogIn, Menu, Home } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -8,9 +8,8 @@ import { api } from '../utils/api';
 import type { BlogPost } from '../types/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './auth/AuthModal';
-import { UserMenu } from './auth/UserMenu';
 import { AnimatedLights } from './effects/AnimatedLights';
-import ThemeToggle from './theme/ThemeToggle';
+import Navigation from './layout/Navigation';
 import { useNavigate } from 'react-router-dom';
 
 // Glass Effect Component
@@ -360,13 +359,13 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   // 获取博客数据
   useEffect(() => {
@@ -563,80 +562,29 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       {/* Dynamic Light Effects */}
       <AnimatedLights />
 
-      {/* Navigation */}
-      <nav className="relative z-50 p-6">
-        <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-7xl mx-auto shadow-sm transition-colors duration-300">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-foreground transition-colors duration-300">{authorName}'s Blog</h1>
-
-            <div className="hidden md:flex items-center gap-6">
-              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/')}>
-                <Home className="w-4 h-4 mr-2" />
-                首页
-              </Button>
-              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/profile')}>
-                <User className="w-4 h-4 mr-2" />
-                {isAuthenticated ? '个人资料' : '关于'}
-              </Button>
-              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300">
-                <Mail className="w-4 h-4 mr-2" />
-                联系
-              </Button>
-              <ThemeToggle />
-              {isAuthenticated ? (
-                <UserMenu />
-              ) : (
-                <Button
-                  variant="outline"
-                  className="border-border text-foreground hover:bg-accent transition-colors duration-300"
-                  onClick={() => setIsAuthModalOpen(true)}
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  登录
-                </Button>
-              )}
-            </div>
-
+      <Navigation
+        title={`${authorName}'s Blog`}
+        heroTitle="Welcome."
+        heroSubtitle={authorBio}
+        heroButtons={
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              variant="ghost"
-              className="md:hidden text-foreground"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+              onClick={() => navigate('/blog')}
             >
-              <Menu className="w-6 h-6" />
+              开始阅读
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button
+              variant="outline"
+              className="border-border text-foreground hover:bg-accent px-8 py-3 text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+              onClick={() => navigate('/profile')}
+            >
+              了解更多
             </Button>
           </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative z-40 px-6 py-16 bg-muted/50 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto">
-            <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight transition-colors duration-300">
-              Welcome.
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8 leading-relaxed transition-colors duration-300">
-              {authorBio}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-lg transition-colors duration-300"
-                onClick={() => navigate('/blog')}
-              >
-                开始阅读
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button
-                variant="outline"
-                className="border-border text-foreground hover:bg-accent px-8 py-3 text-lg transition-colors duration-300"
-                onClick={() => navigate('/profile')}
-              >
-                了解更多
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+        }
+      />
 
       {/* Featured Post */}
       {featuredPost && (
