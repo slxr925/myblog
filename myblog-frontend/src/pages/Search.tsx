@@ -6,6 +6,8 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { api } from '../utils/api';
+import ThemeToggle from '../components/theme/ThemeToggle';
+import { useNavigate } from 'react-router-dom';
 
 interface BlogPost {
   id: number;
@@ -26,6 +28,7 @@ interface BlogPost {
 }
 
 const SearchPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -173,25 +176,40 @@ const SearchPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+    <div className="min-h-screen bg-background py-12 transition-colors duration-300">
+      {/* 导航栏 */}
+      <div className="px-6 mb-8">
+        <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-6xl mx-auto shadow-sm transition-colors duration-300">
+          <div className="flex items-center justify-between p-4">
+            <button
+              onClick={() => navigate('/')}
+              className="text-2xl font-bold text-foreground hover:text-primary transition-colors duration-300"
+            >
+              ← 返回首页
+            </button>
+            <ThemeToggle />
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-6xl mx-auto px-4">
         {/* 页面标题 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">文章搜索</h1>
-          <p className="text-lg text-gray-600">探索所有技术分享、项目实战和学习心得</p>
+          <h1 className="text-4xl font-bold text-foreground mb-4 transition-colors duration-300">文章搜索</h1>
+          <p className="text-lg text-muted-foreground transition-colors duration-300">探索所有技术分享、项目实战和学习心得</p>
         </div>
 
         {/* 搜索栏 */}
         <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-card rounded-lg shadow-md p-6 transition-colors duration-300">
             <div className="flex items-center space-x-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                 <Input
                   placeholder="搜索文章标题、内容或标签..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-12 text-lg py-3 border-gray-300 focus:border-blue-500"
+                  className="pl-12 text-lg py-3 bg-background border-border text-foreground placeholder-muted-foreground focus:border-primary transition-colors duration-300"
                 />
               </div>
             </div>
@@ -203,7 +221,7 @@ const SearchPage: React.FC = () => {
                   variant={!selectedCategory ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(null)}
-                  className={!selectedCategory ? "bg-blue-600 text-white" : "text-gray-600"}
+                  className={!selectedCategory ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent transition-colors duration-300"}
                 >
                   全部 ({posts.length})
                 </Button>
@@ -213,7 +231,7 @@ const SearchPage: React.FC = () => {
                     variant={selectedCategory === category ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedCategory(category)}
-                    className={selectedCategory === category ? "bg-blue-600 text-white" : "text-gray-600"}
+                    className={selectedCategory === category ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent transition-colors duration-300"}
                   >
                     {category} ({posts.filter(post => post.categoryName === category).length})
                   </Button>
@@ -226,7 +244,7 @@ const SearchPage: React.FC = () => {
         {/* 搜索结果统计 */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <p className="text-gray-600">
+            <p className="text-muted-foreground transition-colors duration-300">
               {searchTerm && `搜索 "${searchTerm}" 的结果：`}
               {selectedCategory && `分类 "${selectedCategory}" 的结果：`}
               共找到 {filteredPosts.length} 篇文章

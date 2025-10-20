@@ -2,6 +2,7 @@ import React from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import Profile from './pages/Profile'
 import BlogDetail from './pages/BlogDetail'
@@ -12,8 +13,9 @@ import SearchPage from './pages/Search'
 const AppWrapper = () => {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
           <Routes>
             {/* 公开路由 */}
             <Route path="/" element={<EnhancedBlog />} />
@@ -40,7 +42,8 @@ const AppWrapper = () => {
           </Routes>
         </Router>
       </AuthProvider>
-    </ErrorBoundary>
+    </ThemeProvider>
+  </ErrorBoundary>
   )
 }
 

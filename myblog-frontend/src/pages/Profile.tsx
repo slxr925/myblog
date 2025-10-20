@@ -11,6 +11,7 @@ import { Role } from '../types/api';
 import { api } from '../utils/api';
 import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
 import { FileUpload } from '../components/upload/FileUpload';
+import ThemeToggle from '../components/theme/ThemeToggle';
 import { Home, User, Mail, Lock, Edit2, Save, X, Camera } from 'lucide-react';
 
 const Profile: React.FC = () => {
@@ -37,11 +38,11 @@ const Profile: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md bg-white border-gray-200 shadow-sm">
+      <div className="min-h-screen bg-muted/30 transition-colors duration-300 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-card border-border transition-colors duration-300 shadow-sm">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-2 text-gray-800">请先登录</h2>
-            <p className="text-gray-600">您需要登录后才能查看个人资料。</p>
+            <h2 className="text-xl font-bold mb-2 text-foreground transition-colors duration-300">请先登录</h2>
+            <p className="text-muted-foreground transition-colors duration-300">您需要登录后才能查看个人资料。</p>
           </CardContent>
         </Card>
       </div>
@@ -89,18 +90,19 @@ const Profile: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-muted/50 transition-colors duration-300"
     >
       {/* 导航栏 */}
       <nav className="relative z-50 p-6">
-        <div className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-xl max-w-7xl mx-auto shadow-sm">
+        <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-7xl mx-auto shadow-sm transition-colors duration-300">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-gray-800">个人资料</h1>
+            <h1 className="text-2xl font-bold text-foreground transition-colors duration-300">个人资料</h1>
             <nav className="flex items-center space-x-4">
-              <Button variant="ghost" className="text-gray-700 hover:bg-gray-100" onClick={() => navigate('/')}>
+              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/')}>
                 <Home className="w-4 h-4 mr-2" />
                 首页
               </Button>
+              <ThemeToggle />
             </nav>
           </div>
         </div>
@@ -108,15 +110,15 @@ const Profile: React.FC = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-gray-800">个人资料</h1>
-          <p className="text-xl text-gray-600">管理您的个人信息和设置</p>
+          <h1 className="text-4xl font-bold mb-2 text-foreground transition-colors duration-300">个人资料</h1>
+          <p className="text-xl text-muted-foreground transition-colors duration-300">管理您的个人信息和设置</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左侧：个人信息 */}
           <div className="lg:col-span-2 space-y-6">
             {/* 基本信息卡片 */}
-            <Card className="bg-white border-gray-200 shadow-sm">
+            <Card className="bg-card border-border transition-colors duration-300 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <User className="w-5 h-5 mr-2" />
@@ -147,8 +149,8 @@ const Profile: React.FC = () => {
                     </Button>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-2xl font-semibold text-gray-800">{user.nickname || user.username}</h3>
-                    <p className="text-gray-600 mb-2">{user.email}</p>
+                    <h3 className="text-2xl font-semibold text-foreground transition-colors duration-300">{user.nickname || user.username}</h3>
+                    <p className="text-muted-foreground transition-colors duration-300 mb-2">{user.email}</p>
                     <Badge variant={user.role === Role.ADMIN ? 'default' : 'secondary'} className="mt-1">
                       {user.role === Role.ADMIN ? '管理员' : '普通用户'}
                     </Badge>
@@ -157,9 +159,9 @@ const Profile: React.FC = () => {
 
                 {/* 头像上传区域 */}
                 {showAvatarUpload && (
-                  <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-muted/30 transition-colors duration-300">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-medium text-gray-800">更换头像</h4>
+                      <h4 className="text-lg font-medium text-foreground transition-colors duration-300">更换头像</h4>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -188,7 +190,7 @@ const Profile: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">用户名</label>
-                      <Input value={user.username} disabled className="bg-gray-50" />
+                      <Input value={user.username} disabled className="bg-muted/30 transition-colors duration-300" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">昵称</label>
@@ -200,7 +202,7 @@ const Profile: React.FC = () => {
                           className="border-gray-300 focus:border-blue-500"
                         />
                       ) : (
-                        <Input value={user.nickname || '未设置'} disabled className="bg-gray-50" />
+                        <Input value={user.nickname || '未设置'} disabled className="bg-muted/30 transition-colors duration-300" />
                       )}
                     </div>
                     <div>
@@ -214,7 +216,7 @@ const Profile: React.FC = () => {
                           className="border-gray-300 focus:border-blue-500"
                         />
                       ) : (
-                        <Input value={user.email} disabled className="bg-gray-50" />
+                        <Input value={user.email} disabled className="bg-muted/30 transition-colors duration-300" />
                       )}
                     </div>
                     <div>
@@ -222,7 +224,7 @@ const Profile: React.FC = () => {
                       <Input
                         value={user.createTime ? new Date(user.createTime).toLocaleString('zh-CN') : '未知'}
                         disabled
-                        className="bg-gray-50"
+                        className="bg-muted/30 transition-colors duration-300"
                       />
                     </div>
                   </div>
@@ -239,7 +241,7 @@ const Profile: React.FC = () => {
                         placeholder="请输入个人简介"
                       />
                     ) : (
-                      <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-600 min-h-[100px]">
+                      <div className="p-3 bg-muted/30 transition-colors duration-300 rounded-md text-sm text-muted-foreground transition-colors duration-300 min-h-[100px]">
                         {user.bio || '未设置个人简介'}
                       </div>
                     )}
@@ -254,7 +256,7 @@ const Profile: React.FC = () => {
                         <Save className="w-4 h-4 mr-2" />
                         保存
                       </Button>
-                      <Button variant="outline" onClick={handleCancel} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                      <Button variant="outline" onClick={handleCancel} className="border-border text-foreground hover:bg-accent transition-colors duration-300">
                         <X className="w-4 h-4 mr-2" />
                         取消
                       </Button>
@@ -265,7 +267,7 @@ const Profile: React.FC = () => {
                         <Edit2 className="w-4 h-4 mr-2" />
                         编辑资料
                       </Button>
-                      <Button variant="outline" onClick={() => setIsChangingPassword(true)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                      <Button variant="outline" onClick={() => setIsChangingPassword(true)} className="border-border text-foreground hover:bg-accent transition-colors duration-300">
                         <Lock className="w-4 h-4 mr-2" />
                         修改密码
                       </Button>
@@ -279,39 +281,39 @@ const Profile: React.FC = () => {
           {/* 右侧：账户信息 */}
           <div className="space-y-6">
             {/* 账户信息卡片 */}
-            <Card className="bg-white border-gray-200 shadow-sm">
+            <Card className="bg-card border-border transition-colors duration-300 shadow-sm">
               <CardHeader>
                 <CardTitle>账户信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">状态</span>
+                  <span className="text-muted-foreground transition-colors duration-300">状态</span>
                   <Badge variant={user.status === 0 ? 'default' : 'destructive'}>
                     {user.status === 0 ? '正常' : '已禁用'}
                   </Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">角色</span>
-                  <span className="font-medium text-gray-800">{user.role === Role.ADMIN ? '管理员' : '普通用户'}</span>
+                  <span className="text-muted-foreground transition-colors duration-300">角色</span>
+                  <span className="font-medium text-foreground transition-colors duration-300">{user.role === Role.ADMIN ? '管理员' : '普通用户'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">最后更新</span>
-                  <span className="text-gray-800">{user.updateTime ? new Date(user.updateTime).toLocaleDateString('zh-CN') : '未知'}</span>
+                  <span className="text-muted-foreground transition-colors duration-300">最后更新</span>
+                  <span className="text-foreground transition-colors duration-300">{user.updateTime ? new Date(user.updateTime).toLocaleDateString('zh-CN') : '未知'}</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* 快捷操作 */}
-            <Card className="bg-white border-gray-200 shadow-sm">
+            <Card className="bg-card border-border transition-colors duration-300 shadow-sm">
               <CardHeader>
                 <CardTitle>快捷操作</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => navigate('/')}>
+                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/')}>
                   <Home className="w-4 h-4 mr-2" />
                   返回首页
                 </Button>
-                <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => setIsChangingPassword(true)}>
+                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent transition-colors duration-300" onClick={() => setIsChangingPassword(true)}>
                   <Lock className="w-4 h-4 mr-2" />
                   修改密码
                 </Button>

@@ -11,6 +11,7 @@ import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
 import { AuthModal } from '../components/auth/AuthModal';
+import ThemeToggle from '../components/theme/ThemeToggle';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -151,13 +152,13 @@ const BlogDetail: React.FC = () => {
               variant="ghost"
               size="sm"
               onClick={() => navigate('/')}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 text-foreground hover:bg-accent transition-colors duration-300"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>返回首页</span>
             </Button>
             <h1 className="text-xl font-bold text-foreground">文章详情</h1>
-            <div className="w-20"></div> {/* 占位保持对称 */}
+            <ThemeToggle />
           </div>
         </div>
       </motion.header>

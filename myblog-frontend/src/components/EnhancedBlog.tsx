@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './auth/AuthModal';
 import { UserMenu } from './auth/UserMenu';
 import { AnimatedLights } from './effects/AnimatedLights';
+import ThemeToggle from './theme/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 
 // Glass Effect Component
@@ -212,7 +213,7 @@ const BlogPostCard: React.FC<{
   if (isLarge) {
     return (
       <Card
-        className={`bg-white ${categoryStyle.border} ${categoryStyle.hoverBorder} ${categoryStyle.hoverShadow} transition-all duration-300 hover:scale-[1.03] cursor-pointer overflow-hidden h-full`}
+        className={`bg-card ${categoryStyle.border} ${categoryStyle.hoverBorder} ${categoryStyle.hoverShadow} transition-all duration-300 hover:scale-[1.03] cursor-pointer overflow-hidden h-full`}
         onClick={() => onClick(post.id)}
       >
         {/* 大卡片头部渐变背景 */}
@@ -221,12 +222,12 @@ const BlogPostCard: React.FC<{
             <Badge className={`${categoryStyle.badgeColor} font-semibold text-sm px-3 py-1`}>
               {post.categoryName || '未分类'}
             </Badge>
-            <span className="text-sm text-gray-600">{post.date}</span>
+            <span className="text-sm text-muted-foreground">{post.date}</span>
           </div>
           <CardTitle className={`${categoryStyle.titleColor} hover:text-opacity-80 transition-colors text-2xl font-bold mb-3 line-clamp-2`}>
             {post.title}
           </CardTitle>
-          <CardDescription className="text-gray-600 line-clamp-3 mb-4">
+          <CardDescription className="text-muted-foreground line-clamp-3 mb-4">
             {post.excerpt}
           </CardDescription>
         </div>
@@ -234,7 +235,7 @@ const BlogPostCard: React.FC<{
         <CardContent className="p-6">
           <div className="flex flex-wrap gap-2 mb-4">
             {post.tags.map(tag => (
-              <Badge key={tag} variant="outline" className="text-sm border-gray-300 text-gray-600 hover:border-gray-400">
+              <Badge key={tag} variant="outline" className="text-sm border-border text-muted-foreground hover:border-primary transition-colors duration-300">
                 {tag}
               </Badge>
             ))}
@@ -242,32 +243,32 @@ const BlogPostCard: React.FC<{
 
           {/* 大卡片专属：文章内容预览 */}
           {post.content && (
-            <div className="mt-6 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                <span className="w-1 h-4 bg-blue-500 mr-2"></span>
+            <div className="mt-6 mb-6 p-4 bg-muted/30 rounded-lg border border-border transition-colors duration-300">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
+                <span className="w-1 h-4 bg-primary mr-2"></span>
                 文章内容预览
               </h4>
-              <div className="prose prose-sm max-w-none text-gray-600 line-clamp-6">
+              <div className="prose prose-sm max-w-none text-muted-foreground line-clamp-6">
                 {post.content.length > 300 ?
                   `${post.content.substring(0, 300)}...` :
                   post.content
                 }
               </div>
               <div className="mt-3 text-right">
-                <span className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer font-medium">
+                <span className="text-xs text-primary hover:text-primary/80 cursor-pointer font-medium transition-colors duration-300">
                   点击阅读全文 →
                 </span>
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center space-x-4">
               <span className="flex items-center">
                 <Eye className="w-4 h-4 mr-1" />
                 {post.views}
               </span>
-              <span className="flex items-center text-red-500">
+              <span className="flex items-center text-destructive">
                 <Heart className="w-4 h-4 mr-1" />
                 {post.likes}
               </span>
@@ -276,7 +277,7 @@ const BlogPostCard: React.FC<{
                 {post.comments}
               </span>
             </div>
-            <span className="flex items-center bg-gray-50 px-3 py-1 rounded-full">
+            <span className="flex items-center bg-muted px-3 py-1 rounded-full transition-colors duration-300">
               <Clock className="w-4 h-4 mr-1" />
               {post.readTime}
             </span>
@@ -288,7 +289,7 @@ const BlogPostCard: React.FC<{
 
   return (
     <Card
-      className={`bg-white ${categoryStyle.border} ${categoryStyle.hoverBorder} ${categoryStyle.hoverShadow} transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden`}
+      className={`bg-card ${categoryStyle.border} ${categoryStyle.hoverBorder} ${categoryStyle.hoverShadow} transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden`}
       onClick={() => onClick(post.id)}
     >
       {/* 卡片头部渐变背景 */}
@@ -297,7 +298,7 @@ const BlogPostCard: React.FC<{
           <Badge className={`${categoryStyle.badgeColor} font-semibold text-xs`}>
             {post.categoryName || '未分类'}
           </Badge>
-          <span className="text-xs text-gray-600">{post.date}</span>
+          <span className="text-xs text-muted-foreground">{post.date}</span>
         </div>
         <CardTitle className={`${categoryStyle.titleColor} hover:text-opacity-80 transition-colors line-clamp-2`}>
           {post.title}
@@ -305,28 +306,28 @@ const BlogPostCard: React.FC<{
       </div>
 
       <CardContent className="p-4">
-        <CardDescription className="text-gray-600 mb-3 line-clamp-2">{post.excerpt}</CardDescription>
+        <CardDescription className="text-muted-foreground mb-3 line-clamp-2">{post.excerpt}</CardDescription>
 
         <div className="flex flex-wrap gap-1 mb-3">
           {post.tags.slice(0, 3).map(tag => (
-            <Badge key={tag} variant="outline" className="text-xs border-gray-300 text-gray-600 hover:border-gray-400">
+            <Badge key={tag} variant="outline" className="text-xs border-border text-muted-foreground hover:border-primary transition-colors duration-300">
               {tag}
             </Badge>
           ))}
           {post.tags.length > 3 && (
-            <Badge variant="outline" className="text-xs border-gray-300 text-gray-500">
+            <Badge variant="outline" className="text-xs border-border text-muted-foreground transition-colors duration-300">
               +{post.tags.length - 3}
             </Badge>
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center space-x-3">
             <span className="flex items-center">
               <Eye className="w-3 h-3 mr-1" />
               {post.views}
             </span>
-            <span className="flex items-center text-red-500">
+            <span className="flex items-center text-destructive">
               <Heart className="w-3 h-3 mr-1" />
               {post.likes}
             </span>
@@ -335,7 +336,7 @@ const BlogPostCard: React.FC<{
               {post.comments}
             </span>
           </div>
-          <span className="flex items-center bg-gray-50 px-2 py-1 rounded">
+          <span className="flex items-center bg-muted px-2 py-1 rounded transition-colors duration-300">
             <Clock className="w-3 h-3 mr-1" />
             {post.readTime}
           </span>
@@ -558,35 +559,36 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
   const regularPosts = filteredPosts.filter(post => !post.featured).slice(0, 5); // 最多显示5篇普通文章
 
   return (
-    <div className="min-h-screen w-full relative bg-white">
+    <div className="min-h-screen w-full relative bg-background transition-colors duration-300">
       {/* Dynamic Light Effects */}
       <AnimatedLights />
 
       {/* Navigation */}
       <nav className="relative z-50 p-6">
-        <div className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-xl max-w-7xl mx-auto shadow-sm">
+        <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-7xl mx-auto shadow-sm transition-colors duration-300">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-gray-800">{authorName}'s Blog</h1>
+            <h1 className="text-2xl font-bold text-foreground transition-colors duration-300">{authorName}'s Blog</h1>
 
             <div className="hidden md:flex items-center gap-6">
-              <Button variant="ghost" className="text-gray-700 hover:bg-gray-100" onClick={() => navigate('/')}>
+              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/')}>
                 <Home className="w-4 h-4 mr-2" />
                 首页
               </Button>
-              <Button variant="ghost" className="text-gray-700 hover:bg-gray-100" onClick={() => navigate('/profile')}>
+              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/profile')}>
                 <User className="w-4 h-4 mr-2" />
                 {isAuthenticated ? '个人资料' : '关于'}
               </Button>
-              <Button variant="ghost" className="text-gray-700 hover:bg-gray-100">
+              <Button variant="ghost" className="text-foreground hover:bg-accent transition-colors duration-300">
                 <Mail className="w-4 h-4 mr-2" />
                 联系
               </Button>
+              <ThemeToggle />
               {isAuthenticated ? (
                 <UserMenu />
               ) : (
                 <Button
                   variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-border text-foreground hover:bg-accent transition-colors duration-300"
                   onClick={() => setIsAuthModalOpen(true)}
                 >
                   <LogIn className="w-4 h-4 mr-2" />
@@ -607,18 +609,18 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-40 px-6 py-16 bg-gray-50">
+      <section className="relative z-40 px-6 py-16 bg-muted/50 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto">
-            <h2 className="text-5xl font-bold text-gray-800 mb-6 leading-tight">
+            <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight transition-colors duration-300">
               Welcome.
             </h2>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-xl text-muted-foreground mb-8 leading-relaxed transition-colors duration-300">
               {authorBio}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-lg transition-colors duration-300"
                 onClick={() => navigate('/blog')}
               >
                 开始阅读
@@ -626,7 +628,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
               </Button>
               <Button
                 variant="outline"
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-3 text-lg"
+                className="border-border text-foreground hover:bg-accent px-8 py-3 text-lg transition-colors duration-300"
                 onClick={() => navigate('/profile')}
               >
                 了解更多
@@ -674,16 +676,16 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
       {/* Search and Filter */}
       <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm max-w-4xl mx-auto">
+        <div className="bg-card rounded-xl border border-border shadow-sm max-w-4xl mx-auto transition-colors duration-300">
           <div className="p-6">
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="搜索文章..."
                   value={searchTerm}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white border-gray-300 text-gray-800 placeholder-gray-400 focus:border-blue-500"
+                  className="pl-10 bg-background border-border text-foreground placeholder-muted-foreground focus:border-primary transition-colors duration-300"
                 />
               </div>
             </div>
@@ -692,7 +694,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
                 variant={selectedTag === null ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedTag(null)}
-                className={selectedTag === null ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-gray-300 text-gray-700 hover:bg-gray-50"}
+                className={selectedTag === null ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "border-border text-foreground hover:bg-accent"}
               >
                 全部
               </Button>
@@ -702,7 +704,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
                   variant={selectedTag === tag ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedTag(tag)}
-                  className={`flex items-center ${selectedTag === tag ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                  className={`flex items-center ${selectedTag === tag ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "border-border text-foreground hover:bg-accent"} transition-colors duration-300`}
                 >
                   <Tag className="w-3 h-3 mr-1" />
                   {tag}
@@ -751,7 +753,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
           <div className="text-center mt-8">
             <Button
               variant="outline"
-              className="border-blue-300 text-blue-700 hover:bg-blue-50 px-8 py-3"
+              className="border-primary text-primary hover:bg-primary/10 px-8 py-3 transition-colors duration-300"
               onClick={() => navigate('/search')}
             >
               查看更多文章
@@ -761,32 +763,32 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       </section>
 
       {/* Footer */}
-      <footer className="relative z-40 px-6 py-12 mt-20 bg-gray-50">
+      <footer className="relative z-40 px-6 py-12 mt-20 bg-muted/50 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="p-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
-                <h4 className="text-xl font-bold text-gray-800 mb-2">保持联系</h4>
-                <p className="text-gray-600">关注我的社交媒体获取最新动态</p>
+                <h4 className="text-xl font-bold text-foreground mb-2 transition-colors duration-300">保持联系</h4>
+                <p className="text-muted-foreground transition-colors duration-300">关注我的社交媒体获取最新动态</p>
               </div>
 
               <div className="flex gap-4">
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-200">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent transition-colors duration-300">
                   <Github className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-200">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent transition-colors duration-300">
                   <Twitter className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-200">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent transition-colors duration-300">
                   <Linkedin className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-200">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent transition-colors duration-300">
                   <Mail className="w-5 h-5" />
                 </Button>
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+            <div className="mt-8 pt-6 border-t border-border text-center text-muted-foreground text-sm transition-colors duration-300">
               © 2025 {authorName}的博客. All rights reserved.
             </div>
           </div>
