@@ -599,7 +599,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
             <Button
               variant="ghost"
-              className="md:hidden text-gray-700"
+              className="md:hidden text-foreground"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <Menu className="w-6 h-6" />
@@ -647,14 +647,14 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
                 <Badge className="bg-blue-100 text-blue-800 font-semibold">
                   ⭐ 精选文章
                 </Badge>
-                <span className="text-sm text-gray-600">{featuredPost.date}</span>
+                <span className="text-sm text-muted-foreground">{featuredPost.date}</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-800 mb-4 hover:text-blue-600 transition-colors cursor-pointer" onClick={() => handlePostClick(featuredPost.id)}>
+              <h3 className="text-3xl font-bold text-foreground mb-4 hover:text-primary transition-colors cursor-pointer" onClick={() => handlePostClick(featuredPost.id)}>
                 {featuredPost.title}
               </h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">{featuredPost.excerpt}</p>
+              <p className="text-muted-foreground mb-6 leading-relaxed">{featuredPost.excerpt}</p>
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <span className="flex items-center">
                     <Clock className="w-4 h-4 mr-1" />
                     {featuredPost.readTime}
@@ -718,8 +718,8 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       {/* Blog Posts Grid */}
       <section id="blog-posts" className="relative z-40 px-6 py-12 max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h3 className="text-4xl font-bold text-gray-800 mb-4">最新文章</h3>
-          <p className="text-gray-600 text-lg">探索最新的技术分享、项目实战和学习心得</p>
+          <h3 className="text-4xl font-bold text-foreground mb-4">最新文章</h3>
+          <p className="text-muted-foreground text-lg">探索最新的技术分享、项目实战和学习心得</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
@@ -744,7 +744,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">没有找到匹配的文章</p>
+            <p className="text-muted-foreground text-lg">没有找到匹配的文章</p>
           </div>
         )}
 

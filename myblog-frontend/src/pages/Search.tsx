@@ -168,7 +168,7 @@ const SearchPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">正在加载文章...</p>
+            <p className="mt-4 text-muted-foreground">正在加载文章...</p>
           </div>
         </div>
       </div>
@@ -256,7 +256,7 @@ const SearchPage: React.FC = () => {
                   setSearchTerm('');
                   setSearchParams({});
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 清除搜索
               </Button>
@@ -282,7 +282,7 @@ const SearchPage: React.FC = () => {
                       <Badge className={`${categoryStyle.badgeColor} font-semibold text-xs px-2 py-1`}>
                         {post.categoryName || '未分类'}
                       </Badge>
-                      <span className="text-xs text-gray-600">{post.date}</span>
+                      <span className="text-xs text-muted-foreground">{post.date}</span>
                     </div>
                     <CardTitle className={`${categoryStyle.titleColor} hover:text-opacity-80 transition-colors text-lg font-semibold line-clamp-2`}>
                       {post.title}
@@ -290,26 +290,26 @@ const SearchPage: React.FC = () => {
                   </div>
 
                   <CardContent className="p-4">
-                    <CardDescription className="text-gray-600 mb-3 line-clamp-3">
+                    <CardDescription className="text-muted-foreground mb-3 line-clamp-3">
                       {post.excerpt}
                     </CardDescription>
 
                     {/* 标签 */}
                     <div className="flex flex-wrap gap-1 mb-3">
                       {post.tags.slice(0, 3).map(tag => (
-                        <Badge key={tag} variant="outline" className="text-xs border-gray-300 text-gray-600">
+                        <Badge key={tag} variant="outline" className="text-xs border-border text-muted-foreground">
                           {tag}
                         </Badge>
                       ))}
                       {post.tags.length > 3 && (
-                        <Badge variant="outline" className="text-xs border-gray-300 text-gray-500">
+                        <Badge variant="outline" className="text-xs border-border text-muted-foreground">
                           +{post.tags.length - 3}
                         </Badge>
                       )}
                     </div>
 
                     {/* 统计信息 */}
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center space-x-3">
                         <span className="flex items-center">
                           <Eye className="w-3 h-3 mr-1" />
@@ -336,10 +336,10 @@ const SearchPage: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
+            <div className="text-muted-foreground mb-4">
               <Search className="w-16 h-16 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">没有找到相关文章</h3>
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 {searchTerm ? '尝试使用其他关键词搜索' : '当前分类下没有文章'}
               </p>
             </div>
