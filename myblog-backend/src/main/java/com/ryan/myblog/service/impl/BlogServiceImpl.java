@@ -8,16 +8,23 @@ import com.ryan.myblog.dto.BlogSaveDTO;
 import com.ryan.myblog.dto.LikeResultDTO;
 import com.ryan.myblog.entity.Blog;
 import com.ryan.myblog.entity.BlogTag;
+import com.ryan.myblog.entity.User;
 import com.ryan.myblog.entity.UserLike;
+import com.ryan.myblog.entity.Category;
+import com.ryan.myblog.entity.Tag;
 import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.BlogTagMapper;
 import com.ryan.myblog.mapper.TagMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
+import com.ryan.myblog.mapper.UserMapper;
+import com.ryan.myblog.mapper.CategoryMapper;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.vo.BlogDetailVO;
+import com.ryan.myblog.vo.BlogListVO;
+import com.ryan.myblog.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +49,8 @@ public class BlogServiceImpl implements BlogService {
     private final BlogTagMapper blogTagMapper;
     private final TagMapper tagMapper;
     private final UserLikeMapper userLikeMapper;
+    private final UserMapper userMapper;
+    private final CategoryMapper categoryMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
     private final SecurityUtils securityUtils;
@@ -517,7 +526,72 @@ public class BlogServiceImpl implements BlogService {
         });
         return blogs;
     }
-    
+
+    /**
+     * 转换为博客列表VO
+     */
+    private BlogListVO convertToBlogListVO(Blog blog) {
+        BlogListVO vo = new BlogListVO();
+        vo.setId(blog.getId());
+        vo.setTitle(blog.getTitle());
+        vo.setSummary(blog.getSummary());
+        vo.setCoverImage(blog.getCoverImg()); // 使用正确的字段名
+        vo.setAuthorId(blog.getAuthorId());
+        vo.setCategoryId(blog.getCategoryId());
+        vo.setStatus(blog.getStatus());
+        vo.setIsTop(blog.getIsTop() != null && blog.getIsTop() == 1); // 转换Integer为Boolean
+        vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L); // 转换Integer为Long
+        vo.setLikeCount(blog.getLikeCount() != null ? blog.getLikeCount().longValue() : 0L);
+        vo.setCommentCount(blog.getCommentCount() != null ? blog.getCommentCount().longValue() : 0L);
+        vo.setPublishTime(blog.getPublishTime());
+        vo.setCreateTime(blog.getCreateTime());
+        vo.setUpdateTime(blog.getUpdateTime());
+
+        // 获取作者信息
+        if (blog.getAuthorId() != null) {
+            User author = userMapper.selectById(blog.getAuthorId());
+            if (author != null) {
+                vo.setAuthorNickname(author.getNickname());
+                vo.setAuthorAvatar(author.getAvatar());
+            }
+        }
+
+        // 获取分类信息
+        if (blog.getCategoryId() != null) {
+            Category category = categoryMapper.selectById(blog.getCategoryId());
+            if (category != null) {
+                vo.setCategoryName(category.getName());
+            }
+        }
+
+        // 获取标签信息
+        List<BlogTag> blogTags = blogTagMapper.selectList(
+                new LambdaQueryWrapper<BlogTag>().eq(BlogTag::getBlogId, blog.getId())
+        );
+        if (!blogTags.isEmpty()) {
+            List<Long> tagIds = blogTags.stream().map(BlogTag::getTagId).collect(Collectors.toList());
+            List<Tag> tags = tagMapper.selectBatchIds(tagIds);
+            List<TagVO> tagVOs = tags.stream().map(tag -> {
+                TagVO tagVO = new TagVO();
+                tagVO.setId(tag.getId());
+                tagVO.setName(tag.getName());
+                return tagVO;
+            }).collect(Collectors.toList());
+            vo.setTags(tagVOs); // 使用正确的setter方法名
+        }
+
+        return vo;
+    }
+
+    @Override
+    public List<BlogListVO> getAllPublicBlogs() {
+        return blogMapper.selectList(new LambdaQueryWrapper<Blog>()
+                .eq(Blog::getStatus, 1) // 只查询已发布的博客
+                .orderByDesc(Blog::getIsTop) // 置顶的在前
+                .orderByDesc(Blog::getPublishTime) // 按发布时间倒序
+        ).stream().map(this::convertToBlogListVO).collect(Collectors.toList());
+    }
+
     /**
      * 清除单个博客缓存
      */

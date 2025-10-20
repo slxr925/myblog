@@ -6,6 +6,7 @@ import com.ryan.myblog.dto.BlogSaveDTO;
 import com.ryan.myblog.dto.LikeResultDTO;
 import com.ryan.myblog.entity.Blog;
 import com.ryan.myblog.vo.BlogDetailVO;
+import com.ryan.myblog.vo.BlogListVO;
 
 import java.util.List;
 
@@ -107,4 +108,9 @@ public interface BlogService {
      * 根据标签获取推荐博客
      */
     List<BlogDetailVO> getBlogsByTags(List<Long> tagIds, Long excludeBlogId, int limit);
+
+    /**
+     * 获取所有公开文章
+     */
+    List<BlogListVO> getAllPublicBlogs();
 }

@@ -240,7 +240,16 @@ public class BlogController {
         List<BlogDetailVO> relatedBlogs = blogService.getRelatedBlogs(id, limit);
         return Result.success(relatedBlogs);
     }
-    
+
+    /**
+     * 获取所有公开文章
+     */
+    @GetMapping("/public/all")
+    public Result<List<BlogListVO>> getAllPublicBlogs() {
+        List<BlogListVO> allPublicBlogs = blogService.getAllPublicBlogs();
+        return Result.success(allPublicBlogs);
+    }
+
     /**
      * 获取当前用户ID
      */

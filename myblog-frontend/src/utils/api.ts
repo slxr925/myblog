@@ -235,6 +235,11 @@ export const api = {
     unpublish: async (id: number): Promise<ApiResponse<void>> => {
       return apiClient.post(`/blog/${id}/unpublish`);
     },
+
+    // 获取所有公开文章
+    getAllPublic: async (): Promise<ApiResponse<BlogVO[]>> => {
+      return apiClient.get('/blog/public/all');
+    },
   },
 
   user: {

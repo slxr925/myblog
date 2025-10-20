@@ -161,52 +161,182 @@ const FloatingOrbs: React.FC = () => {
   );
 };
 
+// 获取分类样式的辅助函数
+const getCategoryStyle = (categoryName: string) => {
+  const styles = {
+    '技术分享': {
+      border: 'border-blue-200',
+      headerBg: 'bg-gradient-to-r from-blue-50 to-indigo-50',
+      titleColor: 'text-blue-800',
+      badgeColor: 'bg-blue-100 text-blue-700',
+      hoverBorder: 'hover:border-blue-300',
+      hoverShadow: 'hover:shadow-blue-100'
+    },
+    '项目实战': {
+      border: 'border-green-200',
+      headerBg: 'bg-gradient-to-r from-green-50 to-emerald-50',
+      titleColor: 'text-green-800',
+      badgeColor: 'bg-green-100 text-green-700',
+      hoverBorder: 'hover:border-green-300',
+      hoverShadow: 'hover:shadow-green-100'
+    },
+    '生活随笔': {
+      border: 'border-purple-200',
+      headerBg: 'bg-gradient-to-r from-purple-50 to-pink-50',
+      titleColor: 'text-purple-800',
+      badgeColor: 'bg-purple-100 text-purple-700',
+      hoverBorder: 'hover:border-purple-300',
+      hoverShadow: 'hover:shadow-purple-100'
+    },
+    '学习笔记': {
+      border: 'border-orange-200',
+      headerBg: 'bg-gradient-to-r from-orange-50 to-amber-50',
+      titleColor: 'text-orange-800',
+      badgeColor: 'bg-orange-100 text-orange-700',
+      hoverBorder: 'hover:border-orange-300',
+      hoverShadow: 'hover:shadow-orange-100'
+    }
+  };
+
+  return styles[categoryName as keyof typeof styles] || styles['技术分享'];
+};
+
 // Blog Post Card Component
 const BlogPostCard: React.FC<{
   post: BlogPost;
   onClick: (postId: number) => void;
-}> = ({ post, onClick }) => {
+  isLarge?: boolean;
+}> = ({ post, onClick, isLarge = false }) => {
+  const categoryStyle = getCategoryStyle(post.categoryName || '技术分享');
+
+  if (isLarge) {
+    return (
+      <Card
+        className={`bg-white ${categoryStyle.border} ${categoryStyle.hoverBorder} ${categoryStyle.hoverShadow} transition-all duration-300 hover:scale-[1.03] cursor-pointer overflow-hidden h-full`}
+        onClick={() => onClick(post.id)}
+      >
+        {/* 大卡片头部渐变背景 */}
+        <div className={`${categoryStyle.headerBg} p-6 border-b ${categoryStyle.border}`}>
+          <div className="flex items-center justify-between mb-3">
+            <Badge className={`${categoryStyle.badgeColor} font-semibold text-sm px-3 py-1`}>
+              {post.categoryName || '未分类'}
+            </Badge>
+            <span className="text-sm text-gray-600">{post.date}</span>
+          </div>
+          <CardTitle className={`${categoryStyle.titleColor} hover:text-opacity-80 transition-colors text-2xl font-bold mb-3 line-clamp-2`}>
+            {post.title}
+          </CardTitle>
+          <CardDescription className="text-gray-600 line-clamp-3 mb-4">
+            {post.excerpt}
+          </CardDescription>
+        </div>
+
+        <CardContent className="p-6">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {post.tags.map(tag => (
+              <Badge key={tag} variant="outline" className="text-sm border-gray-300 text-gray-600 hover:border-gray-400">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+
+          {/* 大卡片专属：文章内容预览 */}
+          {post.content && (
+            <div className="mt-6 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                <span className="w-1 h-4 bg-blue-500 mr-2"></span>
+                文章内容预览
+              </h4>
+              <div className="prose prose-sm max-w-none text-gray-600 line-clamp-6">
+                {post.content.length > 300 ?
+                  `${post.content.substring(0, 300)}...` :
+                  post.content
+                }
+              </div>
+              <div className="mt-3 text-right">
+                <span className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer font-medium">
+                  点击阅读全文 →
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center space-x-4">
+              <span className="flex items-center">
+                <Eye className="w-4 h-4 mr-1" />
+                {post.views}
+              </span>
+              <span className="flex items-center text-red-500">
+                <Heart className="w-4 h-4 mr-1" />
+                {post.likes}
+              </span>
+              <span className="flex items-center">
+                <MessageCircle className="w-4 h-4 mr-1" />
+                {post.comments}
+              </span>
+            </div>
+            <span className="flex items-center bg-gray-50 px-3 py-1 rounded-full">
+              <Clock className="w-4 h-4 mr-1" />
+              {post.readTime}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card
-      className="bg-white border-gray-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+      className={`bg-white ${categoryStyle.border} ${categoryStyle.hoverBorder} ${categoryStyle.hoverShadow} transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden`}
       onClick={() => onClick(post.id)}
     >
-      <CardHeader>
+      {/* 卡片头部渐变背景 */}
+      <div className={`${categoryStyle.headerBg} p-4 border-b ${categoryStyle.border}`}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-blue-600 font-semibold">{post.categoryName || '未分类'}</span>
-          <span className="text-xs text-gray-500">{post.date}</span>
+          <Badge className={`${categoryStyle.badgeColor} font-semibold text-xs`}>
+            {post.categoryName || '未分类'}
+          </Badge>
+          <span className="text-xs text-gray-600">{post.date}</span>
         </div>
-        <CardTitle className="text-gray-800 hover:text-blue-600 transition-colors">{post.title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardDescription className="text-gray-600 mb-4">{post.excerpt}</CardDescription>
+        <CardTitle className={`${categoryStyle.titleColor} hover:text-opacity-80 transition-colors line-clamp-2`}>
+          {post.title}
+        </CardTitle>
+      </div>
 
-        <div className="flex flex-wrap gap-1 mb-4">
-          {post.tags.map(tag => (
-            <Badge key={tag} variant="secondary" className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">
+      <CardContent className="p-4">
+        <CardDescription className="text-gray-600 mb-3 line-clamp-2">{post.excerpt}</CardDescription>
+
+        <div className="flex flex-wrap gap-1 mb-3">
+          {post.tags.slice(0, 3).map(tag => (
+            <Badge key={tag} variant="outline" className="text-xs border-gray-300 text-gray-600 hover:border-gray-400">
               {tag}
             </Badge>
           ))}
+          {post.tags.length > 3 && (
+            <Badge variant="outline" className="text-xs border-gray-300 text-gray-500">
+              +{post.tags.length - 3}
+            </Badge>
+          )}
         </div>
 
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center space-x-3">
             <span className="flex items-center">
-              <Eye className="w-4 h-4 mr-1" />
+              <Eye className="w-3 h-3 mr-1" />
               {post.views}
             </span>
-            <span className="flex items-center text-gray-500">
-              <Heart className="w-4 h-4 mr-1" />
+            <span className="flex items-center text-red-500">
+              <Heart className="w-3 h-3 mr-1" />
               {post.likes}
             </span>
             <span className="flex items-center">
-              <MessageCircle className="w-4 h-4 mr-1" />
+              <MessageCircle className="w-3 h-3 mr-1" />
               {post.comments}
             </span>
           </div>
-          <span className="flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
+          <span className="flex items-center bg-gray-50 px-2 py-1 rounded">
+            <Clock className="w-3 h-3 mr-1" />
             {post.readTime}
           </span>
         </div>
@@ -242,7 +372,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await api.blog.getLatest(10);
+        const response = await api.blog.getLatest(6);
 
         // 由于响应拦截器已经提取了data部分，response就是文章数组
         const blogData = response;
@@ -425,7 +555,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
   };
 
   const featuredPost = posts.find(post => post.featured);
-  const regularPosts = filteredPosts.filter(post => !post.featured);
+  const regularPosts = filteredPosts.filter(post => !post.featured).slice(0, 5); // 最多显示5篇普通文章
 
   return (
     <div className="min-h-screen w-full relative bg-white">
@@ -585,19 +715,27 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
       {/* Blog Posts Grid */}
       <section id="blog-posts" className="relative z-40 px-6 py-12 max-w-7xl mx-auto">
-        <h3 className="text-3xl font-bold text-gray-800 mb-8 text-center">最新文章</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div className="text-center mb-12">
+          <h3 className="text-4xl font-bold text-gray-800 mb-4">最新文章</h3>
+          <p className="text-gray-600 text-lg">探索最新的技术分享、项目实战和学习心得</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="h-96 bg-white/10 animate-pulse rounded-xl" />
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-80 bg-white/10 animate-pulse rounded-xl" />
             ))
           ) : (
-            regularPosts.map((post) => (
-              <BlogPostCard
+            regularPosts.map((post, index) => (
+              <div
                 key={post.id}
-                post={post}
-                onClick={handlePostClick}
-              />
+                className={index === 0 ? "lg:col-span-2 lg:row-span-2" : ""}
+              >
+                <BlogPostCard
+                  post={post}
+                  onClick={handlePostClick}
+                  isLarge={index === 0}
+                />
+              </div>
             ))
           )}
         </div>
@@ -605,6 +743,19 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg">没有找到匹配的文章</p>
+          </div>
+        )}
+
+        {/* 查看更多按钮 */}
+        {!loading && filteredPosts.length > 0 && (
+          <div className="text-center mt-8">
+            <Button
+              variant="outline"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50 px-8 py-3"
+              onClick={() => navigate('/search')}
+            >
+              查看更多文章
+            </Button>
           </div>
         )}
       </section>
