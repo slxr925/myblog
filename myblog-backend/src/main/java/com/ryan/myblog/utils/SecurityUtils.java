@@ -1,6 +1,6 @@
 package com.ryan.myblog.utils;
 
-import com.ryan.myblog.entity.User;
+import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

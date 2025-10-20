@@ -1,12 +1,12 @@
 package com.ryan.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.ryan.myblog.entity.Tag;
+import com.ryan.myblog.model.entity.Tag;
 import com.ryan.myblog.mapper.TagMapper;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.TagService;
-import com.ryan.myblog.vo.TagVO;
+import com.ryan.myblog.model.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

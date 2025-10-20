@@ -1,4 +1,4 @@
-package com.ryan.myblog.vo;
+package com.ryan.myblog.model.vo;
 
 import lombok.Data;
 

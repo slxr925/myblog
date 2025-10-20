@@ -1,7 +1,7 @@
 package com.ryan.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.ryan.myblog.entity.Category;
+import com.ryan.myblog.model.entity.Category;
 import com.ryan.myblog.mapper.CategoryMapper;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;

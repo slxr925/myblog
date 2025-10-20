@@ -1,7 +1,7 @@
 package com.ryan.myblog.service;
 
-import com.ryan.myblog.entity.Tag;
-import com.ryan.myblog.vo.TagVO;
+import com.ryan.myblog.model.entity.Tag;
+import com.ryan.myblog.model.vo.TagVO;
 
 import java.util.List;
 

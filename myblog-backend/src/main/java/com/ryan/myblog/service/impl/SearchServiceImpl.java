@@ -1,6 +1,6 @@
 package com.ryan.myblog.service.impl;
 
-import com.ryan.myblog.entity.BlogDocument;
+import com.ryan.myblog.model.entity.BlogDocument;
 import com.ryan.myblog.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

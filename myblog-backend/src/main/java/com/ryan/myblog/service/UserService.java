@@ -2,9 +2,9 @@ package com.ryan.myblog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
-import com.ryan.myblog.dto.UserLoginDTO;
-import com.ryan.myblog.dto.UserRegisterDTO;
-import com.ryan.myblog.entity.User;
+import com.ryan.myblog.model.dto.UserLoginDTO;
+import com.ryan.myblog.model.dto.UserRegisterDTO;
+import com.ryan.myblog.model.entity.User;
 
 /**
  * 用户服务接口

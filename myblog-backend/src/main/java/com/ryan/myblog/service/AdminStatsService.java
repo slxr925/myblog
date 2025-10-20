@@ -1,7 +1,7 @@
 package com.ryan.myblog.service;
 
-import com.ryan.myblog.dto.AdminStatsDTO;
-import com.ryan.myblog.dto.DailyStatsDTO;
+import com.ryan.myblog.model.dto.AdminStatsDTO;
+import com.ryan.myblog.model.dto.DailyStatsDTO;
 
 import java.time.LocalDate;
 import java.util.List;

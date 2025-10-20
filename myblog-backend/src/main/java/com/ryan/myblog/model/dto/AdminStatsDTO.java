@@ -1,4 +1,4 @@
-package com.ryan.myblog.dto;
+package com.ryan.myblog.model.dto;
 
 import lombok.Data;
 import java.util.List;

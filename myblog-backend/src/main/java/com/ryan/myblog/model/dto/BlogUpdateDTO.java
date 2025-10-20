@@ -1,4 +1,4 @@
-package com.ryan.myblog.dto;
+package com.ryan.myblog.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

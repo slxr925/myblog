@@ -1,10 +1,10 @@
 package com.ryan.myblog.controller;
 
 import com.ryan.myblog.common.Result;
-import com.ryan.myblog.dto.ChangePasswordDTO;
-import com.ryan.myblog.dto.UserLoginDTO;
-import com.ryan.myblog.dto.UserRegisterDTO;
-import com.ryan.myblog.entity.User;
+import com.ryan.myblog.model.dto.ChangePasswordDTO;
+import com.ryan.myblog.model.dto.UserLoginDTO;
+import com.ryan.myblog.model.dto.UserRegisterDTO;
+import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
 import lombok.RequiredArgsConstructor;

@@ -2,11 +2,11 @@ package com.ryan.myblog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
-import com.ryan.myblog.dto.BlogSaveDTO;
-import com.ryan.myblog.dto.LikeResultDTO;
-import com.ryan.myblog.entity.Blog;
-import com.ryan.myblog.vo.BlogDetailVO;
-import com.ryan.myblog.vo.BlogListVO;
+import com.ryan.myblog.model.dto.BlogSaveDTO;
+import com.ryan.myblog.model.dto.LikeResultDTO;
+import com.ryan.myblog.model.entity.Blog;
+import com.ryan.myblog.model.vo.BlogDetailVO;
+import com.ryan.myblog.model.vo.BlogListVO;
 
 import java.util.List;
 

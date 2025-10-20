@@ -2,8 +2,8 @@ package com.ryan.myblog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
-import com.ryan.myblog.dto.CommentSaveDTO;
-import com.ryan.myblog.vo.CommentVO;
+import com.ryan.myblog.model.dto.CommentSaveDTO;
+import com.ryan.myblog.model.vo.CommentVO;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package com.ryan.myblog.service.impl;
 
 import com.ryan.myblog.common.Role;
-import com.ryan.myblog.entity.User;
+import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;

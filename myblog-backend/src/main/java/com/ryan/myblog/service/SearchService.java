@@ -1,6 +1,6 @@
 package com.ryan.myblog.service;
 
-import com.ryan.myblog.entity.BlogDocument;
+import com.ryan.myblog.model.entity.BlogDocument;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
