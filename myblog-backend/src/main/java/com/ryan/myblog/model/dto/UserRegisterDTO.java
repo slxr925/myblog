@@ -1,4 +1,4 @@
-package com.ryan.myblog.dto;
+package com.ryan.myblog.model.dto;
 
 import com.ryan.myblog.utils.PasswordValidator;
 import jakarta.validation.Constraint;
