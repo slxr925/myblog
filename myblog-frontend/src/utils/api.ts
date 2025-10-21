@@ -240,6 +240,20 @@ export const api = {
     getAllPublic: async (): Promise<ApiResponse<BlogVO[]>> => {
       return apiClient.get('/blog/public/all');
     },
+
+    // 搜索博客文章
+    search: async (keyword: string, limit: number = 10): Promise<ApiResponse<BlogVO[]>> => {
+      return apiClient.get('/blog/search', {
+        params: { keyword, limit }
+      });
+    },
+
+    // 根据标签搜索博客文章
+    searchByTag: async (tagName: string, limit: number = 10): Promise<ApiResponse<BlogVO[]>> => {
+      return apiClient.get('/blog/search/by-tag', {
+        params: { tagName, limit }
+      });
+    },
   },
 
   user: {
@@ -365,6 +379,11 @@ export const api = {
     // 根据博客ID获取标签列表
     getByBlogId: async (blogId: number): Promise<ApiResponse<TagVO[]>> => {
       return apiClient.get(`/tag/blog/${blogId}`);
+    },
+
+    // 获取所有被已发布博客使用的标签
+    getUsedTags: async (): Promise<ApiResponse<Array<{ id: number; name: string; createTime: string }>>> => {
+      return apiClient.get('/tag/used');
     },
   },
 

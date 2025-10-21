@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './auth/AuthModal';
 import { AnimatedLights } from './effects/AnimatedLights';
 import Navigation from './layout/Navigation';
+import CategoryNavigation from './navigation/CategoryNavigation';
 import { useNavigate } from 'react-router-dom';
 
 // Glass Effect Component
@@ -361,18 +362,62 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
   const { isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [searchMode, setSearchMode] = useState<'all' | 'search' | 'tag' | 'category'>('all');
+
+  // 处理搜索
+  const handleSearch = async (term: string) => {
+    setSearchTerm(term);
+    if (term.trim()) {
+      setSearchMode('search');
+      setSelectedTag(null);
+      setSelectedCategory(null);
+    } else {
+      setSearchMode('all');
+    }
+  };
+
+  // 处理标签选择
+  const handleTagSelect = (tagName: string) => {
+    setSelectedTag(tagName);
+    setSearchTerm('');
+    setSearchMode('tag');
+    setSelectedCategory(null);
+  };
+
+  // 处理分类选择
+  const handleCategorySelect = (categoryId: number) => {
+    setSelectedCategory(categoryId);
+    setSearchTerm('');
+    setSelectedTag(null);
+    setSearchMode('category'); // 预留，后续可以实现
+  };
 
   // 获取博客数据
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await api.blog.getLatest(6);
+        let response;
+
+        if (searchMode === 'search' && searchTerm) {
+          // 搜索模式：使用关键词搜索
+          response = await api.blog.search(searchTerm, 10);
+        } else if (searchMode === 'tag' && selectedTag) {
+          // 标签模式：根据标签搜索
+          response = await api.blog.searchByTag(selectedTag, 10);
+        } else if (searchMode === 'category' && selectedCategory) {
+          // 分类模式：根据分类获取文章
+          response = await api.blog.getByCategory(selectedCategory, 10);
+        } else {
+          // 默认模式：获取最新文章
+          response = await api.blog.getLatest(6);
+        }
 
         // 由于响应拦截器已经提取了data部分，response就是文章数组
         const blogData = response;
@@ -492,26 +537,12 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
     };
 
     fetchPosts();
-  }, []);
+  }, [searchMode, searchTerm, selectedTag]);
 
-  // 过滤博客
+  // 设置显示的博客文章（直接使用posts，因为过滤在服务端完成）
   useEffect(() => {
-    let filtered = posts;
-
-    if (searchTerm) {
-      filtered = filtered.filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (selectedTag) {
-      filtered = filtered.filter(post => post.tags.includes(selectedTag));
-    }
-
-    setFilteredPosts(filtered);
-  }, [searchTerm, selectedTag, posts]);
+    setFilteredPosts(posts);
+  }, [posts]);
 
   // 获取所有标签
   const allTags = Array.from(new Set(posts.flatMap(post => post.tags)));
@@ -554,8 +585,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
     navigate(`/blog/${postId}`);
   };
 
-  const regularPosts = filteredPosts.slice(0, 5); // 最多显示5篇普通文章
-
   return (
     <div className="min-h-screen w-full relative bg-background transition-colors duration-300">
       {/* Dynamic Light Effects */}
@@ -588,92 +617,76 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       />
 
       
-      {/* Search and Filter */}
-      <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
-        <div className="bg-card rounded-xl border border-border shadow-sm max-w-4xl mx-auto transition-colors duration-300">
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="搜索文章..."
-                  value={searchTerm}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-background border-border text-foreground placeholder-muted-foreground focus:border-primary transition-colors duration-300"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedTag === null ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTag(null)}
-                className={selectedTag === null ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "border-border text-foreground hover:bg-accent"}
-              >
-                全部
-              </Button>
-              {allTags.map(tag => (
-                <Button
-                  key={tag}
-                  variant={selectedTag === tag ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTag(tag)}
-                  className={`flex items-center ${selectedTag === tag ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "border-border text-foreground hover:bg-accent"} transition-colors duration-300`}
-                >
-                  <Tag className="w-3 h-3 mr-1" />
-                  {tag}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Search and Filter - Moved to Navigation bar */}
 
       {/* Blog Posts Grid */}
       <section id="blog-posts" className="relative z-40 px-6 py-12 max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h3 className="text-4xl font-bold text-foreground mb-4">最新文章</h3>
-          <p className="text-muted-foreground text-lg">探索最新的技术分享、项目实战和学习心得</p>
+          <h3 className="text-4xl font-bold text-foreground mb-4">
+            {searchMode === 'search' ? '搜索结果' :
+             searchMode === 'tag' ? `标签：${selectedTag}` :
+             searchMode === 'category' ? '分类文章' : '最新文章'}
+          </h3>
+          <p className="text-muted-foreground text-lg">
+            {searchMode === 'search' ? `找到 ${filteredPosts.length} 篇相关文章` :
+             searchMode === 'tag' ? `包含标签"${selectedTag}"的文章` :
+             searchMode === 'category' ? '该分类下的所有文章' : '探索最新的技术分享、项目实战和学习心得'}
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-80 bg-white/10 animate-pulse rounded-xl" />
-            ))
-          ) : (
-            regularPosts.map((post, index) => (
-              <div
-                key={post.id}
-                className={index === 0 ? "lg:col-span-2 lg:row-span-2" : ""}
-              >
-                <BlogPostCard
-                  post={post}
-                  onClick={handlePostClick}
-                  isLarge={index === 0}
-                />
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* 左侧分类导航 */}
+          <div className="lg:w-80 flex-shrink-0">
+            <CategoryNavigation
+              onCategorySelect={handleCategorySelect}
+              onTagSelect={handleTagSelect}
+              selectedCategory={selectedCategory}
+              selectedTag={selectedTag}
+            />
+          </div>
+
+          {/* 右侧文章列表 */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {loading ? (
+                Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="h-80 bg-white/10 animate-pulse rounded-xl" />
+                ))
+              ) : (
+                filteredPosts.map((post, index) => (
+                  <div
+                    key={post.id}
+                    className="w-full"
+                  >
+                    <BlogPostCard
+                      post={post}
+                      onClick={handlePostClick}
+                      isLarge={false}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            {!loading && filteredPosts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg">没有找到匹配的文章</p>
               </div>
-            ))
-          )}
+            )}
+
+            {/* 查看更多按钮 */}
+            {!loading && filteredPosts.length > 0 && (
+              <div className="text-center mt-8">
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10 px-8 py-3 transition-colors duration-300"
+                  onClick={() => navigate('/search')}
+                >
+                  查看更多文章
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
-
-        {!loading && filteredPosts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">没有找到匹配的文章</p>
-          </div>
-        )}
-
-        {/* 查看更多按钮 */}
-        {!loading && filteredPosts.length > 0 && (
-          <div className="text-center mt-8">
-            <Button
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary/10 px-8 py-3 transition-colors duration-300"
-              onClick={() => navigate('/search')}
-            >
-              查看更多文章
-            </Button>
-          </div>
-        )}
       </section>
 
       {/* Footer */}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Clock, Eye, Heart, MessageCircle, Calendar, User } from 'lucide-react';
-import { Input } from '../components/ui/input';
+import { Clock, Eye, Heart, MessageCircle, Calendar, User } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -76,55 +75,82 @@ const SearchPage: React.FC = () => {
     return styles[categoryName as keyof typeof styles] || styles['技术分享'];
   };
 
-  // 获取所有文章数据
+  // 获取搜索结果
   useEffect(() => {
-    const fetchAllPosts = async () => {
+    const fetchSearchResults = async () => {
       try {
         setLoading(true);
-        const response = await api.blog.getAllPublic(); // 获取所有公开文章
-        if (response.data && response.data.length > 0) {
-          const formattedPosts = response.data.map((blog: any) => {
-            const publishDate = blog.createTime ? new Date(blog.createTime).toLocaleDateString('zh-CN') : '未知日期';
+        let response;
 
-            // 处理标签 - BlogListVO中的tags是TagVO对象数组
-            const tags = blog.tags ? blog.tags.map((tag: any) => {
-              if (typeof tag === 'string') {
-                return tag;
-              } else if (tag && typeof tag === 'object' && 'name' in tag) {
-                return tag.name;
-              }
-              return '';
-            }).filter((tag: string) => tag) : [];
-
-            return {
-              id: blog.id,
-              title: blog.title,
-              excerpt: blog.summary || '',
-              content: '', // BlogListVO不包含content字段
-              author: blog.authorNickname || '未知作者', // 使用authorNickname
-              date: publishDate,
-              readTime: '1分钟', // BlogListVO没有content，使用默认值
-              views: blog.viewCount || 0,
-              likes: blog.likeCount || 0,
-              comments: blog.commentCount || 0,
-              tags: tags,
-              image: blog.coverImage || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`, // 使用coverImage
-              featured: blog.isTop === true, // BlogListVO中isTop是Boolean
-              categoryId: blog.categoryId,
-              categoryName: blog.categoryName,
-            };
-          });
-          setPosts(formattedPosts);
+        if (searchTerm.trim()) {
+          // 使用关键词搜索
+          response = await api.blog.search(searchTerm, 50); // 设置较大的limit，让后端进行智能限制
+        } else {
+          // 没有搜索词时，获取最新文章
+          response = await api.blog.getLatest(50);
         }
+
+        // 处理响应数据
+        const blogData = Array.isArray(response) ? response : (response?.data || []);
+
+        const formattedPosts = blogData.map((blog: any) => {
+          // 处理日期格式
+          let publishDate = '';
+          if (blog.publishTime) {
+            try {
+              let dateObj: Date;
+              if (Array.isArray(blog.publishTime)) {
+                const [year, month, day, hour, minute, second] = blog.publishTime;
+                dateObj = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+              } else {
+                dateObj = new Date(blog.publishTime);
+              }
+              publishDate = dateObj.toLocaleDateString('zh-CN');
+            } catch (error) {
+              publishDate = '未知日期';
+            }
+          }
+
+          // 处理标签
+          const tags = blog.tags ? blog.tags.map((tag: any) => {
+            if (typeof tag === 'string') {
+              return tag;
+            } else if (tag && typeof tag === 'object' && 'name' in tag) {
+              return tag.name;
+            }
+            return '';
+          }).filter((tag: string) => tag) : [];
+
+          return {
+            id: blog.id,
+            title: blog.title,
+            excerpt: blog.summary || '',
+            content: blog.content || '',
+            author: blog.authorName || '未知作者',
+            date: publishDate,
+            readTime: `${Math.ceil((blog.content?.length || 0) / 500)}分钟`,
+            views: blog.viewCount || 0,
+            likes: blog.likeCount || 0,
+            comments: blog.commentCount || 0,
+            tags: tags,
+            image: blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
+            featured: blog.isTop === 1,
+            categoryId: blog.categoryId,
+            categoryName: blog.categoryName,
+          };
+        });
+
+        setPosts(formattedPosts);
       } catch (error) {
-        console.error('获取文章失败:', error);
+        console.error('获取搜索结果失败:', error);
+        setPosts([]); // 出错时设置空数组
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllPosts();
-  }, []);
+    fetchSearchResults();
+  }, [searchTerm]); // 只依赖searchTerm，分类过滤在客户端处理
 
   // 过滤文章
   useEffect(() => {
@@ -186,44 +212,29 @@ const SearchPage: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {/* 搜索栏 */}
+        {/* 分类筛选 */}
         <div className="mb-8">
           <div className="bg-card rounded-lg shadow-md p-6 transition-colors duration-300">
-            <div className="flex items-center space-x-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  placeholder="搜索文章标题、内容或标签..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-12 text-lg py-3 bg-background border-border text-foreground placeholder-muted-foreground focus:border-primary transition-colors duration-300"
-                />
-              </div>
-            </div>
-
-            {/* 分类筛选 */}
-            <div className="mt-4">
-              <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={!selectedCategory ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(null)}
+                className={!selectedCategory ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent transition-colors duration-300"}
+              >
+                全部 ({posts.length})
+              </Button>
+              {allCategories.map(category => (
                 <Button
-                  variant={!selectedCategory ? "default" : "outline"}
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                  className={!selectedCategory ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent transition-colors duration-300"}
+                  onClick={() => setSelectedCategory(category)}
+                  className={selectedCategory === category ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent transition-colors duration-300"}
                 >
-                  全部 ({posts.length})
+                  {category} ({posts.filter(post => post.categoryName === category).length})
                 </Button>
-                {allCategories.map(category => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category)}
-                    className={selectedCategory === category ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent transition-colors duration-300"}
-                  >
-                    {category} ({posts.filter(post => post.categoryName === category).length})
-                  </Button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -324,7 +335,9 @@ const SearchPage: React.FC = () => {
         ) : (
           <div className="text-center py-12">
             <div className="text-muted-foreground mb-4">
-              <Search className="w-16 h-16 mx-auto mb-4" />
+              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-muted-foreground rounded-full"></div>
+              </div>
               <h3 className="text-xl font-semibold mb-2">没有找到相关文章</h3>
               <p className="text-muted-foreground">
                 {searchTerm ? '尝试使用其他关键词搜索' : '当前分类下没有文章'}

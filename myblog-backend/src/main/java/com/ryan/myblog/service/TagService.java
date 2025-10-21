@@ -44,4 +44,9 @@ public interface TagService {
      * 批量保存标签（如果不存在则创建）
      */
     List<Tag> saveTagsIfNotExist(List<String> tagNames);
+
+    /**
+     * 获取所有被已发布博客使用的标签
+     */
+    List<Tag> getAllTagsUsedByBlogs();
 }

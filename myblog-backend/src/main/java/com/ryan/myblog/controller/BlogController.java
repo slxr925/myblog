@@ -251,6 +251,28 @@ public class BlogController {
     }
 
     /**
+     * 搜索所有公开博客文章
+     */
+    @GetMapping("/search")
+    public Result<List<BlogListVO>> searchBlogs(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "10") Integer limit) {
+        List<BlogListVO> searchResults = blogService.searchBlogs(keyword, limit);
+        return Result.success(searchResults);
+    }
+
+    /**
+     * 根据标签搜索博客文章
+     */
+    @GetMapping("/search/by-tag")
+    public Result<List<BlogListVO>> searchBlogsByTag(
+            @RequestParam String tagName,
+            @RequestParam(defaultValue = "10") Integer limit) {
+        List<BlogListVO> searchResults = blogService.searchBlogsByTag(tagName, limit);
+        return Result.success(searchResults);
+    }
+
+    /**
      * 获取当前用户ID
      */
     private Long getCurrentUserId() {

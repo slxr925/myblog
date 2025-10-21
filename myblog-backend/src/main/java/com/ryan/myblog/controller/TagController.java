@@ -91,4 +91,13 @@ public class TagController {
         List<TagVO> tags = tagService.getTagsByBlogId(blogId);
         return Result.success(tags);
     }
+
+    /**
+     * 获取所有被已发布博客使用的标签
+     */
+    @GetMapping("/used")
+    public Result<List<Tag>> getAllTagsUsedByBlogs() {
+        List<Tag> usedTags = tagService.getAllTagsUsedByBlogs();
+        return Result.success(usedTags);
+    }
 }

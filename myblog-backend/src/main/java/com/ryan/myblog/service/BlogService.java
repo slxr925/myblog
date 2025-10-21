@@ -103,6 +103,22 @@ public interface BlogService {
      * 根据分类获取推荐博客
      */
     List<BlogDetailVO> getBlogsByCategory(Long categoryId, int limit);
+
+    /**
+     * 搜索所有公开博客文章
+     * @param keyword 搜索关键词
+     * @param limit 结果限制数量
+     * @return 搜索结果列表
+     */
+    List<BlogListVO> searchBlogs(String keyword, Integer limit);
+
+    /**
+     * 根据标签搜索博客文章
+     * @param tagName 标签名称
+     * @param limit 结果限制数量
+     * @return 搜索结果列表
+     */
+    List<BlogListVO> searchBlogsByTag(String tagName, Integer limit);
     
     /**
      * 根据标签获取推荐博客

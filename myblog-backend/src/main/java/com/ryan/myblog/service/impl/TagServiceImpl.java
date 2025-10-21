@@ -2,7 +2,11 @@ package com.ryan.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryan.myblog.model.entity.Tag;
+import com.ryan.myblog.model.entity.BlogTag;
+import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.mapper.TagMapper;
+import com.ryan.myblog.mapper.BlogTagMapper;
+import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.TagService;
@@ -15,6 +19,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 标签服务实现类
@@ -22,8 +27,10 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class TagServiceImpl implements TagService {
-    
+
     private final TagMapper tagMapper;
+    private final BlogTagMapper blogTagMapper;
+    private final BlogMapper blogMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
     
@@ -151,5 +158,52 @@ public class TagServiceImpl implements TagService {
         }
         
         return tags;
+    }
+
+    @Override
+    public List<Tag> getAllTagsUsedByBlogs() {
+        // 查询所有被已发布博客使用的标签
+        LambdaQueryWrapper<BlogTag> blogTagQuery = new LambdaQueryWrapper<>();
+        List<BlogTag> blogTags = blogTagMapper.selectList(blogTagQuery);
+
+        if (blogTags.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 获取所有标签ID
+        List<Long> tagIds = blogTags.stream()
+                .map(BlogTag::getTagId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 查询这些标签对应的博客，确保博客是已发布状态
+        LambdaQueryWrapper<Blog> blogQuery = new LambdaQueryWrapper<Blog>()
+                .in(Blog::getId,
+                    blogTags.stream()
+                            .map(BlogTag::getBlogId)
+                            .distinct()
+                            .collect(Collectors.toList()))
+                .eq(Blog::getStatus, 1); // 只查询已发布的博客
+
+        List<Blog> publishedBlogs = blogMapper.selectList(blogQuery);
+        if (publishedBlogs.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 获取已发布博客的标签关联
+        List<Long> publishedBlogIds = publishedBlogs.stream()
+                .map(Blog::getId)
+                .collect(Collectors.toList());
+
+        List<Long> usedTagIds = blogTagMapper.selectList(
+                new LambdaQueryWrapper<BlogTag>().in(BlogTag::getBlogId, publishedBlogIds)
+        ).stream().map(BlogTag::getTagId).distinct().collect(Collectors.toList());
+
+        // 查询标签信息
+        if (!usedTagIds.isEmpty()) {
+            return tagMapper.selectBatchIds(usedTagIds);
+        }
+
+        return new ArrayList<>();
     }
 }

@@ -4,13 +4,13 @@ import { Button } from '../ui/button';
 import ThemeToggle from '../theme/ThemeToggle';
 import { UserMenu } from '../auth/UserMenu';
 import { useAuth } from '../../contexts/AuthContext';
+import RealTimeSearch from '../search/RealTimeSearch';
 import {
   Home,
   User,
   Mail,
   LogIn,
-  Menu,
-  ArrowRight
+  Menu
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -52,9 +52,17 @@ const Navigation: React.FC<NavigationProps> = ({
       <nav className="relative z-50 p-6">
         <div className="bg-background/90 backdrop-blur-xl border border-border rounded-xl max-w-7xl mx-auto shadow-sm transition-colors duration-300">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-foreground transition-colors duration-300">{title}</h1>
+            <div className="flex items-center gap-6">
+              <h1 className="text-2xl font-bold text-foreground transition-colors duration-300">{title}</h1>
 
-            <div className="hidden md:flex items-center gap-6">
+              {/* 实时搜索栏 */}
+              <RealTimeSearch
+                className="relative flex items-center"
+                placeholder="搜索文章..."
+              />
+            </div>
+
+            <div className="hidden md:flex items-center gap-2">
               <Button
                 variant="ghost"
                 className="text-foreground hover:bg-accent transition-colors duration-300"
@@ -78,6 +86,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 <Mail className="w-4 h-4 mr-2" />
                 联系
               </Button>
+
               <ThemeToggle />
               {isAuthenticated ? (
                 <UserMenu />
