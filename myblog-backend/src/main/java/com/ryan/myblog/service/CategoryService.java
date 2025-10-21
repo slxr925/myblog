@@ -1,6 +1,6 @@
 package com.ryan.myblog.service;
 
-import com.ryan.myblog.entity.Category;
+import com.ryan.myblog.model.entity.Category;
 
 import java.util.List;
 

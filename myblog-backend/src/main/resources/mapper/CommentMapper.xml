@@ -3,7 +3,7 @@
 <mapper namespace="com.ryan.myblog.mapper.CommentMapper">
 
     <!-- 分页查询评论列表（包含用户信息） -->
-    <select id="selectCommentPage" resultType="com.ryan.myblog.entity.Comment">
+    <select id="selectCommentPage" resultType="com.ryan.myblog.model.entity.Comment">
         SELECT c.id, c.blog_id, c.user_id, c.parent_id, c.reply_user_id, 
                c.content, c.status, c.like_count, c.create_time, c.update_time, c.deleted
         FROM tb_comment c

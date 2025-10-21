@@ -3,8 +3,8 @@ package com.ryan.myblog.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.ryan.myblog.entity.Blog;
-import com.ryan.myblog.vo.BlogDetailVO;
+import com.ryan.myblog.model.entity.Blog;
+import com.ryan.myblog.model.vo.BlogDetailVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

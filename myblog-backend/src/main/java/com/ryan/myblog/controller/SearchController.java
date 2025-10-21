@@ -1,7 +1,7 @@
 package com.ryan.myblog.controller;
 
 import com.ryan.myblog.common.Result;
-import com.ryan.myblog.entity.BlogDocument;
+import com.ryan.myblog.model.entity.BlogDocument;
 import com.ryan.myblog.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

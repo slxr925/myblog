@@ -554,8 +554,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
     navigate(`/blog/${postId}`);
   };
 
-  const featuredPost = posts.find(post => post.featured);
-  const regularPosts = filteredPosts.filter(post => !post.featured).slice(0, 5); // 最多显示5篇普通文章
+  const regularPosts = filteredPosts.slice(0, 5); // 最多显示5篇普通文章
 
   return (
     <div className="min-h-screen w-full relative bg-background transition-colors duration-300">
@@ -584,44 +583,11 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
             </Button>
           </div>
         }
+        isAuthModalOpen={isAuthModalOpen}
+        setIsAuthModalOpen={setIsAuthModalOpen}
       />
 
-      {/* Featured Post */}
-      {featuredPost && (
-        <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm max-w-4xl mx-auto border border-blue-100">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-4">
-                <Badge className="bg-blue-100 text-blue-800 font-semibold">
-                  ⭐ 精选文章
-                </Badge>
-                <span className="text-sm text-muted-foreground">{featuredPost.date}</span>
-              </div>
-              <h3 className="text-3xl font-bold text-foreground mb-4 hover:text-primary transition-colors cursor-pointer" onClick={() => handlePostClick(featuredPost.id)}>
-                {featuredPost.title}
-              </h3>
-              <p className="text-muted-foreground mb-6 leading-relaxed">{featuredPost.excerpt}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                  <span className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {featuredPost.readTime}
-                  </span>
-                  <span className="flex items-center">
-                    <Eye className="w-4 h-4 mr-1" />
-                    {featuredPost.views}
-                  </span>
-                </div>
-                <Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold group" onClick={() => handlePostClick(featuredPost.id)}>
-                  阅读更多
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
+      
       {/* Search and Filter */}
       <section className="relative z-40 px-6 py-8 max-w-7xl mx-auto">
         <div className="bg-card rounded-xl border border-border shadow-sm max-w-4xl mx-auto transition-colors duration-300">

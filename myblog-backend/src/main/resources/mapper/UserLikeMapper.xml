@@ -4,7 +4,7 @@
 <mapper namespace="com.ryan.myblog.mapper.UserLikeMapper">
 
     <!-- 根据用户ID和目标类型、目标ID查询点赞记录 -->
-    <select id="selectByUserAndTarget" resultType="com.ryan.myblog.entity.UserLike">
+    <select id="selectByUserAndTarget" resultType="com.ryan.myblog.model.entity.UserLike">
         SELECT * FROM tb_user_like
         WHERE user_id = #{userId}
           AND target_type = #{targetType}

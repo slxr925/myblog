@@ -1,7 +1,7 @@
 package com.ryan.myblog.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.ryan.myblog.entity.VisitLog;
+import com.ryan.myblog.model.entity.VisitLog;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

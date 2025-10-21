@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ryan.myblog.mapper.BlogMapper">
 
-    <resultMap id="BlogDetailMap" type="com.ryan.myblog.vo.BlogDetailVO">
+    <resultMap id="BlogDetailMap" type="com.ryan.myblog.model.vo.BlogDetailVO">
         <id column="id" property="id"/>
         <result column="title" property="title"/>
         <result column="summary" property="summary"/>

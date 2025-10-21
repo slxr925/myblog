@@ -19,6 +19,8 @@ interface NavigationProps {
   heroTitle?: string;
   heroSubtitle?: string;
   heroButtons?: React.ReactNode;
+  isAuthModalOpen?: boolean;
+  setIsAuthModalOpen?: (open: boolean) => void;
 }
 
 const Navigation: React.FC<NavigationProps> = ({
@@ -26,12 +28,18 @@ const Navigation: React.FC<NavigationProps> = ({
   showHero = true,
   heroTitle = "Welcome.",
   heroSubtitle = "探索最新的技术分享、项目实战和学习心得",
-  heroButtons
+  heroButtons,
+  isAuthModalOpen: externalIsAuthModalOpen,
+  setIsAuthModalOpen: externalSetIsAuthModalOpen
 }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // 使用外部传入的模态框状态，如果没有则使用内部状态（向后兼容）
+  const [internalIsAuthModalOpen, setInternalIsAuthModalOpen] = useState(false);
+  const isAuthModalOpen = externalIsAuthModalOpen !== undefined ? externalIsAuthModalOpen : internalIsAuthModalOpen;
+  const setIsAuthModalOpen = externalSetIsAuthModalOpen !== undefined ? externalSetIsAuthModalOpen : setInternalIsAuthModalOpen;
 
   const handleNavigation = (path: string) => {
     navigate(path);

@@ -1,9 +1,9 @@
 package com.ryan.myblog.controller;
 
 import com.ryan.myblog.common.Result;
-import com.ryan.myblog.entity.Tag;
+import com.ryan.myblog.model.entity.Tag;
 import com.ryan.myblog.service.TagService;
-import com.ryan.myblog.vo.TagVO;
+import com.ryan.myblog.model.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;

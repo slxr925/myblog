@@ -1,7 +1,7 @@
 package com.ryan.myblog.config;
 
 import com.ryan.myblog.common.Role;
-import com.ryan.myblog.entity.User;
+import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.JwtUtils;
