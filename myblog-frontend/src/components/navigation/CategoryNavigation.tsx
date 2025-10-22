@@ -47,9 +47,16 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
         api.tag.getUsedTags() // 获取所有被使用的标签
       ]);
 
-      // 处理分类数据
-      if (categoriesResponse && Array.isArray(categoriesResponse)) {
-        const formattedCategories = categoriesResponse.map(category => ({
+      // 处理分类数据 - 支持两种响应格式
+      let categoriesData = [];
+      if (categoriesResponse) {
+        if (Array.isArray(categoriesResponse)) {
+          categoriesData = categoriesResponse;
+        } else if (categoriesResponse.data && Array.isArray(categoriesResponse.data)) {
+          categoriesData = categoriesResponse.data;
+        }
+
+        const formattedCategories = categoriesData.map(category => ({
           id: category.id,
           name: category.name,
           description: category.description,
@@ -58,9 +65,15 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
         setCategories(formattedCategories);
       }
 
-      // 处理标签数据
-      if (tagsResponse && Array.isArray(tagsResponse)) {
-        setTags(tagsResponse);
+      // 处理标签数据 - 支持两种响应格式
+      let tagsData = [];
+      if (tagsResponse) {
+        if (Array.isArray(tagsResponse)) {
+          tagsData = tagsResponse;
+        } else if (tagsResponse.data && Array.isArray(tagsResponse.data)) {
+          tagsData = tagsResponse.data;
+        }
+        setTags(tagsData);
       }
 
     } catch (error) {

@@ -56,7 +56,13 @@ public class SecurityConfig {
                 // 允许搜索功能
                 .requestMatchers("/api/search/**").permitAll()
                 // 允许查看分类和标签
-                .requestMatchers("/api/category/list", "/api/tag/list").permitAll()
+                .requestMatchers("/api/category/list", "/api/tag/list", "/api/tag/used").permitAll()
+                // 允许搜索博客和根据标签搜索
+                .requestMatchers("/api/blog/search", "/api/blog/search/by-tag").permitAll()
+                // 允许获取最新博客和热门博客
+                .requestMatchers("/api/blog/latest", "/api/blog/hot").permitAll()
+                // 允许根据分类获取博客
+                .requestMatchers("/api/blog/category/*").permitAll()
                 // 允许健康检查和欢迎页面
                 .requestMatchers("/api/health", "/api/welcome").permitAll()
                 // 允许访问Swagger和Knife4j文档

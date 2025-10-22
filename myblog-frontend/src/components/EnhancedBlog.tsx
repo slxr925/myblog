@@ -675,7 +675,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
             {/* 查看更多按钮 */}
             {!loading && filteredPosts.length > 0 && (
-              <div className="text-center mt-8">
+              <div className="flex justify-center mt-8">
                 <Button
                   variant="outline"
                   className="border-primary text-primary hover:bg-primary/10 px-8 py-3 transition-colors duration-300"
