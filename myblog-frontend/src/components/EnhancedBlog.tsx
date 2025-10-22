@@ -537,7 +537,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
     };
 
     fetchPosts();
-  }, [searchMode, searchTerm, selectedTag]);
+  }, [searchMode, searchTerm, selectedTag, selectedCategory]);
 
   // 设置显示的博客文章（直接使用posts，因为过滤在服务端完成）
   useEffect(() => {

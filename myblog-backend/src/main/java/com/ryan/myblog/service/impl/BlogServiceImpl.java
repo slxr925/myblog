@@ -651,17 +651,28 @@ public class BlogServiceImpl implements BlogService {
             return List.of(); // 标签不存在
         }
 
-        Tag tag = tags.get(0); // 取第一个（最新的）标签
+        // 优先选择有博客关联的标签，如果没有则选择最新的
+        Tag selectedTag = null;
+        List<BlogTag> blogTags = null;
 
-        // 查找包含该标签的所有已发布博客
-        LambdaQueryWrapper<BlogTag> blogTagQuery = new LambdaQueryWrapper<BlogTag>()
-                .eq(BlogTag::getTagId, tag.getId());
-        List<BlogTag> blogTags = blogTagMapper.selectList(blogTagQuery);
+        for (Tag tag : tags) {
+            // 查找包含该标签的所有已发布博客
+            LambdaQueryWrapper<BlogTag> blogTagQuery = new LambdaQueryWrapper<BlogTag>()
+                    .eq(BlogTag::getTagId, tag.getId());
+            List<BlogTag> currentBlogTags = blogTagMapper.selectList(blogTagQuery);
 
-        if (blogTags.isEmpty()) {
+            if (!currentBlogTags.isEmpty()) {
+                selectedTag = tag;
+                blogTags = currentBlogTags;
+                break; // 找到第一个有博客关联的标签就使用它
+            }
+        }
+
+        if (selectedTag == null || blogTags == null || blogTags.isEmpty()) {
             return List.of(); // 没有博客使用该标签
         }
 
+    
         // 获取博客ID列表
         List<Long> blogIds = blogTags.stream()
                 .map(BlogTag::getBlogId)
