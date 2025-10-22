@@ -2,7 +2,9 @@ package com.ryan.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryan.myblog.model.entity.Category;
+import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.mapper.CategoryMapper;
+import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.CategoryService;
@@ -12,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 分类服务实现类
@@ -21,6 +25,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
     
     private final CategoryMapper categoryMapper;
+    private final BlogMapper blogMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
     
@@ -46,7 +51,29 @@ public class CategoryServiceImpl implements CategoryService {
         
         return categories;
     }
-    
+
+    @Override
+    public List<Category> getAllCategoriesWithCount() {
+        // 暂时禁用缓存以避免类型转换问题
+        // List<Category> categories = cacheService.get(CATEGORY_LIST_KEY, List.class);
+
+        // 直接从数据库查询
+        LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByAsc(Category::getSort, Category::getCreateTime);
+        List<Category> categories = categoryMapper.selectList(wrapper);
+
+        // 获取每个分类的文章数量
+        for (Category category : categories) {
+            LambdaQueryWrapper<Blog> blogWrapper = new LambdaQueryWrapper<>();
+            blogWrapper.eq(Blog::getCategoryId, category.getId())
+                    .eq(Blog::getStatus, 1); // 只统计已发布的文章
+            Long count = blogMapper.selectCount(blogWrapper);
+            category.setBlogCount(count);
+        }
+
+        return categories;
+    }
+
     @Override
     public Category getCategoryById(Long id) {
         String cacheKey = CATEGORY_DETAIL_KEY_PREFIX + id;

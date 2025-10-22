@@ -60,7 +60,7 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
           id: category.id,
           name: category.name,
           description: category.description,
-          blogCount: 0 // 可以后续通过API获取每个分类的文章数量
+          blogCount: category.blogCount || 0 // 使用后端返回的真实博客数量
         }));
         setCategories(formattedCategories);
       }

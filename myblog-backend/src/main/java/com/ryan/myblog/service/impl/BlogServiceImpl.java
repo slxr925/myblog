@@ -643,12 +643,15 @@ public class BlogServiceImpl implements BlogService {
 
         // 先根据标签名查找标签
         LambdaQueryWrapper<Tag> tagQuery = new LambdaQueryWrapper<Tag>()
-                .eq(Tag::getName, tagName);
-        Tag tag = tagMapper.selectOne(tagQuery);
+                .eq(Tag::getName, tagName)
+                .orderByDesc(Tag::getCreateTime); // 按创建时间倒序，取最新的标签
+        List<Tag> tags = tagMapper.selectList(tagQuery);
 
-        if (tag == null) {
+        if (tags.isEmpty()) {
             return List.of(); // 标签不存在
         }
+
+        Tag tag = tags.get(0); // 取第一个（最新的）标签
 
         // 查找包含该标签的所有已发布博客
         LambdaQueryWrapper<BlogTag> blogTagQuery = new LambdaQueryWrapper<BlogTag>()

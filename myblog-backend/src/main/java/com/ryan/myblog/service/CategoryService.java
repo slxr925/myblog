@@ -13,7 +13,12 @@ public interface CategoryService {
      * 查询所有分类
      */
     List<Category> getAllCategories();
-    
+
+    /**
+     * 查询所有分类（带文章数量）
+     */
+    List<Category> getAllCategoriesWithCount();
+
     /**
      * 根据ID查询分类
      */

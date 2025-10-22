@@ -623,14 +623,10 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       <section id="blog-posts" className="relative z-40 px-6 py-12 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h3 className="text-4xl font-bold text-foreground mb-4">
-            {searchMode === 'search' ? '搜索结果' :
-             searchMode === 'tag' ? `标签：${selectedTag}` :
-             searchMode === 'category' ? '分类文章' : '最新文章'}
+            最新文章
           </h3>
           <p className="text-muted-foreground text-lg">
-            {searchMode === 'search' ? `找到 ${filteredPosts.length} 篇相关文章` :
-             searchMode === 'tag' ? `包含标签"${selectedTag}"的文章` :
-             searchMode === 'category' ? '该分类下的所有文章' : '探索最新的技术分享、项目实战和学习心得'}
+            探索最新的技术分享、项目实战和学习心得
           </p>
         </div>
         <div className="flex flex-col lg:flex-row gap-8">

@@ -20,11 +20,11 @@ public class CategoryController {
     private final CategoryService categoryService;
     
     /**
-     * 获取所有分类
+     * 获取所有分类（带文章数量）
      */
     @GetMapping("/list")
     public Result<List<Category>> getAllCategories() {
-        List<Category> categories = categoryService.getAllCategories();
+        List<Category> categories = categoryService.getAllCategoriesWithCount();
         return Result.success(categories);
     }
     

@@ -40,7 +40,13 @@ public class Category {
      */
     @TableField("sort")
     private Integer sort;
-    
+
+    /**
+     * 文章数量（临时字段，不存储到数据库）
+     */
+    @TableField(exist = false)
+    private Long blogCount;
+
     /**
      * 创建时间
      */
