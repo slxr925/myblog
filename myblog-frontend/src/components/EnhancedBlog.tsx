@@ -271,15 +271,8 @@ const BlogPostCard: React.FC<{
                 <Eye className="w-4 h-4 mr-1" />
                 {post.views}
               </span>
-              <span
-                className={`flex items-center cursor-pointer transition-colors duration-300 ${
-                  isAuthenticated && likedPosts.has(post.id)
-                    ? 'text-destructive hover:text-destructive/80'
-                    : 'text-muted-foreground hover:text-destructive'
-                }`}
-                onClick={(e) => onLike(post.id, e)}
-              >
-                <Heart className={`w-4 h-4 mr-1 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current' : ''}`} />
+              <span className="flex items-center">
+                <Heart className="w-4 h-4 mr-1" />
                 {post.likes}
               </span>
               <span className="flex items-center">
@@ -337,15 +330,8 @@ const BlogPostCard: React.FC<{
               <Eye className="w-3 h-3 mr-1" />
               {post.views}
             </span>
-            <span
-              className={`flex items-center cursor-pointer transition-colors duration-300 ${
-                isAuthenticated && likedPosts.has(post.id)
-                  ? 'text-destructive hover:text-destructive/80'
-                  : 'text-muted-foreground hover:text-destructive'
-              }`}
-              onClick={(e) => onLike(post.id, e)}
-            >
-              <Heart className={`w-3 h-3 mr-1 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current' : ''}`} />
+            <span className="flex items-center">
+              <Heart className="w-3 h-3 mr-1" />
               {post.likes}
             </span>
             <span className="flex items-center">

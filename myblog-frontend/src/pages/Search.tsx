@@ -143,7 +143,7 @@ const SearchPage: React.FC = () => {
     };
 
     fetchAllPosts();
-  }, []);
+  }, [isAuthenticated]);
 
   // 过滤文章
   const filteredPosts = selectedCategory

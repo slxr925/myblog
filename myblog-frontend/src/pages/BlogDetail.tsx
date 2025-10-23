@@ -181,7 +181,7 @@ const BlogDetail: React.FC = () => {
                 {blogData.viewCount || 0}
               </span>
               <span className="flex items-center">
-                <Heart className="w-4 h-4 mr-1" />
+                <Heart className={`w-4 h-4 mr-1 ${isLiked ? 'fill-current text-red-500' : ''}`} />
                 {likeCount}
               </span>
               <span className="flex items-center">
