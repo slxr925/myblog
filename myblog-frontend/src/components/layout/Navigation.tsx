@@ -10,7 +10,8 @@ import {
   User,
   Mail,
   LogIn,
-  Menu
+  Menu,
+  ArrowRight
 } from 'lucide-react';
 
 interface NavigationProps {
