@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { api } from '../utils/api';
 import Navigation from '../components/layout/Navigation';
+import { AuthModal } from '../components/auth/AuthModal';
 import { useNavigate } from 'react-router-dom';
 
 interface BlogPost {
@@ -34,6 +35,7 @@ const SearchPage: React.FC = () => {
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // 获取分类样式
   const getCategoryStyle = (categoryName: string) => {
@@ -208,6 +210,8 @@ const SearchPage: React.FC = () => {
         showHero={true}
         heroTitle="文章搜索"
         heroSubtitle="探索所有技术分享、项目实战和学习心得"
+        isAuthModalOpen={isAuthModalOpen}
+        setIsAuthModalOpen={setIsAuthModalOpen}
       />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -357,6 +361,12 @@ const SearchPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 };
