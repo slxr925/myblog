@@ -171,7 +171,7 @@ const Navigation: React.FC<NavigationProps> = ({
 
       {/* Hero Section */}
       {showHero && (
-        <section className="relative z-40 px-6 py-8 bg-muted/50 transition-colors duration-300">
+        <section className="relative z-40 px-6 pt-16 pb-8 bg-muted/50 transition-colors duration-300">
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-4xl mx-auto">
               <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight transition-colors duration-300">
@@ -180,7 +180,7 @@ const Navigation: React.FC<NavigationProps> = ({
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed transition-colors duration-300">
                 {heroSubtitle}
               </p>
-              {heroButtons || (
+              {heroButtons !== null && (heroButtons || (
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
                     className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-lg transition-colors duration-300"
@@ -197,7 +197,7 @@ const Navigation: React.FC<NavigationProps> = ({
                     浏览文章
                   </Button>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </section>
