@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { api } from '../utils/api';
 import Navigation from '../components/layout/Navigation';
 import { AuthModal } from '../components/auth/AuthModal';
+import { useAuth } from '../contexts/AuthContext';
 
 interface BlogPost {
   id: number;
@@ -28,10 +29,12 @@ interface BlogPost {
 
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   // 获取分类样式
   const getCategoryStyle = (categoryName: string) => {
@@ -80,8 +83,8 @@ const SearchPage: React.FC = () => {
         setLoading(true);
         const response = await api.blog.getLatest(50);
 
-        // 处理响应数据
-        const blogData = Array.isArray(response) ? response : (response?.data || []);
+        // 处理响应数据 - 响应拦截器已经提取了data部分
+        const blogData = Array.isArray(response) ? response : [];
 
         const formattedPosts = blogData.map((blog: any) => {
           // 处理日期格式
@@ -149,6 +152,47 @@ const SearchPage: React.FC = () => {
 
   // 获取所有分类
   const allCategories = Array.from(new Set(posts.map(post => post.categoryName))).filter(Boolean);
+
+  const handleLike = async (postId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // 防止触发文章点击
+
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    try {
+      await api.blog.toggleLike(postId);
+
+      // 先获取当前点赞状态
+      const wasLiked = likedPosts.has(postId);
+
+      // 更新点赞状态
+      setLikedPosts(prev => {
+        const newSet = new Set(prev);
+        if (wasLiked) {
+          newSet.delete(postId);
+        } else {
+          newSet.add(postId);
+        }
+        return newSet;
+      });
+
+      // 更新本地文章数据
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? {
+                ...post,
+                likes: wasLiked ? post.likes - 1 : post.likes + 1
+              }
+            : post
+        )
+      );
+    } catch (error) {
+      console.error('点赞失败:', error);
+    }
+  };
 
   const handlePostClick = (postId: number) => {
     navigate(`/blog/${postId}`);
@@ -278,8 +322,15 @@ const SearchPage: React.FC = () => {
                           <Eye className="w-3 h-3 mr-1" />
                           {post.views}
                         </span>
-                        <span className="flex items-center text-red-500">
-                          <Heart className="w-3 h-3 mr-1" />
+                        <span
+                          className={`flex items-center cursor-pointer transition-colors duration-300 ${
+                            isAuthenticated && likedPosts.has(post.id)
+                              ? 'text-red-500 hover:text-red-600'
+                              : 'text-muted-foreground hover:text-red-500'
+                          }`}
+                          onClick={(e) => handleLike(post.id, e)}
+                        >
+                          <Heart className={`w-3 h-3 mr-1 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current' : ''}`} />
                           {post.likes}
                         </span>
                         <span className="flex items-center">

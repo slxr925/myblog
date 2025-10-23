@@ -207,7 +207,10 @@ const BlogPostCard: React.FC<{
   post: BlogPost;
   onClick: (postId: number) => void;
   isLarge?: boolean;
-}> = ({ post, onClick, isLarge = false }) => {
+  isAuthenticated: boolean;
+  likedPosts: Set<number>;
+  onLike: (postId: number, e: React.MouseEvent) => void;
+}> = ({ post, onClick, isLarge = false, isAuthenticated, likedPosts, onLike }) => {
   const categoryStyle = getCategoryStyle(post.categoryName || '技术分享');
 
   if (isLarge) {
@@ -268,8 +271,15 @@ const BlogPostCard: React.FC<{
                 <Eye className="w-4 h-4 mr-1" />
                 {post.views}
               </span>
-              <span className="flex items-center text-destructive">
-                <Heart className="w-4 h-4 mr-1" />
+              <span
+                className={`flex items-center cursor-pointer transition-colors duration-300 ${
+                  isAuthenticated && likedPosts.has(post.id)
+                    ? 'text-destructive hover:text-destructive/80'
+                    : 'text-muted-foreground hover:text-destructive'
+                }`}
+                onClick={(e) => onLike(post.id, e)}
+              >
+                <Heart className={`w-4 h-4 mr-1 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current' : ''}`} />
                 {post.likes}
               </span>
               <span className="flex items-center">
@@ -327,8 +337,15 @@ const BlogPostCard: React.FC<{
               <Eye className="w-3 h-3 mr-1" />
               {post.views}
             </span>
-            <span className="flex items-center text-destructive">
-              <Heart className="w-3 h-3 mr-1" />
+            <span
+              className={`flex items-center cursor-pointer transition-colors duration-300 ${
+                isAuthenticated && likedPosts.has(post.id)
+                  ? 'text-destructive hover:text-destructive/80'
+                  : 'text-muted-foreground hover:text-destructive'
+              }`}
+              onClick={(e) => onLike(post.id, e)}
+            >
+              <Heart className={`w-3 h-3 mr-1 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current' : ''}`} />
               {post.likes}
             </span>
             <span className="flex items-center">
@@ -657,6 +674,9 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
                       post={post}
                       onClick={handlePostClick}
                       isLarge={false}
+                      isAuthenticated={isAuthenticated}
+                      likedPosts={likedPosts}
+                      onLike={handleLike}
                     />
                   </div>
                 ))
