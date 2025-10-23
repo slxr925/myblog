@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Clock, Eye, Heart, MessageCircle, Calendar, User } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Clock, Eye, Heart, MessageCircle, Calendar, User, ArrowLeft, Search } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -26,9 +26,12 @@ interface BlogPost {
   categoryName: string;
 }
 
-const SearchPage: React.FC = () => {
+const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchTerm = searchParams.get('q') || '';
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -73,12 +76,20 @@ const SearchPage: React.FC = () => {
     return styles[categoryName as keyof typeof styles] || styles['技术分享'];
   };
 
-  // 获取全部文章
+  // 获取搜索结果
   useEffect(() => {
-    const fetchAllPosts = async () => {
+    const fetchSearchResults = async () => {
       try {
         setLoading(true);
-        const response = await api.blog.getLatest(50);
+        let response;
+
+        if (searchTerm.trim()) {
+          // 使用关键词搜索
+          response = await api.blog.search(searchTerm, 50);
+        } else {
+          // 没有搜索词时，获取最新文章
+          response = await api.blog.getLatest(50);
+        }
 
         // 处理响应数据
         const blogData = Array.isArray(response) ? response : (response?.data || []);
@@ -132,20 +143,35 @@ const SearchPage: React.FC = () => {
 
         setPosts(formattedPosts);
       } catch (error) {
-        console.error('获取文章失败:', error);
+        console.error('获取搜索结果失败:', error);
         setPosts([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllPosts();
-  }, []);
+    fetchSearchResults();
+  }, [searchTerm]);
 
   // 过滤文章
-  const filteredPosts = selectedCategory
-    ? posts.filter(post => post.categoryName === selectedCategory)
-    : posts;
+  useEffect(() => {
+    let filtered = posts;
+
+    if (searchTerm) {
+      filtered = filtered.filter(post =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (selectedCategory) {
+      filtered = filtered.filter(post => post.categoryName === selectedCategory);
+    }
+
+    setFilteredPosts(filtered);
+  }, [searchTerm, selectedCategory, posts]);
 
   // 获取所有分类
   const allCategories = Array.from(new Set(posts.map(post => post.categoryName))).filter(Boolean);
@@ -154,13 +180,17 @@ const SearchPage: React.FC = () => {
     navigate(`/blog/${postId}`);
   };
 
+  const handleBackToAll = () => {
+    navigate('/blog');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">正在加载文章...</p>
+            <p className="mt-4 text-muted-foreground">正在搜索文章...</p>
           </div>
         </div>
       </div>
@@ -172,15 +202,27 @@ const SearchPage: React.FC = () => {
       <Navigation
         title="Ryan's Blog"
         showHero={true}
-        heroTitle="全部文章"
-        heroSubtitle="探索所有技术分享、项目实战和学习心得"
-        heroButtons={null}
+        heroTitle={searchTerm ? `搜索结果："${searchTerm}"` : "全部文章"}
+        heroSubtitle={searchTerm ? `找到了 ${filteredPosts.length} 篇相关文章` : "探索所有技术分享、项目实战和学习心得"}
+        heroButtons={
+          searchTerm && (
+            <div className="flex gap-4 justify-center">
+              <Button
+                variant="outline"
+                className="border-border text-foreground hover:bg-accent px-6 py-2 transition-colors duration-300"
+                onClick={handleBackToAll}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                返回全部文章
+              </Button>
+            </div>
+          )
+        }
         isAuthModalOpen={isAuthModalOpen}
         setIsAuthModalOpen={setIsAuthModalOpen}
       />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-
         {/* 分类筛选 */}
         <div className="mb-8">
           <div className="bg-card rounded-lg shadow-md p-6 transition-colors duration-300">
@@ -208,20 +250,21 @@ const SearchPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 文章统计 */}
+        {/* 搜索结果统计 */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground transition-colors duration-300">
-              {selectedCategory ? `分类 "${selectedCategory}" 的结果：` : ''}
+              {searchTerm && `搜索 "${searchTerm}" 的结果：`}
+              {selectedCategory && `分类 "${selectedCategory}" 的结果：`}
               共找到 {filteredPosts.length} 篇文章
             </p>
-            {selectedCategory && (
+            {searchTerm && (
               <Button
                 variant="ghost"
-                onClick={() => setSelectedCategory(null)}
+                onClick={handleBackToAll}
                 className="text-muted-foreground hover:text-foreground"
               >
-                清除筛选
+                清除搜索
               </Button>
             )}
           </div>
@@ -301,22 +344,20 @@ const SearchPage: React.FC = () => {
           <div className="text-center py-12">
             <div className="text-muted-foreground mb-4">
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-muted-foreground rounded-full"></div>
+                <Search className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-2">没有找到相关文章</h3>
               <p className="text-muted-foreground">
-                {selectedCategory ? '当前分类下没有文章' : '暂时没有文章'}
+                {searchTerm ? '尝试使用其他关键词搜索' : '当前分类下没有文章'}
               </p>
             </div>
-            {selectedCategory && (
-              <Button
-                onClick={() => setSelectedCategory(null)}
-                variant="outline"
-                className="mt-4"
-              >
-                查看全部文章
-              </Button>
-            )}
+            <Button
+              onClick={handleBackToAll}
+              variant="outline"
+              className="mt-4"
+            >
+              {searchTerm ? '尝试其他关键词' : '返回全部文章'}
+            </Button>
           </div>
         )}
       </div>
@@ -330,4 +371,4 @@ const SearchPage: React.FC = () => {
   );
 };
 
-export default SearchPage;
+export default SearchResultsPage;

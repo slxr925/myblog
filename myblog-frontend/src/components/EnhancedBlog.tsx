@@ -675,7 +675,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
                 <Button
                   variant="outline"
                   className="border-primary text-primary hover:bg-primary/10 px-8 py-3 transition-colors duration-300"
-                  onClick={() => navigate('/search')}
+                  onClick={() => navigate('/blog')}
                 >
                   查看更多文章
                 </Button>
