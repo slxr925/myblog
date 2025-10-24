@@ -21,6 +21,8 @@ import com.ryan.myblog.mapper.CategoryMapper;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
+import com.ryan.myblog.service.SearchService;
+import com.ryan.myblog.converter.BlogDocumentConverter;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogListVO;
@@ -53,6 +55,8 @@ public class BlogServiceImpl implements BlogService {
     private final CategoryMapper categoryMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
+    private final SearchService searchService;
+    private final BlogDocumentConverter blogDocumentConverter;
     private final SecurityUtils securityUtils;
     private final RedisTemplate<String, Object> redisTemplate;
     
@@ -87,6 +91,15 @@ public class BlogServiceImpl implements BlogService {
         
         // 清除相关缓存
         clearBlogCaches();
+
+        // 同步到Elasticsearch（仅已发布的博客）
+        if (blog.getStatus() == 1 && searchService.isAvailable()) {
+            try {
+                syncBlogToElasticsearch(blog);
+            } catch (Exception e) {
+                log.error("同步博客到Elasticsearch失败: {}", blog.getId(), e);
+            }
+        }
     }
     
     @Override
@@ -125,11 +138,23 @@ public class BlogServiceImpl implements BlogService {
         // 清除缓存
         clearBlogCache(id);
         clearBlogCaches();
-        
+
         // 更新缓存版本
         cacheConsistencyService.updateCacheVersion("blog:*");
+
+        // 同步到Elasticsearch（仅已发布的博客）
+        if (existBlog.getStatus() == 1 && searchService.isAvailable()) {
+            try {
+                syncBlogToElasticsearch(existBlog);
+            } catch (Exception e) {
+                log.error("同步博客更新到Elasticsearch失败: {}", existBlog.getId(), e);
+            }
+        } else if (existBlog.getStatus() != 1) {
+            // 如果博客不再是已发布状态，从ES删除
+            deleteBlogFromElasticsearch(existBlog.getId());
+        }
     }
-    
+
     @Override
     @Transactional
     public void deleteBlog(Long id, Long operatorId) {
@@ -158,6 +183,9 @@ public class BlogServiceImpl implements BlogService {
 
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("blog:*", "博客删除");
+
+        // 从ES删除索引
+        deleteBlogFromElasticsearch(id);
     }
     
     @Override
@@ -382,8 +410,17 @@ public class BlogServiceImpl implements BlogService {
         
         // 更新缓存版本
         cacheConsistencyService.updateCacheVersion("blog:*");
+
+        // 同步到Elasticsearch
+        if (searchService.isAvailable()) {
+            try {
+                syncBlogToElasticsearch(blog);
+            } catch (Exception e) {
+                log.error("同步发布的博客到Elasticsearch失败: {}", blog.getId(), e);
+            }
+        }
     }
-    
+
     @Override
     public void unpublishBlog(Long id, Long authorId) {
         Blog blog = blogMapper.selectById(id);
@@ -403,6 +440,9 @@ public class BlogServiceImpl implements BlogService {
         
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("blog:*", "博客下线");
+
+        // 从ES删除索引（因为博客不再是已发布状态）
+        deleteBlogFromElasticsearch(id);
     }
     
     /**
@@ -727,6 +767,61 @@ public class BlogServiceImpl implements BlogService {
         cacheService.deleteByPattern("blog:category:*");
         // 清除标签相关缓存
         cacheService.deleteByPattern("blog:tags:*");
+    }
+
+    /**
+     * 同步博客到Elasticsearch
+     */
+    private void syncBlogToElasticsearch(Blog blog) {
+        try {
+            // 获取作者信息
+            User author = userMapper.selectById(blog.getAuthorId());
+            // 获取分类信息
+            Category category = categoryMapper.selectById(blog.getCategoryId());
+            // 获取标签信息
+            List<Tag> tags = getBlogTags(blog.getId());
+
+            // 转换为ES文档
+            var document = blogDocumentConverter.convertToDocument(blog, author, category, tags);
+
+            // 索引到ES
+            searchService.indexBlog(document);
+
+            log.info("成功同步博客到ES: {}", blog.getId());
+        } catch (Exception e) {
+            log.error("同步博客到ES失败: {}", blog.getId(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * 从ES删除博客索引
+     */
+    private void deleteBlogFromElasticsearch(Long blogId) {
+        if (searchService.isAvailable()) {
+            try {
+                searchService.deleteIndex(blogId.toString());
+                log.info("成功从ES删除博客索引: {}", blogId);
+            } catch (Exception e) {
+                log.error("从ES删除博客索引失败: {}", blogId, e);
+            }
+        }
+    }
+
+    /**
+     * 获取博客的标签列表
+     */
+    private List<Tag> getBlogTags(Long blogId) {
+        List<Long> tagIds = blogTagMapper.selectList(
+                new LambdaQueryWrapper<BlogTag>()
+                        .eq(BlogTag::getBlogId, blogId)
+        ).stream().map(BlogTag::getTagId).collect(Collectors.toList());
+
+        if (tagIds.isEmpty()) {
+            return List.of();
+        }
+
+        return tagMapper.selectBatchIds(tagIds);
     }
 
     /**

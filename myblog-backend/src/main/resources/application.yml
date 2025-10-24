@@ -1,7 +1,13 @@
 # 应用配置
 app:
   elasticsearch:
-    enabled: false  # 暂时禁用ES，等安装完成后启用
+    enabled: ${ELASTICSEARCH_ENABLED:true}  # 启用Elasticsearch
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    username: ${ELASTICSEARCH_USERNAME:}
+    password: ${ELASTICSEARCH_PASSWORD:}
+    connection-timeout: 10s
+    socket-timeout: 60s
+
   # 自定义文件上传配置
   upload:
     path: ${UPLOAD_PATH:/app/uploads}
@@ -105,7 +111,7 @@ server:
 management:
   health:
     elasticsearch:
-      enabled: false  # 禁用Elasticsearch健康检查
+      enabled: true  # 启用Elasticsearch健康检查
 
 # Knife4j/SpringDoc配置
 springdoc:
