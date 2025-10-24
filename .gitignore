@@ -35,3 +35,4 @@ build/
 *.md
 *.json
 *.rdb
+myblog-backend/tempdoc

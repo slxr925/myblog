@@ -56,7 +56,10 @@ public class BlogDocument {
     
     @Field(type = FieldType.Long)
     private Long commentCount;
-    
+
+    @Field(type = FieldType.Keyword)
+    private String coverImg;
+
     @Field(type = FieldType.Date)
     private LocalDateTime publishTime;
     
@@ -65,4 +68,10 @@ public class BlogDocument {
     
     @Field(type = FieldType.Date)
     private LocalDateTime updateTime;
+
+    /**
+     * 综合评分（用于排序，非持久化字段）
+     */
+    @Field(type = FieldType.Double)
+    private Double multiFactorScore;
 }

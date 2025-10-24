@@ -17,16 +17,31 @@ public class SearchResultVO {
      * 博客标题（可能包含高亮）
      */
     private String title;
-    
+
+    /**
+     * 高亮的标题（包含HTML高亮标签）
+     */
+    private String highlightedTitle;
+
     /**
      * 博客摘要（可能包含高亮）
      */
     private String summary;
-    
+
+    /**
+     * 高亮的摘要（包含HTML高亮标签）
+     */
+    private String highlightedSummary;
+
     /**
      * 博客内容片段（可能包含高亮）
      */
     private String contentSnippet;
+
+    /**
+     * 高亮的内容片段（包含HTML高亮标签）
+     */
+    private String highlightedContent;
     
     /**
      * 作者昵称
