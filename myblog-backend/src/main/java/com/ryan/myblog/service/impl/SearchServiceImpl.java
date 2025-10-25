@@ -481,6 +481,9 @@ public class SearchServiceImpl implements SearchService {
                 sortConfig = SearchSortConfig.defaultConfig();
             }
 
+            // 创建 final 副本供 lambda 表达式使用
+            final SearchSortConfig finalSortConfig = sortConfig;
+
             // 基础搜索查询
             Criteria criteria = new Criteria("title").contains(trimmedKeyword)
                     .or("summary").contains(trimmedKeyword)
@@ -494,18 +497,18 @@ public class SearchServiceImpl implements SearchService {
 
             // 应用综合排序算法
             List<BlogDocument> results = searchHits.getSearchHits().stream()
-                    .map(hit -> calculateMultiFactorScore(hit, sortConfig))
+                    .map(hit -> calculateMultiFactorScore(hit, finalSortConfig))
                     .sorted((doc1, doc2) -> {
                         // 根据最终评分排序
                         double score1 = doc1.getMultiFactorScore() != null ? doc1.getMultiFactorScore() : 0.0;
                         double score2 = doc2.getMultiFactorScore() != null ? doc2.getMultiFactorScore() : 0.0;
-                        return sortConfig.getDescending() ? Double.compare(score2, score1) : Double.compare(score1, score2);
+                        return finalSortConfig.getDescending() ? Double.compare(score2, score1) : Double.compare(score1, score2);
                     })
                     .collect(Collectors.toList());
 
             log.info("综合排序搜索完成，关键词: '{}', 排序配置: 时间权重={}, 热度权重={}, 相关性权重={}, 结果数量: {}",
-                    trimmedKeyword, sortConfig.getTimeWeight(), sortConfig.getPopularityWeight(),
-                    sortConfig.getRelevanceWeight(), results.size());
+                    trimmedKeyword, finalSortConfig.getTimeWeight(), finalSortConfig.getPopularityWeight(),
+                    finalSortConfig.getRelevanceWeight(), results.size());
 
             return new PageImpl<>(results, pageable, searchHits.getTotalHits());
 

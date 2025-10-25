@@ -1,541 +1,380 @@
-# MyBlog 博客系统
+# MyBlog - 现代化全栈博客系统
 
-基于 Spring Boot 3、React 19 和现代技术栈构建的全功能博客管理平台，支持用户管理、内容发布、评论互动、数据分析等完整功能。
+<div align="center">
 
-## ✨ 核心功能
+![MyBlog Logo](https://img.shields.io/badge/MyBlog-2.0-blue?style=for-the-badge)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-green?style=for-the-badge&logo=spring-boot)
+![React](https://img.shields.io/badge/React-19.1.1-blue?style=for-the-badge&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue?style=for-the-badge&logo=typescript)
 
-### 🎨 用户系统
-- **用户注册登录**：邮箱验证注册，JWT 安全认证
-- **个人资料管理**：头像上传、昵称、个人简介等完整资料
-- **角色权限控制**：普通用户与管理员权限分离
-- **安全密码管理**：密码强度验证、安全修改密码
+[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Java Version](https://img.shields.io/badge/Java-21+-orange?style=for-the-badge&logo=java)](https://openjdk.java.net/)
+[![Node Version](https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 
-### 📝 博客内容管理
-- **完整的 CRUD 操作**：创建、编辑、发布、删除文章
-- **富文本支持**：Markdown 编辑器，语法高亮
-- **文章状态管理**：草稿、已发布、下线状态
-- **内容分类**：多级分类体系，支持分类管理
-- **标签系统**：多标签关联，彩色标签展示
-- **文章特色**：置顶文章、精选文章功能
-- **浏览统计**：实时浏览量统计与展示
+**一个功能完整、技术先进的现代化全栈博客系统**
 
-### 💬 评论系统
-- **多级评论**：支持嵌套回复结构
-- **评论审核**：待审核、已通过、已拒绝状态管理
-- **评论互动**：点赞功能，用户互动增强
-- **评论管理**：管理员可审核、删除评论
+[功能特性](#-功能特性) • [技术栈](#-技术栈) • [快速开始](#-快速开始) • [项目结构](#-项目结构) • [贡献指南](#-贡献指南)
 
-### 📊 数据分析后台
-- **综合统计面板**：
-  - 总用户数、总文章数、总评论数、总点赞数
-  - 今日数据：新增用户、新增文章、新增评论、今日浏览
-- **可视化图表**：
-  - 近7天、30天活动趋势图
-  - 用户增长、文章发布趋势分析
-- **访问日志分析**：
-  - 页面访问跟踪
-  - 用户会话记录
-  - IP 地址和用户代理统计
-- **管理中心**：
-  - 用户管理（查看、编辑、删除）
-  - 文章管理（批量操作、状态修改）
-  - 评论管理（审核、删除）
-  - 分类标签管理
+</div>
 
-### 🔍 搜索与发现
-- **Elasticsearch 全文搜索**：
-  - 关键词全文检索
-  - 高级搜索过滤（分类、标签）
-  - 搜索结果高亮显示
-- **内容发现**：
-  - 首页精选文章展示
-  - 分类浏览导航
-  - 标签云展示
+## 📖 项目简介
 
-### 🖼️ 文件上传
-- **头像上传**：用户自定义头像功能
-- **图片上传**：文章配图上传
-- **安全处理**：
-  - 文件类型验证
-  - 路径安全检查
-  - 安全存储与URL生成
+MyBlog 是一个采用前后端分离架构的现代化博客系统，集成了用户管理、内容发布、评论互动、数据分析、全文搜索等完整功能。项目使用最新的技术栈，提供优秀的用户体验和开发者体验。
 
-### 🎯 界面特性
-- **响应式设计**：移动端友好界面
-- **现代化UI**：Tailwind CSS + Radix UI 组件
-- **动画效果**：Framer Motion 流畅动画
-- **玻璃拟态效果**：现代化视觉效果
-- **主题支持**：准备支持明暗主题切换
+### 🎯 设计理念
 
-## 🚀 技术栈
+- **现代化架构**: 前后端分离，微服务设计思想
+- **用户体验优先**: 响应式设计，流畅的交互体验
+- **开发者友好**: 完整的API文档，清晰的代码结构
+- **性能优化**: 多层缓存，数据库优化，搜索引擎集成
+- **安全可靠**: JWT认证，权限控制，安全防护机制
 
-### 后端技术
-- **核心框架**：Java 21 + Spring Boot 3.5.5
-- **数据持久化**：MyBatis Plus 3.5.9 + MySQL 8.4+
-- **缓存系统**：Redis 7.0+ （会话管理、热点数据缓存）
-- **搜索引擎**：Elasticsearch 8.x （全文搜索）
-- **安全框架**：Spring Security + JWT 认证
-- **API文档**：SpringDoc OpenAPI / Knife4j
-- **日志管理**：Logback 日志框架
+## ✨ 功能特性
 
-### 前端技术
-- **核心框架**：React 19.1.1 + TypeScript
-- **构建工具**：Vite 7.1.7
-- **UI组件库**：Tailwind CSS 4.1.13 + Radix UI
-- **动画库**：Framer Motion
-- **图表库**：Recharts 数据可视化
-- **Markdown**：React Markdown 语法高亮
-- **状态管理**：React Context API
+### 👤 用户系统
+- ✅ **注册登录**: 邮箱验证注册，JWT安全认证
+- ✅ **个人资料**: 头像上传，个人信息管理
+- ✅ **权限控制**: 普通用户与管理员权限分离
+- ✅ **密码安全**: 强度验证，安全修改流程
 
-## 📋 环境要求
+### 📝 内容管理
+- ✅ **文章编辑**: Markdown编辑器，实时预览
+- ✅ **富文本支持**: 代码高亮，图片上传
+- ✅ **分类标签**: 多级分类，彩色标签系统
+- ✅ **文章特色**: 置顶，精选，草稿功能
+- ✅ **浏览统计**: 实时浏览量，用户行为跟踪
 
-### 系统要求
-- **操作系统**：Windows 10+, macOS 10.15+, Ubuntu 18.04+
-- **内存**：推荐 8GB+ RAM
-- **存储空间**：至少 5GB 可用空间
+### 💬 互动功能
+- ✅ **评论系统**: 多级嵌套评论，富文本支持
+- ✅ **点赞互动**: 文章点赞，评论点赞
+- ✅ **评论审核**: 管理员审核，垃圾评论过滤
+- ✅ **通知系统**: 评论回复通知
 
-### 必需软件
-1. **JDK 21+** - Java 开发环境
-2. **Maven 3.8+** - 项目构建工具
-3. **MySQL 8.4+** - 主数据库
-4. **Redis 7.0+** - 缓存和会话存储
-5. **Elasticsearch 8.x** - 全文搜索引擎
-6. **Node.js 18+** - 前端开发环境
+### 🔍 搜索功能
+- ✅ **全文搜索**: Elasticsearch全文检索
+- ✅ **搜索高亮**: 关键词高亮显示
+- ✅ **智能建议**: 搜索关键词自动补全
+- ✅ **高级搜索**: 分类、标签、时间范围过滤
+- ✅ **排序算法**: BM25算法，多因子综合排序
 
-## 🛠️ 环境配置
+### 📊 数据分析
+- ✅ **统计面板**: 用户数，文章数，评论数，点赞数
+- ✅ **趋势图表**: 访问趋势，用户活跃度分析
+- ✅ **管理中心**: 用户管理，内容审核，系统设置
 
-### 数据库初始化
+### 🎨 界面特性
+- ✅ **响应式设计**: 移动端友好界面
+- ✅ **现代化UI**: Tailwind CSS + Radix UI组件
+- ✅ **动画效果**: Framer Motion流畅动画
+- ✅ **主题支持**: 准备支持明暗主题切换
 
-#### 1. MySQL 配置
+## 🛠️ 技术栈
+
+### 后端技术栈
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| **Java** | 21 | 核心编程语言 |
+| **Spring Boot** | 3.5.5 | 应用框架 |
+| **Spring Security** | 6.x | 安全框架 |
+| **MyBatis Plus** | 3.5.9 | ORM框架 |
+| **MySQL** | 8.4+ | 主数据库 |
+| **Redis** | 7.0+ | 缓存数据库 |
+| **Elasticsearch** | 8.x | 搜索引擎 |
+| **JWT** | 0.12+ | 认证机制 |
+| **Knife4j** | 4.x | API文档 |
+
+### 前端技术栈
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| **React** | 19.1.1 | 前端框架 |
+| **TypeScript** | 5.5.3 | 类型系统 |
+| **Vite** | 7.1.7 | 构建工具 |
+| **Tailwind CSS** | 4.1.13 | CSS框架 |
+| **Radix UI** | Latest | 组件库 |
+| **Framer Motion** | Latest | 动画库 |
+| **React Router** | 7.9.3 | 路由管理 |
+| **Axios** | 1.12.2 | HTTP客户端 |
+
+## 🚀 快速开始
+
+### 环境要求
+
+- **Node.js**: 18.0+
+- **Java**: 21+
+- **Maven**: 3.6+
+- **MySQL**: 8.0+
+- **Redis**: 7.0+
+
+### 本地开发
+
+#### 1. 克隆项目
+```bash
+git clone https://github.com/yourname/myblog.git
+cd myblog
+```
+
+#### 2. 数据库配置
 ```sql
 -- 创建数据库
 CREATE DATABASE myblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 创建专用用户（推荐）
-CREATE USER 'myblog'@'localhost' IDENTIFIED BY 'myblog123';
+-- 创建用户（可选）
+CREATE USER 'myblog'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON myblog.* TO 'myblog'@'localhost';
 FLUSH PRIVILEGES;
-
--- 测试连接
-mysql -u myblog -p myblog
 ```
 
-#### 2. Redis 配置
-确保 Redis 服务在默认端口 6379 运行：
-
-**macOS (使用 Homebrew):**
+#### 3. 后端启动
 ```bash
-brew install redis
-brew services start redis
-redis-cli ping  # 应该返回 PONG
-```
+cd myblog-backend
 
-**Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install redis-server
-sudo systemctl start redis-server
-sudo systemctl enable redis-server
-redis-cli ping
-```
+# 配置数据库连接（编辑 application-local.yml）
+vim src/main/resources/application-local.yml
 
-**Windows:**
-```bash
-# 下载 Redis for Windows 或使用 WSL
-# 启动 Redis 服务
-redis-server
-```
-
-#### 3. Elasticsearch 配置
-确保 Elasticsearch 服务在端口 9200 运行：
-
-**macOS (使用 Homebrew):**
-```bash
-brew install elasticsearch
-brew services start elasticsearch
-curl http://localhost:9200  # 验证服务状态
-```
-
-**Ubuntu/Debian:**
-```bash
-wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
-echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
-sudo apt-get update && sudo apt-get install elasticsearch
-sudo systemctl start elasticsearch
-sudo systemctl enable elasticsearch
-```
-
-### 应用配置
-
-修改 `src/main/resources/application.yml` 中的数据库连接信息：
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/myblog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username:        # 您的MySQL用户名
-    password:      # 您的MySQL密码
-
-  redis:
-    host: localhost
-    port: 6379
-    password:               # 如果有密码则填写
-
-  elasticsearch:
-    uris: http://localhost:9200
-```
-
-## 🚀 快速启动
-
-### 1. 获取项目代码
-```bash
-git clone <repository-url>
-cd myblog
-```
-
-### 2. 验证环境
-确保所有必需服务已启动：
-```bash
-# 检查 MySQL
-mysql -u myblog -p -e "SELECT 1"
-
-# 检查 Redis
-redis-cli ping
-
-# 检查 Elasticsearch
-curl http://localhost:9200
-```
-
-### 3. 启动后端服务
-```bash
-# 方式一：使用 Maven 直接启动
+# 启动后端服务
 ./mvnw spring-boot:run
-
-# 方式二：编译后运行 JAR
-./mvnw clean package -DskipTests
-java -jar target/myblog-0.0.1-SNAPSHOT.jar
-
-# 方式三：使用 IDE 运行 MyBlogApplication.java
 ```
 
-**首次启动验证：**
-- 检查控制台输出确认无错误
-- 访问 http://localhost:9999/actuator/health 确认服务健康
-- 查看数据库确认表结构已自动创建
-
-### 4. 启动前端服务
+#### 4. 前端启动
 ```bash
-# 进入前端目录
-cd frontend
+cd myblog-frontend
 
 # 安装依赖
 npm install
 
-# 启动开发服务器
+# 启动前端服务
 npm run dev
-
-# 或使用生产构建
-npm run build
-npm run preview
 ```
 
-### 5. 访问应用
-- **前端用户界面**: http://localhost:5173
-- **后端 API**: http://localhost:9999
-- **API 文档**: http://localhost:9999/doc.html
-- **健康检查**: http://localhost:9999/actuator/health
+#### 5. 访问应用
 
-## 📱 应用访问
-
-### 主要入口
-- **博客前台**: http://localhost:5173 （用户访问界面）
-- **管理后台**: http://localhost:5173/admin （管理员控制台）
-- **API 基础路径**: http://localhost:9999/api
-
-### 开发工具
-- **API 文档**: http://localhost:9999/doc.html (Knife4j 界面)
-- **健康检查**: http://localhost:9999/actuator/health
-- **应用信息**: http://localhost:9999/actuator/info
-
-### 默认账户
-系统启动后可创建第一个管理员账户：
-- **邮箱**: admin@example.com
-- **密码**: admin123
-（首次使用请立即修改默认密码）
+- **前端地址**: http://localhost:5173
+- **后端API**: http://localhost:8081/api
+- **API文档**: http://localhost:8081/doc.html
+- **健康检查**: http://localhost:8081/actuator/health
 
 ## 📁 项目结构
 
 ```
 myblog/
-├── 📂 后端项目 (Spring Boot)
-│   ├── src/main/java/com/ryan/myblog/
-│   │   ├── controller/          # REST API 控制器
-│   │   │   ├── admin/          # 管理员相关接口
-│   │   │   ├── user/           # 用户相关接口
-│   │   │   ├── blog/           # 博客文章接口
-│   │   │   ├── comment/        # 评论相关接口
-│   │   │   └── upload/         # 文件上传接口
-│   │   ├── service/            # 业务逻辑层
-│   │   │   ├── impl/           # 业务实现类
-│   │   │   └── *Service.java   # 业务接口
-│   │   ├── mapper/             # MyBatis 数据访问层
-│   │   ├── entity/             # JPA 实体类
-│   │   ├── dto/                # 数据传输对象
-│   │   ├── vo/                 # 视图对象
-│   │   ├── config/             # 配置类
-│   │   │   ├── SecurityConfig.java
-│   │   │   ├── RedisConfig.java
-│   │   │   └── ElasticsearchConfig.java
-│   │   ├── utils/              # 工具类
-│   │   ├── exception/          # 异常处理
-│   │   └── MyBlogApplication.java  # 启动类
-│   ├── src/main/resources/
-│   │   ├── mapper/             # MyBatis XML 映射文件
-│   │   ├── static/             # 静态资源
-│   │   ├── templates/          # 模板文件
-│   │   ├── sql/                # 数据库初始化脚本
-│   │   └── application.yml     # 应用配置文件
-│   └── pom.xml                 # Maven 依赖配置
-│
-├── 📂 前端项目 (React + Vite)
+├── myblog-backend/                 # 🎯 Spring Boot后端
 │   ├── src/
-│   │   ├── components/         # 可复用组件
-│   │   │   ├── common/         # 通用组件
-│   │   │   ├── blog/           # 博客相关组件
-│   │   │   └── admin/          # 管理后台组件
-│   │   ├── pages/              # 页面组件
-│   │   │   ├── Home/           # 首页
-│   │   │   ├── Blog/           # 博客详情页
-│   │   │   ├── Admin/          # 管理后台
-│   │   │   └── User/           # 用户相关页面
-│   │   ├── hooks/              # 自定义 React Hooks
-│   │   ├── services/           # API 服务层
+│   │   ├── main/
+│   │   │   ├── java/com/ryan/myblog/
+│   │   │   │   ├── controller/     # REST API控制器
+│   │   │   │   ├── service/        # 业务逻辑层
+│   │   │   │   ├── model/          # 数据模型（entity/dto/vo）
+│   │   │   │   ├── config/         # 配置类
+│   │   │   │   ├── utils/          # 工具类
+│   │   │   │   └── MyBlogApplication.java
+│   │   │   └── resources/
+│   │   │       ├── application.yml           # 主配置文件
+│   │   │       ├── application-local.yml    # 本地开发配置
+│   │   │       └── mapper/                # MyBatis映射文件
+│   ├── pom.xml                          # Maven依赖配置
+│   └── mvnw                             # Maven Wrapper
+├── myblog-frontend/                # ⚛️ React前端
+│   ├── src/
+│   │   ├── components/              # 可复用组件
+│   │   │   ├── common/          # 通用组件
+│   │   │   ├── blog/            # 博客相关组件
+│   │   │   ├── admin/           # 管理后台组件
+│   │   │   ├── auth/            # 认证组件
+│   │   │   └── ui/              # UI基础组件
+│   │   ├── pages/               # 页面组件
+│   │   │   ├── Dashboard.tsx    # 仪表板
+│   │   │   ├── BlogDetail.tsx   # 博客详情
+│   │   │   ├── Search.tsx        # 搜索页面
+│   │   │   └── Admin.tsx        # 管理后台
+│   │   ├── contexts/           # React Context
 │   │   ├── utils/              # 工具函数
+│   │   ├── types/              # TypeScript类型
 │   │   ├── styles/             # 样式文件
-│   │   ├── types/              # TypeScript 类型定义
+│   │   ├── App.tsx             # 应用根组件
 │   │   └── main.tsx            # 应用入口
-│   ├── public/                 # 公共静态资源
+│   ├── public/                 # 静态资源
 │   ├── package.json            # 依赖配置
-│   ├── vite.config.ts          # Vite 配置
-│   └── tailwind.config.js      # Tailwind CSS 配置
-│
-├── 📂 其他文件
-│   ├── README.md               # 项目说明文档
-│   ├── .gitignore              # Git 忽略文件
-│   └── docs/                   # 项目文档
-│
-└── 📂 上传目录
-    └── uploads/                # 用户上传的文件存储
-        ├── avatars/            # 用户头像
-        └── images/             # 博客图片
+│   ├── vite.config.ts          # Vite配置
+│   └── tailwind.config.js     # Tailwind配置
+└── README.md                  # 项目说明文档
+```
+
+## 🔧 配置说明
+
+### 后端配置示例
+
+```yaml
+# application-local.yml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/myblog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: myblog
+    password: your_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+
+elasticsearch:
+  enabled: true
+  uris: http://localhost:9200
+```
+
+### 前端配置示例
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
+})
 ```
 
 ## 🔧 开发指南
 
 ### 数据库管理
-- **自动建表**: 首次启动时，应用会根据实体类自动创建数据表结构
-- **数据初始化**: 可执行 `src/main/resources/sql/` 目录下的 SQL 脚本初始化测试数据
-- **数据迁移**: 使用 Flyway 进行数据库版本管理（如需要）
+- **自动建表**: 首次启动时根据实体类自动创建表结构
+- **数据迁移**: 支持数据库版本管理和升级脚本
 
-### API 开发与测试
-- **API 文档**: 启动后访问 http://localhost:9999/doc.html 查看完整的 API 文档
-- **在线测试**: Knife4j 提供的界面可直接测试所有 API 接口
-- **Postman 集合**: 可导出 Postman 集合文件用于团队协作
+### API开发
+- **文档生成**: 启动后访问 `/doc.html` 查看API文档
+- **在线测试**: Knife4j提供界面直接测试API
 
 ### 缓存策略
-- **会话存储**: 用户登录状态存储在 Redis 中
+- **会话存储**: 用户登录状态存储在Redis中
 - **热点数据**: 频繁访问的文章、用户信息缓存
 - **查询缓存**: 复杂查询结果缓存，提升响应速度
 
-### 搜索功能
-- **索引同步**: 文章发布/更新时自动同步到 Elasticsearch
-- **中文分词**: 支持中文全文搜索和分词
-- **搜索建议**: 提供搜索关键词自动补全功能
-
-### 开发最佳实践
-```bash
-# 后端开发
-./mvnw clean compile    # 编译项目
-./mvnw test            # 运行测试
-./mvnw spring-boot:run -Dspring.profiles.active=dev  # 开发环境启动
-
-# 前端开发
-npm run dev            # 开发服务器
-npm run build          # 生产构建
-npm run preview        # 预览生产构建
-npm run lint           # 代码检查
-```
-
-### 日志管理
-- **日志级别**: 可通过 `application.yml` 调整日志输出级别
-- **日志文件**: 日志文件存储在 `logs/` 目录下
-- **监控集成**: 支持 Micrometer + Prometheus 监控集成
-
 ## 🚨 故障排除
 
-### 常见问题及解决方案
+### 常见问题
 
-#### 1. 数据库连接问题
-**症状**: 启动时报数据库连接错误
+#### 1. 数据库连接失败
 ```bash
-# 解决步骤
-# 1. 检查 MySQL 服务状态
+# 检查MySQL服务状态
 brew services list | grep mysql  # macOS
 sudo systemctl status mysql      # Linux
 
-# 2. 验证数据库存在
-mysql -u root -p -e "SHOW DATABASES;"
-
-# 3. 测试用户连接
-mysql -u myblog -p -e "SELECT 1;"
-
-# 4. 检查配置文件
-cat src/main/resources/application.yml
+# 测试连接
+mysql -u myblog -p -e "SELECT 1"
 ```
 
-#### 2. Redis 连接问题
-**症状**: 缓存相关功能异常，登录失败
+#### 2. Redis连接问题
 ```bash
-# 解决步骤
-# 1. 检查 Redis 服务
-redis-cli ping  # 应返回 PONG
+# 检查Redis服务
+redis-cli ping  # 应返回PONG
 
-# 2. 检查端口占用
+# 检查端口占用
 lsof -i :6379
-
-# 3. 重启 Redis 服务
-brew services restart redis     # macOS
-sudo systemctl restart redis    # Linux
 ```
 
-#### 3. Elasticsearch 问题
-**症状**: 搜索功能不可用
+#### 3. 前端启动问题
 ```bash
-# 解决步骤
-# 1. 检查 ES 服务状态
-curl http://localhost:9200/_cluster/health
-
-# 2. 检查索引状态
-curl http://localhost:9200/_cat/indices
-
-# 3. 重启 ES 服务
-brew services restart elasticsearch     # macOS
-sudo systemctl restart elasticsearch    # Linux
-```
-
-#### 4. 前端启动问题
-**症状**: npm install 失败或 dev 服务器无法启动
-```bash
-# 解决步骤
-# 1. 清理缓存和依赖
+# 清理缓存和依赖
 rm -rf node_modules package-lock.json
 npm cache clean --force
-
-# 2. 重新安装依赖
 npm install
-
-# 3. 检查 Node.js 版本
-node --version  # 应该 >= 18.x
-
-# 4. 检查端口占用
-lsof -i :5173
 ```
 
-#### 5. 端口冲突问题
-**症状**: 端口已被占用错误
+#### 4. 端口冲突
 ```bash
 # 查找占用端口的进程
-lsof -i :9999  # 后端端口
+lsof -i :8081  # 后端端口
 lsof -i :5173  # 前端端口
 
 # 终止进程
 kill -9 <PID>
-
-# 或修改配置文件中的端口
 ```
 
-#### 6. 权限问题
-**症状**: 文件上传失败，日志写入错误
-```bash
-# 解决步骤
-# 1. 检查上传目录权限
-ls -la uploads/
+### 性能优化
 
-# 2. 修改目录权限
-chmod 755 uploads/
-chmod 644 uploads/*
+- **后端优化**: 调整JVM参数，优化数据库连接池
+- **前端优化**: 启用代码分割，图片懒加载
+- **缓存优化**: 合理设置缓存过期时间
 
-# 3. 检查应用运行用户
-ps aux | grep java
-```
+## 📊 技术亮点
 
-### 性能优化建议
+### 🔍 搜索技术
+- **BM25算法**: 优化搜索相关性
+- **多字段权重**: 标题、内容、摘要权重配置
+- **中文支持**: 中文分词和检测
+- **重试机制**: Spring Retry确保搜索服务稳定性
 
-#### 后端优化
-- **JVM 参数调整**: `-Xms2g -Xmx4g` 根据服务器配置调整
-- **数据库连接池**: 优化 HikariCP 配置
-- **Redis 缓存**: 合理设置缓存过期时间
+### 🚀 性能优化
+- **多层缓存**: Redis热点数据缓存
+- **数据库优化**: MyBatis Plus查询优化
+- **前端优化**: Vite构建优化，组件懒加载
 
-#### 前端优化
-- **构建优化**: 启用代码分割和压缩
-- **资源优化**: 图片懒加载，CDN 加速
-- **缓存策略**: 合理设置浏览器缓存
-
-### 监控和维护
-```bash
-# 查看应用日志
-tail -f logs/myblog.log
-
-# 监控系统资源
-top -p $(pgrep java)
-
-# 数据库性能监控
-mysql -u root -p -e "SHOW PROCESSLIST;"
-```
-
-### 获取帮助
-- **项目 Issues**: 在 GitHub 仓库提交问题
-- **日志分析**: 提供详细的错误日志
-- **环境信息**: 包含操作系统、Java 版本等环境信息
-
-## 📄 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+### 🔒 安全机制
+- **JWT认证**: 无状态token认证
+- **文件安全**: 路径遍历防护
+- **SQL注入防护**: MyBatis参数化查询
+- **XSS防护**: 前端输入验证和后端过滤
 
 ## 🤝 贡献指南
 
-欢迎为项目做出贡献！请遵循以下步骤：
+我们欢迎所有形式的贡献！
 
-### 贡献流程
-1. **Fork** 项目到您的 GitHub 账户
-2. **创建** 功能分支 (`git checkout -b feature/AmazingFeature`)
-3. **提交** 您的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. **推送** 到分支 (`git push origin feature/AmazingFeature`)
-5. **创建** Pull Request
+### 贡献方式
 
-### 开发规范
-- **代码风格**: 遵循项目现有的代码风格
-- **提交信息**: 使用清晰的提交信息描述更改
-- **测试**: 确保新功能有相应的测试
-- **文档**: 更新相关文档和注释
+1. **报告问题**: 在 [Issues](https://github.com/yourname/myblog/issues) 中报告bug
+2. **功能建议**: 提出新功能建议和改进意见
+3. **代码贡献**: 提交Pull Request
+4. **文档改进**: 完善项目文档和说明
 
-### 问题反馈
-- **Bug 报告**: 提供详细的复现步骤和环境信息
-- **功能建议**: 描述期望的功能和使用场景
-- **安全问题**: 请私下联系维护者
+### 开发流程
 
-## 🌟 致谢
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
 
-感谢所有为这个项目做出贡献的开发者和用户！
+### 代码规范
 
-### 技术栈鸣谢
-- [Spring Boot](https://spring.io/projects/spring-boot) - 强大的 Java 后端框架
-- [React](https://reactjs.org/) - 现代化的前端库
-- [Tailwind CSS](https://tailwindcss.com/) - 实用优先的 CSS 框架
-- [MyBatis Plus](https://baomidou.com/) - 强大的 MyBatis 增强工具
-- [Redis](https://redis.io/) - 高性能内存数据库
-- [Elasticsearch](https://www.elastic.co/) - 分布式搜索引擎
+- **后端**: 遵循阿里巴巴Java开发手册
+- **前端**: 使用ESLint和Prettier进行代码格式化
+- **提交信息**: 使用 Conventional Commits 规范
+
+## 📄 许可证
+
+本项目采用 [MIT License](LICENSE) 开源协议。
+
+## 🙏 致谢
+
+感谢以下开源项目和贡献者：
+
+- [Spring Boot](https://spring.io/projects/spring-boot) - 后端框架
+- [React](https://reactjs.org/) - 前端框架
+- [Vite](https://vitejs.dev/) - 构建工具
+- [Tailwind CSS](https://tailwindcss.com/) - CSS框架
+- [Elasticsearch](https://www.elastic.co/) - 搜索引擎
+- [MyBatis Plus](https://baomidou.com/) - 数据库增强工具
+
+## 📞 联系我们
+
+- **项目地址**: https://github.com/yourname/myblog
+- **问题反馈**: https://github.com/yourname/myblog/issues
+- **邮箱**: your.email@example.com
 
 ---
 
-**如果这个项目对您有帮助，请给我们一个 ⭐️！**
+<div align="center">
+
+**如果这个项目对你有帮助，请给我们一个 ⭐️**
+
+Made with ❤️ by MyBlog Team
+
+</div>
