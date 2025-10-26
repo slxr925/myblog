@@ -36,3 +36,6 @@ build/
 *.json
 *.rdb
 myblog-backend/tempdoc
+docker-compose.dev.yml
+Dockerfile.dev
+.env.example
