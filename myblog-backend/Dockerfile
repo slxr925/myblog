@@ -1,5 +1,5 @@
 # 多阶段构建 - 构建阶段
-FROM maven:3.9-openjdk-21 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 # 设置工作目录
 WORKDIR /app
