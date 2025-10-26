@@ -1,0 +1,87 @@
+# 常见忽略文件
+.git
+.gitignore
+README.md
+Dockerfile
+docker-compose*.yml
+.env*
+.envrc
+
+# 日志文件
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 依赖目录
+node_modules/
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# 构建产物
+dist/
+build/
+target/
+.mvn/
+mvnw*
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+
+# 测试文件
+coverage/
+.nyc_output
+.jest/
+__tests__/
+
+# 缓存文件
+.cache/
+.parcel-cache/
+.eslintcache
+
+# 包管理器锁文件（保留package-lock.json用于依赖版本控制）
+# package-lock.json
+
+# 前端特定
+.vite/
+.next/
+out/
+
+# 后端特定
+*.iml
+.classpath
+.project
+.settings/
+bin/
+
+# 数据文件
+uploads/
+data/
+*.db
+*.sqlite
+
+# 配置文件（包含敏感信息）
+application-local.yml
+application-prod.yml
+local.properties
+
+# 文档
+docs/
+*.md
+!README.md

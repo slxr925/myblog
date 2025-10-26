@@ -106,16 +106,19 @@ MyBlog 是一个采用前后端分离架构的现代化博客系统，集成了�
 - **Maven**: 3.6+
 - **MySQL**: 8.0+
 - **Redis**: 7.0+
+- **Docker**: 20.0+ (用于容器化部署)
 
 ### 本地开发
 
-#### 1. 克隆项目
+#### 方式一：传统开发模式
+
+##### 1. 克隆项目
 ```bash
 git clone https://github.com/yourname/myblog.git
 cd myblog
 ```
 
-#### 2. 数据库配置
+##### 2. 数据库配置
 ```sql
 -- 创建数据库
 CREATE DATABASE myblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -126,7 +129,7 @@ GRANT ALL PRIVILEGES ON myblog.* TO 'myblog'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-#### 3. 后端启动
+##### 3. 后端启动
 ```bash
 cd myblog-backend
 
@@ -137,7 +140,7 @@ vim src/main/resources/application-local.yml
 ./mvnw spring-boot:run
 ```
 
-#### 4. 前端启动
+##### 4. 前端启动
 ```bash
 cd myblog-frontend
 
@@ -148,12 +151,128 @@ npm install
 npm run dev
 ```
 
-#### 5. 访问应用
+##### 5. 访问应用
 
 - **前端地址**: http://localhost:5173
 - **后端API**: http://localhost:8081/api
 - **API文档**: http://localhost:8081/doc.html
 - **健康检查**: http://localhost:8081/actuator/health
+
+#### 方式二：Docker容器化开发
+
+##### 1. 使用Docker Compose一键启动
+```bash
+# 生产环境（包含所有服务）
+docker-compose up -d
+
+# 开发环境（支持热重载）
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+##### 2. 查看服务状态
+```bash
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f frontend
+docker-compose logs -f backend
+```
+
+##### 3. 访问应用
+
+- **前端地址**: http://localhost:3000 (生产) / http://localhost:5173 (开发)
+- **后端API**: http://localhost:8081 (生产) / http://localhost:8082 (开发)
+- **MySQL**: localhost:3306 / localhost:3307 (开发)
+- **Redis**: localhost:6379 / localhost:6380 (开发)
+- **Elasticsearch**: localhost:9200 / localhost:9201 (开发)
+
+### 🌥️ 微信云托管部署
+
+#### 准备工作
+
+1. **注册微信云托管账号**
+   - 访问 [微信云托管控制台](https://cloud.weixin.qq.com/)
+   - 创建新环境和数据库实例
+
+2. **配置数据库服务**
+   - 创建MySQL数据库实例
+   - 创建Redis缓存实例
+   - 配置Elasticsearch（可选，或使用腾讯云ES）
+
+3. **配置对象存储**
+   - 创建腾讯云COS存储桶
+   - 获取访问密钥
+
+#### 部署步骤
+
+##### 1. 配置环境变量
+```bash
+# 复制环境变量模板
+cp .env.example .env.production
+
+# 编辑配置文件
+vim .env.production
+```
+
+需要配置的主要变量：
+```bash
+TCB_ENV_ID=your-env-id                    # 微信云托管环境ID
+MYSQL_HOST=mysql.tencentcloudapi.com     # MySQL地址
+MYSQL_PASSWORD=your_password             # 数据库密码
+REDIS_HOST=redis.tencentcloudapi.com     # Redis地址
+JWT_SECRET=your_256bit_secret            # JWT密钥
+WECHAT_APP_ID=your_app_id                # 微信AppID
+COS_SECRET_ID=your_cos_id                # 腾讯云COS密钥
+```
+
+##### 2. 构建Docker镜像
+```bash
+# 构建所有镜像
+./build-images.sh build
+
+# 或分别构建
+./build-images.sh frontend
+./build-images.sh backend
+```
+
+##### 3. 部署到微信云托管
+```bash
+# 部署所有服务
+./deploy-wechat.sh all
+
+# 或分别部署
+./deploy-wechat.sh frontend
+./deploy-wechat.sh backend
+```
+
+##### 4. 配置自定义域名
+在微信云托管控制台中：
+1. 为前端服务配置自定义域名（如：blog.yourdomain.com）
+2. 为后端API配置域名（如：api.yourdomain.com）
+3. 上传SSL证书启用HTTPS
+
+#### 微信生态集成
+
+##### 微信小程序集成
+1. 在微信公众平台配置业务域名
+2. 在`.env.production`中配置微信AppID和密钥
+3. 实现微信登录API
+
+##### 微信公众号集成
+1. 配置JS-SDK域名白名单
+2. 实现微信授权登录
+3. 配置模板消息推送
+
+#### 部署验证
+
+```bash
+# 检查服务状态
+curl https://your-domain.com/health          # 前端健康检查
+curl https://api.your-domain.com/actuator/health  # 后端健康检查
+
+# 测试API接口
+curl https://api.your-domain.com/api/blogs   # 博客列表API
+```
 
 ## 📁 项目结构
 
@@ -173,6 +292,9 @@ myblog/
 │   │   │       ├── application.yml           # 主配置文件
 │   │   │       ├── application-local.yml    # 本地开发配置
 │   │   │       └── mapper/                # MyBatis映射文件
+│   ├── Dockerfile                       # 生产环境容器配置
+│   ├── Dockerfile.dev                   # 开发环境容器配置
+│   ├── cloudbaserc.json                 # 微信云托管配置
 │   ├── pom.xml                          # Maven依赖配置
 │   └── mvnw                             # Maven Wrapper
 ├── myblog-frontend/                # ⚛️ React前端
@@ -195,10 +317,22 @@ myblog/
 │   │   ├── App.tsx             # 应用根组件
 │   │   └── main.tsx            # 应用入口
 │   ├── public/                 # 静态资源
+│   ├── Dockerfile              # 容器配置（Nginx + React）
+│   ├── nginx.conf              # Nginx配置文件
+│   ├── cloudbaserc.json        # 微信云托管配置
 │   ├── package.json            # 依赖配置
 │   ├── vite.config.ts          # Vite配置
 │   └── tailwind.config.js     # Tailwind配置
-└── README.md                  # 项目说明文档
+├── docker-compose.yml          # Docker容器编排（生产环境）
+├── docker-compose.dev.yml      # Docker容器编排（开发环境）
+├── deploy-wechat.sh            # 微信云托管部署脚本
+├── build-images.sh             # Docker镜像构建脚本
+├── .env.example                # 环境变量模板
+├── .env.production             # 生产环境变量配置
+├── .dockerignore               # Docker构建忽略文件
+├── DEPLOYMENT.md               # 详细部署指南
+├── DEPLOYMENT_CHECKLIST.md     # 部署检查清单
+└── README.md                   # 项目说明文档
 ```
 
 ## 🔧 配置说明
