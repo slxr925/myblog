@@ -26,7 +26,7 @@ RUN apk add --no-cache curl
 WORKDIR /app
 
 # 创建非root用户
-RUN groupadd -r spring && useradd -r -g spring spring
+RUN addgroup -g 1000 spring && adduser -D -s /bin/sh -u 1000 -G spring spring
 
 # 复制JAR文件
 COPY --from=builder /app/target/*.jar app.jar
