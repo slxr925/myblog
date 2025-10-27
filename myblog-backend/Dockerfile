@@ -36,7 +36,7 @@ RUN mkdir -p /app/logs && \
     chown -R spring:spring /app
 
 # 设置JVM参数 - 优化内存使用
-ENV JAVA_OPTS="-Xms768m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:+PrintGCDetails -XX:+PrintGCTimeStamps"
+ENV JAVA_OPTS="-Xms768m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0"
 
 # 设置时区
 ENV TZ=Asia/Shanghai
