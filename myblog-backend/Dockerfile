@@ -35,8 +35,8 @@ COPY --from=builder /app/target/*.jar app.jar
 RUN mkdir -p /app/logs && \
     chown -R spring:spring /app
 
-# 设置JVM参数
-ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+# 设置JVM参数 - 优化内存使用
+ENV JAVA_OPTS="-Xms768m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:+PrintGCDetails -XX:+PrintGCTimeStamps"
 
 # 设置时区
 ENV TZ=Asia/Shanghai
@@ -45,8 +45,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # 暴露端口
 EXPOSE 8081
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# 健康检查 - 增加启动等待时间
+HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=5 \
     CMD curl -f http://localhost:8081/actuator/health || exit 1
 
 # 切换到非root用户
