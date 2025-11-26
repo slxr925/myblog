@@ -111,7 +111,7 @@ server:
 management:
   health:
     elasticsearch:
-      enabled: true  # 启用Elasticsearch健康检查
+      enabled: false  # 禁用Elasticsearch健康检查（版本兼容性问题）
 
 # Knife4j/SpringDoc配置
 springdoc:
