@@ -4,10 +4,13 @@ import type {
   ProcessedResponse,
   PageParams,
   PageResponse,
+  PageResult,
   BlogDetailVO,
   BlogDetailEnhancedVO,
+  BlogListVO,
   Category,
   TagVO,
+  Tag,
   BlogPost,
   User,
   UserRegisterDTO,
@@ -120,6 +123,24 @@ const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
   return transformedPost;
 };
 
+const normalizeArrayResponse = <T>(payload: unknown): T[] => {
+  if (Array.isArray(payload)) {
+    return payload as T[];
+  }
+
+  if (payload && typeof payload === 'object') {
+    const responseObject = payload as Record<string, unknown>;
+    if (Array.isArray(responseObject.data)) {
+      return responseObject.data as T[];
+    }
+    if (Array.isArray(responseObject.records)) {
+      return responseObject.records as T[];
+    }
+  }
+
+  return [];
+};
+
 // API 请求工具
 export const api = {
   blog: {
@@ -129,13 +150,18 @@ export const api = {
     },
 
     // 获取博客详情
-    getDetail: async (id: number): Promise<ApiResponse<BlogDetailVO>> => {
-      return apiClient.get(`/blog/${id}`);
+    getDetail: async (id: number): Promise<BlogDetailVO> => {
+      return apiClient.get(`/blog/${id}`) as Promise<BlogDetailVO>;
+    },
+
+    // 根据ID获取博客（用于编辑器）
+    getById: async (id: number): Promise<BlogDetailVO> => {
+      return apiClient.get(`/blog/${id}`) as Promise<BlogDetailVO>;
     },
 
     // 获取增强版博客详情
-    getDetailEnhanced: async (id: number): Promise<ApiResponse<BlogDetailEnhancedVO>> => {
-      return apiClient.get(`/blog/${id}/enhanced`);
+    getDetailEnhanced: async (id: number): Promise<BlogDetailEnhancedVO> => {
+      return apiClient.get(`/blog/${id}/enhanced`) as Promise<BlogDetailEnhancedVO>;
     },
 
     // 获取热门博客
@@ -149,26 +175,60 @@ export const api = {
     },
 
     // 根据分类获取博客
-    getByCategory: async (categoryId: number, limit = 10): Promise<ApiResponse<BlogDetailVO[]>> => {
-      return apiClient.get(`/blog/category/${categoryId}`, { params: { limit } });
+    getByCategory: async (categoryId: number, limit = 10): Promise<BlogDetailVO[]> => {
+      return apiClient.get(`/blog/category/${categoryId}`, { params: { limit } }) as Promise<BlogDetailVO[]>;
+    },
+
+    // 根据分类获取公开文章（带错误处理）
+    getByCategoryPublic: async (categoryId: number, limit = 10): Promise<BlogDetailVO[]> => {
+      try {
+        const response = await apiClient.get(`/blog/category/${categoryId}`, { params: { limit } });
+        return normalizeArrayResponse<BlogDetailVO>(response);
+      } catch (error) {
+        console.error('根据分类获取文章失败:', error);
+        return [];
+      }
+    },
+
+    // 根据标签搜索文章
+    searchByTag: async (tagName: string, limit = 10): Promise<BlogListVO[]> => {
+      try {
+        const response = await apiClient.get('/blog/search/by-tag', {
+          params: { tagName, limit }
+        });
+        return normalizeArrayResponse<BlogListVO>(response);
+      } catch (error) {
+        console.error('根据标签搜索文章失败:', error);
+        return [];
+      }
     },
 
     // 获取相关推荐博客
-    getRelated: async (id: number, limit = 5): Promise<ApiResponse<BlogDetailVO[]>> => {
-      return apiClient.get(`/blog/${id}/related`, { params: { limit } });
+    getRelated: async (id: number, limit = 5): Promise<BlogDetailVO[]> => {
+      return apiClient.get(`/blog/${id}/related`, { params: { limit } }) as Promise<BlogDetailVO[]>;
     },
 
     // 点赞/取消点赞
-    toggleLike: async (id: number): Promise<ApiResponse<void>> => {
-      return apiClient.post(`/blog/${id}/like`);
+    toggleLike: async (id: number): Promise<boolean> => {
+      return apiClient.post(`/blog/${id}/like`) as Promise<boolean>;
     },
     // 点赞/取消点赞（返回详细信息）
-    toggleLikeWithDetails: async (id: number): Promise<ApiResponse<LikeResultDTO>> => {
-      return apiClient.post(`/blog/${id}/like/details`);
+    toggleLikeWithDetails: async (id: number): Promise<LikeResultDTO> => {
+      return apiClient.post(`/blog/${id}/like/details`) as Promise<LikeResultDTO>;
     },
     // 获取博客详情（不增加浏览量）
-    getDetailWithoutIncrement: async (id: number): Promise<ApiResponse<BlogDetailVO>> => {
-      return apiClient.get(`/blog/${id}/detail`);
+    getDetailWithoutIncrement: async (id: number): Promise<BlogDetailVO> => {
+      return apiClient.get(`/blog/${id}/detail`) as Promise<BlogDetailVO>;
+    },
+
+    // 获取当前作者的草稿列表
+    getDrafts: async (): Promise<BlogDetailVO[]> => {
+      return apiClient.get('/blog/drafts') as Promise<BlogDetailVO[]>;
+    },
+
+    // 获取当前作者的文章列表（可选状态）
+    getMyBlogs: async (params?: PageParams): Promise<ProcessedResponse<PageResponse<BlogDetailVO>>> => {
+      return apiClient.get('/blog/my', { params });
     },
 
     // 获取前端格式的博客列表
@@ -212,82 +272,103 @@ export const api = {
     },
 
     // 创建博客
-    create: async (blogData: any): Promise<ApiResponse<void>> => {
-      return apiClient.post('/blog', blogData);
+    create: async (blogData: any): Promise<BlogDetailVO> => {
+      return apiClient.post('/blog', blogData) as Promise<BlogDetailVO>;
     },
 
     // 更新博客
-    update: async (id: number, blogData: any): Promise<ApiResponse<void>> => {
-      return apiClient.put(`/blog/${id}`, blogData);
+    update: async (id: number, blogData: any): Promise<BlogDetailVO> => {
+      return apiClient.put(`/blog/${id}`, blogData) as Promise<BlogDetailVO>;
     },
 
     // 删除博客
-    delete: async (id: number): Promise<ApiResponse<void>> => {
-      return apiClient.delete(`/blog/${id}`);
+    delete: async (id: number): Promise<void> => {
+      await apiClient.delete(`/blog/${id}`);
     },
 
     // 发布博客
-    publish: async (id: number): Promise<ApiResponse<void>> => {
-      return apiClient.post(`/blog/${id}/publish`);
+    publish: async (id: number): Promise<void> => {
+      await apiClient.post(`/blog/${id}/publish`);
     },
 
     // 下线博客
-    unpublish: async (id: number): Promise<ApiResponse<void>> => {
-      return apiClient.post(`/blog/${id}/unpublish`);
+    unpublish: async (id: number): Promise<void> => {
+      await apiClient.post(`/blog/${id}/unpublish`);
     },
 
     // 获取所有公开文章
-    getAllPublic: async (): Promise<ApiResponse<BlogVO[]>> => {
-      return apiClient.get('/blog/public/all');
+    getAllPublic: async (): Promise<BlogListVO[]> => {
+      return apiClient.get('/blog/public/all') as Promise<BlogListVO[]>;
     },
 
-    // 搜索博客文章
-    search: async (keyword: string, limit: number = 10): Promise<ApiResponse<BlogVO[]>> => {
-      return apiClient.get('/blog/search', {
-        params: { keyword, limit }
+  },
+
+  search: {
+    searchBlogs: async (keyword: string, size: number = 10, page: number = 0) => {
+      return apiClient.get('/search/blogs', {
+        params: { keyword, size, page }
       });
     },
 
-    // 根据标签搜索博客文章
-    searchByTag: async (tagName: string, limit: number = 10): Promise<ApiResponse<BlogVO[]>> => {
-      return apiClient.get('/blog/search/by-tag', {
-        params: { tagName, limit }
+    advancedSearch: async (params: {
+      keyword?: string;
+      categoryId?: number;
+      tags?: string[];
+      size?: number;
+      page?: number;
+    }) => {
+      const { keyword, categoryId, tags, size = 10, page = 0 } = params;
+      return apiClient.get('/search/blogs/advanced', {
+        params: {
+          keyword,
+          categoryId,
+          tags,
+          size,
+          page
+        }
       });
     },
+
+    suggestions: async (prefix: string) => {
+      return apiClient.get('/search/suggestions', {
+        params: { prefix }
+      });
+    },
+
+    status: async () => {
+      return apiClient.get('/search/status');
+    }
   },
 
   user: {
     // 用户注册
-    register: async (userData: UserRegisterDTO): Promise<ProcessedResponse<void>> => {
-      const response = await apiClient.post('/user/register', userData);
-      return response;
+    register: async (userData: UserRegisterDTO): Promise<void> => {
+      await apiClient.post('/user/register', userData);
     },
 
     // 用户登录
-    login: async (loginData: UserLoginDTO): Promise<ProcessedResponse<string>> => {
-      const response = await apiClient.post('/user/login', loginData);
-      return response; // 响应拦截器已处理
+    login: async (loginData: UserLoginDTO): Promise<string> => {
+      return apiClient.post('/user/login', loginData) as Promise<string>;
     },
 
     // 获取当前用户信息
-    getCurrentUser: async (): Promise<ProcessedResponse<User>> => {
-      const response = await apiClient.get('/user/info');
-      return response; // 响应拦截器已处理
+    getCurrentUser: async (): Promise<User> => {
+      return apiClient.get('/user/info') as Promise<User>;
     },
 
     // 更新用户信息
-    updateUserInfo: async (userData: Partial<User>): Promise<ApiResponse<void>> => {
-      return apiClient.put('/user/info', userData);
+    updateUserInfo: async (userData: Partial<User>): Promise<void> => {
+      await apiClient.put('/user/info', userData);
     },
 
     // 修改密码
-    changePassword: async (passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }): Promise<ApiResponse<void>> => {
-      return apiClient.post('/user/change-password', passwordData);
+    changePassword: async (passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }): Promise<void> => {
+      await apiClient.post('/user/change-password', passwordData);
     },
 
     // 用户登出
-    logout: async (): Promise<ApiResponse<void>> => {
-      return apiClient.post('/user/logout');
+    logout: async (): Promise<void> => {
+      await apiClient.post('/user/logout');
     },
   },
 
@@ -325,8 +406,9 @@ export const api = {
 
   category: {
     // 获取所有分类
-    getAll: async (): Promise<ApiResponse<Category[]>> => {
-      return apiClient.get('/category/list');
+    getAll: async (): Promise<Category[]> => {
+      const response = await apiClient.get('/category/list');
+      return normalizeArrayResponse<Category>(response);
     },
 
     // 根据ID获取分类
@@ -352,8 +434,9 @@ export const api = {
 
   tag: {
     // 获取所有标签
-    getAll: async (): Promise<ApiResponse<Array<{ id: number; name: string; createTime: string }>>> => {
-      return apiClient.get('/tag/list');
+    getAll: async (): Promise<Tag[]> => {
+      const response = await apiClient.get('/tag/list');
+      return normalizeArrayResponse<Tag>(response);
     },
 
     // 根据ID获取标签
@@ -377,19 +460,25 @@ export const api = {
     },
 
     // 根据博客ID获取标签列表
-    getByBlogId: async (blogId: number): Promise<ApiResponse<TagVO[]>> => {
-      return apiClient.get(`/tag/blog/${blogId}`);
+    getByBlogId: async (blogId: number): Promise<TagVO[]> => {
+      return apiClient.get(`/tag/blog/${blogId}`) as Promise<TagVO[]>;
+    },
+
+    // 根据博客ID获取标签（用于编辑器）
+    getTags: async (blogId: number): Promise<TagVO[]> => {
+      return apiClient.get(`/tag/blog/${blogId}`) as Promise<TagVO[]>;
     },
 
     // 获取所有被已发布博客使用的标签
-    getUsedTags: async (): Promise<ApiResponse<Array<{ id: number; name: string; createTime: string }>>> => {
-      return apiClient.get('/tag/used');
+    getUsedTags: async (): Promise<Tag[]> => {
+      const response = await apiClient.get('/tag/used');
+      return normalizeArrayResponse<Tag>(response);
     },
   },
 
   admin: {
     // 获取用户列表
-    getUsers: async (params?: PageParams): Promise<ApiResponse<PageResponse<User>>> => {
+    getUsers: async (params?: PageParams): Promise<PageResult<User>> => {
       return apiClient.get('/admin/users', { params });
     },
 
@@ -399,7 +488,7 @@ export const api = {
     },
 
     // 获取文章列表
-    getBlogs: async (params?: PageParams): Promise<ApiResponse<PageResponse<BlogDetailVO>>> => {
+    getBlogs: async (params?: PageParams): Promise<PageResult<BlogDetailVO>> => {
       return apiClient.get('/admin/blogs', { params });
     },
 
@@ -414,7 +503,7 @@ export const api = {
     },
 
     // 获取评论列表
-    getComments: async (params?: PageParams): Promise<ApiResponse<PageResponse<CommentVO>>> => {
+    getComments: async (params?: PageParams): Promise<PageResult<CommentVO>> => {
       return apiClient.get('/admin/comments', { params });
     },
 
@@ -426,6 +515,16 @@ export const api = {
     // 获取系统统计
     getStats: async (): Promise<ProcessedResponse<AdminStatsDTO>> => {
       return apiClient.get('/admin/stats');
+    },
+
+    // 获取分类列表（管理员）
+    getCategories: async (): Promise<Category[]> => {
+      return apiClient.get('/admin/categories');
+    },
+
+    // 获取标签列表（管理员）
+    getTags: async (): Promise<Tag[]> => {
+      return apiClient.get('/admin/tags');
     },
 
     // 记录页面访问

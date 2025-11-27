@@ -6,8 +6,8 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { api } from '../utils/api';
 import Navigation from '../components/layout/Navigation';
-import { AuthModal } from '../components/auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuthModal } from '../contexts/AuthModalContext';
 
 interface BlogPost {
   id: number;
@@ -30,10 +30,10 @@ interface BlogPost {
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   // 获取分类样式
@@ -157,7 +157,7 @@ const SearchPage: React.FC = () => {
     e.stopPropagation(); // 防止触发文章点击
 
     if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
+      openAuthModal();
       return;
     }
 
@@ -219,8 +219,6 @@ const SearchPage: React.FC = () => {
         heroTitle="全部文章"
         heroSubtitle="探索所有技术分享、项目实战和学习心得"
         heroButtons={null}
-        isAuthModalOpen={isAuthModalOpen}
-        setIsAuthModalOpen={setIsAuthModalOpen}
       />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -372,11 +370,6 @@ const SearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
     </div>
   );
 };

@@ -48,6 +48,16 @@ export interface Category {
   description?: string;
   icon?: string;
   sort?: number;
+  blogCount?: number;
+  createTime?: string;
+  updateTime?: string;
+  deleted?: number;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  color?: string;
   createTime?: string;
   updateTime?: string;
   deleted?: number;
@@ -67,6 +77,7 @@ export interface BlogDetailVO {
   categoryName?: string;
   tags: TagVO[];
   status: number;
+  visibility?: number;
   isTop: number;
   viewCount: number;
   likeCount: number;
@@ -74,6 +85,59 @@ export interface BlogDetailVO {
   publishTime?: string;
   createTime?: string;
   updateTime?: string;
+  statusChangedTime?: string;
+}
+
+export interface BlogDocument {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  coverImg?: string;
+  authorId?: number;
+  authorName?: string;
+  categoryId?: number;
+  categoryName?: string;
+  tags?: string[];
+  status?: number;
+  isTop?: number;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+  publishTime?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface BlogListVO {
+  id: number;
+  title: string;
+  summary?: string;
+  coverImage?: string;
+  authorId?: number;
+  authorNickname?: string;
+  authorAvatar?: string;
+  categoryId?: number;
+  categoryName?: string;
+  tags?: TagVO[];
+  status?: number;
+  visibility?: number;
+  isTop?: boolean;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+  publishTime?: string;
+  createTime?: string;
+  updateTime?: string;
+  statusChangedTime?: string;
+}
+
+export interface PageResult<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }
 
 // 博客详情增强VO

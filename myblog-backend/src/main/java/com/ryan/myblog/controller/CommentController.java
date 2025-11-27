@@ -61,7 +61,7 @@ public class CommentController {
         pageRequest.setPage(page);
         pageRequest.setSize(size);
 
-        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status != null ? status : 1);
+        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status != null ? status : 1, null);
         return Result.success(result);
     }
 
@@ -79,7 +79,7 @@ public class CommentController {
         pageRequest.setPage(page);
         pageRequest.setSize(size);
 
-        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status != null ? status : 1);
+        IPage<CommentVO> result = commentService.getCommentPage(pageRequest, blogId, status != null ? status : 1, null);
         return Result.success(result);
     }
     

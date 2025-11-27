@@ -5,6 +5,7 @@ import ThemeToggle from '../theme/ThemeToggle';
 import { UserMenu } from '../auth/UserMenu';
 import { useAuth } from '../../contexts/AuthContext';
 import RealTimeSearch from '../search/RealTimeSearch';
+import { useAuthModal } from '../../contexts/AuthModalContext';
 import {
   Home,
   User,
@@ -20,8 +21,6 @@ interface NavigationProps {
   heroTitle?: string;
   heroSubtitle?: string;
   heroButtons?: React.ReactNode;
-  isAuthModalOpen?: boolean;
-  setIsAuthModalOpen?: (open: boolean) => void;
 }
 
 const Navigation: React.FC<NavigationProps> = ({
@@ -29,18 +28,12 @@ const Navigation: React.FC<NavigationProps> = ({
   showHero = true,
   heroTitle = "Welcome.",
   heroSubtitle = "探索最新的技术分享、项目实战和学习心得",
-  heroButtons,
-  isAuthModalOpen: externalIsAuthModalOpen,
-  setIsAuthModalOpen: externalSetIsAuthModalOpen
+  heroButtons
 }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // 使用外部传入的模态框状态，如果没有则使用内部状态（向后兼容）
-  const [internalIsAuthModalOpen, setInternalIsAuthModalOpen] = useState(false);
-  const isAuthModalOpen = externalIsAuthModalOpen !== undefined ? externalIsAuthModalOpen : internalIsAuthModalOpen;
-  const setIsAuthModalOpen = externalSetIsAuthModalOpen !== undefined ? externalSetIsAuthModalOpen : setInternalIsAuthModalOpen;
+  const { openAuthModal } = useAuthModal();
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -95,7 +88,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 <Button
                   variant="outline"
                   className="border-border text-foreground hover:bg-accent transition-colors duration-300"
-                  onClick={() => setIsAuthModalOpen(true)}
+                  onClick={openAuthModal}
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   登录
@@ -151,7 +144,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   variant="outline"
                   className="w-full border-border text-foreground hover:bg-accent transition-colors duration-300 mt-4"
                   onClick={() => {
-                    setIsAuthModalOpen(true);
+                    openAuthModal();
                     setIsMenuOpen(false);
                   }}
                 >
@@ -202,6 +195,7 @@ const Navigation: React.FC<NavigationProps> = ({
           </div>
         </section>
       )}
+
     </>
   );
 };

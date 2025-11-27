@@ -74,6 +74,11 @@ public interface BlogMapper extends BaseMapper<Blog> {
      * 查询最新博客（按发布时间排序）
      */
     List<BlogDetailVO> selectLatestBlogs(@Param("limit") int limit);
+
+    /**
+     * 查询指定ID集合中已发布的博客ID
+     */
+    List<Long> selectPublishedBlogIds(@Param("ids") List<Long> blogIds);
     
     /**
      * 根据分类查询博客
@@ -87,4 +92,16 @@ public interface BlogMapper extends BaseMapper<Blog> {
     List<BlogDetailVO> selectBlogsByTags(@Param("tagIds") List<Long> tagIds,
                                        @Param("excludeBlogId") Long excludeBlogId,
                                        @Param("limit") int limit);
+
+    /**
+     * 查询作者的草稿列表
+     */
+    List<BlogDetailVO> selectDraftsByAuthor(@Param("authorId") Long authorId);
+
+    /**
+     * 分页查询作者自己的文章
+     */
+    IPage<BlogDetailVO> selectBlogsByAuthor(Page<BlogDetailVO> page,
+                                           @Param("authorId") Long authorId,
+                                           @Param("status") Integer status);
 }

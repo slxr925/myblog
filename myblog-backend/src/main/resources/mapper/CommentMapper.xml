@@ -4,15 +4,33 @@
 
     <!-- 分页查询评论列表（包含用户信息） -->
     <select id="selectCommentPage" resultType="com.ryan.myblog.model.entity.Comment">
-        SELECT c.id, c.blog_id, c.user_id, c.parent_id, c.reply_user_id, 
-               c.content, c.status, c.like_count, c.create_time, c.update_time, c.deleted
+        SELECT
+            c.id,
+            c.blog_id,
+            c.user_id,
+            c.parent_id,
+            c.reply_user_id,
+            c.content,
+            c.status,
+            c.like_count,
+            c.create_time,
+            c.update_time,
+            c.deleted
         FROM tb_comment c
+        LEFT JOIN tb_user u ON c.user_id = u.id
         WHERE c.deleted = 0
         <if test="blogId != null">
             AND c.blog_id = #{blogId}
         </if>
         <if test="status != null">
             AND c.status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                c.content LIKE CONCAT('%', #{keyword}, '%')
+                OR u.username LIKE CONCAT('%', #{keyword}, '%')
+                OR u.nickname LIKE CONCAT('%', #{keyword}, '%')
+            )
         </if>
         ORDER BY c.create_time DESC
     </select>

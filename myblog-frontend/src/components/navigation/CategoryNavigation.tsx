@@ -16,10 +16,10 @@ interface Tag {
 }
 
 interface CategoryNavigationProps {
-  onCategorySelect?: (categoryId: number) => void;
-  onTagSelect?: (tagName: string) => void;
-  selectedCategory?: number;
-  selectedTag?: string;
+  onCategorySelect?: (categoryId: number | null) => void;
+  onTagSelect?: (tagName: string | null) => void;
+  selectedCategory?: number | null;
+  selectedTag?: string | null;
 }
 
 const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
@@ -32,6 +32,7 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategoriesAndTags();
@@ -40,6 +41,7 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
   const fetchCategoriesAndTags = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
 
       // 并行获取分类和标签数据
       const [categoriesResponse, tagsResponse] = await Promise.all([
@@ -47,51 +49,33 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
         api.tag.getUsedTags() // 获取所有被使用的标签
       ]);
 
-      // 处理分类数据 - 支持两种响应格式
-      let categoriesData = [];
-      if (categoriesResponse) {
-        if (Array.isArray(categoriesResponse)) {
-          categoriesData = categoriesResponse;
-        } else if (categoriesResponse.data && Array.isArray(categoriesResponse.data)) {
-          categoriesData = categoriesResponse.data;
-        }
-
-        const formattedCategories = categoriesData.map(category => ({
-          id: category.id,
-          name: category.name,
-          description: category.description,
-          blogCount: category.blogCount || 0 // 使用后端返回的真实博客数量
-        }));
-        setCategories(formattedCategories);
-      }
-
-      // 处理标签数据 - 支持两种响应格式
-      let tagsData = [];
-      if (tagsResponse) {
-        if (Array.isArray(tagsResponse)) {
-          tagsData = tagsResponse;
-        } else if (tagsResponse.data && Array.isArray(tagsResponse.data)) {
-          tagsData = tagsResponse.data;
-        }
-        setTags(tagsData);
-      }
+      const formattedCategories = categoriesResponse.map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        blogCount: category.blogCount ?? 0 // 使用后端返回的真实博客数量
+      }));
+      setCategories(formattedCategories);
+      setTags(tagsResponse);
 
     } catch (error) {
       console.error('获取分类和标签失败:', error);
-      // 出错时设置空数组
       setCategories([]);
       setTags([]);
+      setErrorMessage('分类或标签加载失败，请稍后重试');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCategoryClick = (categoryId: number) => {
-    onCategorySelect?.(categoryId);
+    const nextValue = selectedCategory === categoryId ? null : categoryId;
+    onCategorySelect?.(nextValue);
   };
 
   const handleTagClick = (tagName: string) => {
-    onTagSelect?.(tagName);
+    const nextValue = selectedTag === tagName ? null : tagName;
+    onTagSelect?.(nextValue);
   };
 
   if (loading) {
@@ -129,26 +113,30 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
 
         {expanded && (
           <div className="space-y-2">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryClick(category.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-50 text-blue-600 font-medium border-l-3 border-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span>{category.name}</span>
-                  {category.blogCount && (
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                      {category.blogCount}
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
+            {categories.length === 0 ? (
+              <p className="text-sm text-gray-500 italic px-1">暂无分类</p>
+            ) : (
+              categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                    selectedCategory === category.id
+                      ? 'bg-blue-50 text-blue-600 font-medium border-l-3 border-blue-600'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{category.name}</span>
+                    {typeof category.blogCount === 'number' && (
+                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                        {category.blogCount}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -156,6 +144,9 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
       {/* 标签部分 */}
       <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-4">热门标签</h3>
+        {errorMessage && (
+          <p className="text-sm text-red-500 mb-2">{errorMessage}</p>
+        )}
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <button

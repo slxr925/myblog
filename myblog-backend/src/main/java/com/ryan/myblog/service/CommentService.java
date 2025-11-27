@@ -25,7 +25,7 @@ public interface CommentService {
     /**
      * 分页查询评论列表（平铺结构）
      */
-    IPage<CommentVO> getCommentPage(PageRequest pageRequest, Long blogId, Integer status);
+    IPage<CommentVO> getCommentPage(PageRequest pageRequest, Long blogId, Integer status, String keyword);
     
     /**
      * 审核评论

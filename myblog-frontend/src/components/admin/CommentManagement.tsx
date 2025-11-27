@@ -44,19 +44,8 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
         keyword: searchTerm
       });
 
-      // 处理不同的数据结构
-      let commentData = [];
-      let totalCount = 0;
-
-      if (response.data) {
-        if (response.data.records && Array.isArray(response.data.records)) {
-          commentData = response.data.records;
-          totalCount = response.data.total || 0;
-        } else if (Array.isArray(response.data)) {
-          commentData = response.data;
-          totalCount = commentData.length;
-        }
-      }
+      const commentData = Array.isArray(response?.records) ? response.records : [];
+      const totalCount = response?.total ?? commentData.length;
 
       setComments(commentData);
       setTotalComments(totalCount);

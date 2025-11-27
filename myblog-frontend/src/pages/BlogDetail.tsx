@@ -6,11 +6,11 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuthModal } from '../contexts/AuthModalContext';
 import { api } from '../utils/api';
 import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
-import { AuthModal } from '../components/auth/AuthModal';
 import Navigation from '../components/layout/Navigation';
 
 const BlogDetail: React.FC = () => {
@@ -23,7 +23,7 @@ const BlogDetail: React.FC = () => {
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { openAuthModal } = useAuthModal();
 
   // 为了兼容性，保持blogData变量
   const blogData = blog || {};
@@ -63,7 +63,11 @@ const BlogDetail: React.FC = () => {
 
   // 点赞处理函数
   const handleLike = async () => {
-    if (!user || !blog || isLiking) return;
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+    if (!blog || isLiking) return;
 
     try {
       setIsLiking(true);
@@ -140,10 +144,7 @@ const BlogDetail: React.FC = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background"
     >
-      <Navigation
-        title="Ryan's Blog"
-        showHero={false}
-      />
+      <Navigation title="Ryan's Blog" showHero={false} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -218,7 +219,7 @@ const BlogDetail: React.FC = () => {
                 variant={isLiked ? "default" : "outline"}
                 size="sm"
                 onClick={handleLike}
-                disabled={!user || isLiking}
+                disabled={isLiking}
                 className={`flex items-center space-x-2 ${
                   isLiked ? "bg-red-500 hover:bg-red-600 text-white" : ""
                 }`}
@@ -243,7 +244,7 @@ const BlogDetail: React.FC = () => {
               {!user && (
                 <p className="text-sm text-muted-foreground self-center">
                   <button
-                    onClick={() => setIsAuthModalOpen(true)}
+                    onClick={openAuthModal}
                     className="text-primary hover:underline bg-transparent border-0 cursor-pointer p-0"
                   >
                     登录
@@ -279,11 +280,6 @@ const BlogDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* 认证弹窗 */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
     </motion.div>
   );
 };

@@ -67,6 +67,11 @@ public class BlogListVO {
     private Integer status;
 
     /**
+     * 可见性
+     */
+    private Integer visibility;
+
+    /**
      * 是否置顶
      */
     private Boolean isTop;
@@ -100,4 +105,9 @@ public class BlogListVO {
      * 更新时间
      */
     private LocalDateTime updateTime;
+
+    /**
+     * 状态变更时间
+     */
+    private LocalDateTime statusChangedTime;
 }

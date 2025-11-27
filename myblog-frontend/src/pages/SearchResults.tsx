@@ -6,8 +6,8 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { api } from '../utils/api';
 import Navigation from '../components/layout/Navigation';
-import { AuthModal } from '../components/auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuthModal } from '../contexts/AuthModalContext';
 
 interface BlogPost {
   id: number;
@@ -30,13 +30,13 @@ interface BlogPost {
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const [searchParams] = useSearchParams();
   const searchTerm = searchParams.get('q') || '';
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   // 获取分类样式
@@ -88,14 +88,18 @@ const SearchResultsPage: React.FC = () => {
 
         if (searchTerm.trim()) {
           // 使用关键词搜索
-          response = await api.blog.search(searchTerm, 50);
+          response = await api.search.searchBlogs(searchTerm, 50);
         } else {
           // 没有搜索词时，获取最新文章
           response = await api.blog.getLatest(50);
         }
 
-        // 处理响应数据 - 响应拦截器已经提取了data部分
-        const blogData = Array.isArray(response) ? response : [];
+        // 处理响应数据
+        const blogData = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.content)
+            ? response.content
+            : [];
 
         const formattedPosts = blogData.map((blog: any) => {
           // 处理日期格式
@@ -116,17 +120,24 @@ const SearchResultsPage: React.FC = () => {
           }
 
           // 处理标签
-          const tags = blog.tags ? blog.tags.map((tag: any) => {
-            if (typeof tag === 'string') {
-              return tag;
-            } else if (tag && typeof tag === 'object' && 'name' in tag) {
-              return tag.name;
-            }
-            return '';
-          }).filter((tag: string) => tag) : [];
+          const tags = Array.isArray(blog.tags)
+            ? blog.tags
+                .map((tag: any) => {
+                  if (typeof tag === 'string') {
+                    return tag;
+                  }
+                  if (tag && typeof tag === 'object' && 'name' in tag) {
+                    return tag.name as string;
+                  }
+                  return '';
+                })
+                .filter(Boolean)
+            : (typeof blog.tags === 'string'
+                ? blog.tags.split(',').map((tag: string) => tag.trim())
+                : []);
 
           return {
-            id: blog.id,
+            id: Number(blog.id) || blog.id,
             title: blog.title,
             excerpt: blog.summary || '',
             content: blog.content || '',
@@ -183,7 +194,7 @@ const SearchResultsPage: React.FC = () => {
     e.stopPropagation(); // 防止触发文章点击
 
     if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
+      openAuthModal();
       return;
     }
 
@@ -262,8 +273,6 @@ const SearchResultsPage: React.FC = () => {
             </div>
           )
         }
-        isAuthModalOpen={isAuthModalOpen}
-        setIsAuthModalOpen={setIsAuthModalOpen}
       />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -406,11 +415,6 @@ const SearchResultsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
     </div>
   );
 };

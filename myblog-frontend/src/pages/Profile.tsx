@@ -12,7 +12,7 @@ import { api } from '../utils/api';
 import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
 import { FileUpload } from '../components/upload/FileUpload';
 import Navigation from '../components/layout/Navigation';
-import { Home, User, Mail, Lock, Edit2, Save, X, Camera } from 'lucide-react';
+import { Home, User, Mail, Lock, Edit2, Save, X, Camera, FileText } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -299,6 +299,10 @@ const Profile: React.FC = () => {
                 <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/')}>
                   <Home className="w-4 h-4 mr-2" />
                   返回首页
+                </Button>
+                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent transition-colors duration-300" onClick={() => navigate('/blog/drafts?status=draft')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  我的文章
                 </Button>
                 <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent transition-colors duration-300" onClick={() => setIsChangingPassword(true)}>
                   <Lock className="w-4 h-4 mr-2" />

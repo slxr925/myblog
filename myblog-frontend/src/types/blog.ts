@@ -13,12 +13,14 @@ export interface BlogDetailVO {
   categoryName?: string
   tags: string[]
   status: number
+  visibility?: number
   viewCount: number
   likeCount: number
   commentCount: number
   publishTime: string
   createTime: string
   updateTime: string
+  statusChangedTime?: string
 }
 
 export interface BlogDetailEnhancedVO {

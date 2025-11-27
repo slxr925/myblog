@@ -3,7 +3,6 @@ package com.ryan.myblog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryan.myblog.model.entity.Tag;
 import com.ryan.myblog.model.entity.BlogTag;
-import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.mapper.TagMapper;
 import com.ryan.myblog.mapper.BlogTagMapper;
 import com.ryan.myblog.mapper.BlogMapper;
@@ -35,8 +34,6 @@ public class TagServiceImpl implements TagService {
     private final CacheConsistencyService cacheConsistencyService;
     
     private static final String TAG_LIST_KEY = "tag:list";
-    private static final String TAG_DETAIL_KEY_PREFIX = "tag:detail:";
-    private static final String TAG_BY_BLOG_KEY_PREFIX = "tag:blog:";
     private static final long CACHE_EXPIRE_SECONDS = 3600; // 1小时
     
     @Override
@@ -78,8 +75,8 @@ public class TagServiceImpl implements TagService {
         tag.setUpdateTime(LocalDateTime.now());
         tagMapper.insert(tag);
 
-        // 发布缓存失效通知
-        cacheConsistencyService.publishCacheInvalidation("tag:*", "标签新增");
+        cacheService.delete(TAG_LIST_KEY);
+        cacheConsistencyService.updateCacheVersion("tag:*");
     }
 
     @Override
@@ -97,7 +94,7 @@ public class TagServiceImpl implements TagService {
         tag.setUpdateTime(LocalDateTime.now());
         tagMapper.updateById(tag);
 
-        // 更新缓存版本
+        cacheService.delete(TAG_LIST_KEY);
         cacheConsistencyService.updateCacheVersion("tag:*");
     }
 
@@ -106,8 +103,8 @@ public class TagServiceImpl implements TagService {
     public void deleteTag(Long id) {
         tagMapper.deleteById(id);
 
-        // 发布缓存失效通知
-        cacheConsistencyService.publishCacheInvalidation("tag:*", "标签删除");
+        cacheService.delete(TAG_LIST_KEY);
+        cacheConsistencyService.updateCacheVersion("tag:*");
     }
     
     @Override
@@ -154,7 +151,8 @@ public class TagServiceImpl implements TagService {
         
         // 如果有新增标签，发布缓存失效通知
         if (!tags.isEmpty()) {
-            cacheConsistencyService.publishCacheInvalidation("tag:*", "标签批量新增");
+            cacheService.delete(TAG_LIST_KEY);
+            cacheConsistencyService.updateCacheVersion("tag:*");
         }
         
         return tags;
@@ -170,38 +168,27 @@ public class TagServiceImpl implements TagService {
             return new ArrayList<>();
         }
 
-        // 获取所有标签ID
-        List<Long> tagIds = blogTags.stream()
-                .map(BlogTag::getTagId)
+        // 查询这些标签对应的博客，确保博客是已发布状态
+        List<Long> blogIds = blogTags.stream()
+                .map(BlogTag::getBlogId)
                 .distinct()
                 .collect(Collectors.toList());
 
-        // 查询这些标签对应的博客，确保博客是已发布状态
-        LambdaQueryWrapper<Blog> blogQuery = new LambdaQueryWrapper<Blog>()
-                .in(Blog::getId,
-                    blogTags.stream()
-                            .map(BlogTag::getBlogId)
-                            .distinct()
-                            .collect(Collectors.toList()))
-                .eq(Blog::getStatus, 1); // 只查询已发布的博客
-
-        List<Blog> publishedBlogs = blogMapper.selectList(blogQuery);
-        if (publishedBlogs.isEmpty()) {
+        List<Long> publishedBlogIds = blogMapper.selectPublishedBlogIds(blogIds);
+        if (publishedBlogIds.isEmpty()) {
             return new ArrayList<>();
         }
 
         // 获取已发布博客的标签关联
-        List<Long> publishedBlogIds = publishedBlogs.stream()
-                .map(Blog::getId)
-                .collect(Collectors.toList());
-
         List<Long> usedTagIds = blogTagMapper.selectList(
                 new LambdaQueryWrapper<BlogTag>().in(BlogTag::getBlogId, publishedBlogIds)
         ).stream().map(BlogTag::getTagId).distinct().collect(Collectors.toList());
 
         // 查询标签信息
         if (!usedTagIds.isEmpty()) {
-            return tagMapper.selectBatchIds(usedTagIds);
+            LambdaQueryWrapper<Tag> tagQuery = new LambdaQueryWrapper<Tag>()
+                    .in(Tag::getId, usedTagIds);
+            return tagMapper.selectList(tagQuery);
         }
 
         return new ArrayList<>();

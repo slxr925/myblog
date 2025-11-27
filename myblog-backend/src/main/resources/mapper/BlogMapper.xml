@@ -14,6 +14,7 @@
         <result column="category_id" property="categoryId"/>
         <result column="category_name" property="categoryName"/>
         <result column="status" property="status"/>
+        <result column="visibility" property="visibility"/>
         <result column="is_top" property="isTop"/>
         <result column="view_count" property="viewCount"/>
         <result column="like_count" property="likeCount"/>
@@ -21,6 +22,7 @@
         <result column="publish_time" property="publishTime"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
+        <result column="status_changed_time" property="statusChangedTime"/>
     </resultMap>
 
     <select id="selectBlogPage" resultMap="BlogDetailMap">
@@ -134,6 +136,17 @@
         LIMIT #{limit}
     </select>
 
+    <select id="selectPublishedBlogIds" resultType="java.lang.Long">
+        SELECT b.id
+        FROM tb_blog b
+        WHERE b.deleted = 0
+          AND b.status = 1
+          AND b.id IN
+          <foreach collection="ids" item="id" open="(" separator="," close=")">
+              #{id}
+          </foreach>
+    </select>
+
     <select id="selectBlogsByCategory" resultMap="BlogDetailMap">
         SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
         FROM tb_blog b
@@ -160,6 +173,30 @@
         </foreach>
         ORDER BY b.publish_time DESC
         LIMIT #{limit}
+    </select>
+
+    <select id="selectDraftsByAuthor" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0
+          AND b.status = 0
+          AND b.author_id = #{authorId}
+        ORDER BY b.update_time DESC
+    </select>
+
+    <select id="selectBlogsByAuthor" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.deleted = 0
+          AND b.author_id = #{authorId}
+        <if test="status != null">
+            AND b.status = #{status}
+        </if>
+        ORDER BY b.update_time DESC, b.create_time DESC
     </select>
 
 </mapper>

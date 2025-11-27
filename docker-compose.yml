@@ -35,13 +35,18 @@ services:
 
   # Elasticsearch搜索引擎
   elasticsearch:
-    image: elasticsearch:8.15.4
+    image: elasticsearch:8.11.1
     container_name: myblog-elasticsearch
     restart: unless-stopped
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "9200:9200"
       - "9300:9300"

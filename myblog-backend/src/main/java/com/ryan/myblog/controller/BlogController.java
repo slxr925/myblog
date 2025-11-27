@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.model.dto.BlogSaveDTO;
-import com.ryan.myblog.model.dto.BlogUpdateDTO;
 import com.ryan.myblog.model.dto.LikeResultDTO;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.utils.SecurityUtils;
@@ -132,10 +131,10 @@ public class BlogController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Void> saveBlog(@Validated @RequestBody BlogSaveDTO blogSaveDTO) {
+    public Result<BlogDetailVO> saveBlog(@Validated @RequestBody BlogSaveDTO blogSaveDTO) {
         Long authorId = getCurrentUserId();
-        blogService.saveBlog(blogSaveDTO, authorId);
-        return Result.success();
+        BlogDetailVO blogDetailVO = blogService.saveBlog(blogSaveDTO, authorId);
+        return Result.success(blogDetailVO);
     }
     
     /**
@@ -143,11 +142,11 @@ public class BlogController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Void> updateBlog(@PathVariable Long id,
+    public Result<BlogDetailVO> updateBlog(@PathVariable Long id,
                                   @Validated @RequestBody BlogSaveDTO blogSaveDTO) {
         Long authorId = getCurrentUserId();
-        blogService.updateBlog(id, blogSaveDTO, authorId);
-        return Result.success();
+        BlogDetailVO blogDetailVO = blogService.updateBlog(id, blogSaveDTO, authorId);
+        return Result.success(blogDetailVO);
     }
     
     /**
@@ -270,6 +269,34 @@ public class BlogController {
             @RequestParam(defaultValue = "10") Integer limit) {
         List<BlogListVO> searchResults = blogService.searchBlogsByTag(tagName, limit);
         return Result.success(searchResults);
+    }
+
+    /**
+     * 获取当前作者的文章列表
+     */
+    @GetMapping("/my")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public Result<IPage<BlogDetailVO>> getMyBlogs(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer status) {
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+        Long authorId = getCurrentUserId();
+        IPage<BlogDetailVO> result = blogService.getBlogsByAuthor(pageRequest, authorId, status);
+        return Result.success(result);
+    }
+
+    /**
+     * 获取当前作者的草稿列表
+     */
+    @GetMapping("/drafts")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public Result<List<BlogDetailVO>> getMyDrafts() {
+        Long authorId = getCurrentUserId();
+        List<BlogDetailVO> drafts = blogService.getDraftsByAuthor(authorId);
+        return Result.success(drafts);
     }
 
     /**

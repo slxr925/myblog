@@ -18,20 +18,24 @@ import {
   User,
   TrendingUp,
   Archive,
-  PenTool
+  PenTool,
+  ClipboardList
 } from 'lucide-react';
 import { BlogStatus, type BlogDetailVO } from '../../types/api';
 import { api } from '../../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 interface BlogManagementProps {
   onBack: () => void;
+  initialStatusFilter?: BlogStatus;
 }
 
-export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
+export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialStatusFilter }) => {
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState<BlogDetailVO[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [statusFilter, setStatusFilter] = useState<number | undefined>(initialStatusFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalBlogs, setTotalBlogs] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -39,6 +43,10 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
   useEffect(() => {
     fetchBlogs();
   }, [currentPage, searchTerm, statusFilter]);
+
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
   const fetchBlogs = async () => {
     try {
@@ -50,19 +58,8 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
         status: statusFilter
       });
 
-      // 处理不同的数据结构
-      let blogData = [];
-      let totalCount = 0;
-
-      if (response.data) {
-        if (response.data.records && Array.isArray(response.data.records)) {
-          blogData = response.data.records;
-          totalCount = response.data.total || 0;
-        } else if (Array.isArray(response.data)) {
-          blogData = response.data;
-          totalCount = blogData.length;
-        }
-      }
+      const blogData = Array.isArray(response?.records) ? response.records : [];
+      const totalCount = response?.total ?? blogData.length;
 
       setBlogs(blogData);
       setTotalBlogs(totalCount);
@@ -190,7 +187,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
     >
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
@@ -200,6 +197,20 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
               <h1 className="text-3xl font-bold">文章管理</h1>
               <p className="text-muted-foreground">管理系统中的所有博客文章</p>
             </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/blog/drafts?status=draft')}
+              className="flex items-center gap-2"
+            >
+              <ClipboardList className="w-4 h-4" />
+              草稿箱
+            </Button>
+            <Button onClick={() => navigate('/blog/new')} className="flex items-center gap-2">
+              <PenTool className="w-4 h-4" />
+              写文章
+            </Button>
           </div>
         </div>
 
@@ -423,6 +434,13 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
                         </div>
                       </div>
 
+                      {blog.statusChangedTime && (
+                        <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          状态更新：{new Date(blog.statusChangedTime).toLocaleString('zh-CN', { hour12: false })}
+                        </div>
+                      )}
+
                       {/* Blog Categories and Tags */}
                       {(blog.categoryName || blog.tags) && (
                         <div className="mb-4">
@@ -431,11 +449,12 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack }) => {
                               📁 {blog.categoryName}
                             </Badge>
                           )}
-                          {blog.tags && blog.tags.split(',').slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs mr-1 mb-1">
-                              #{tag.trim()}
-                            </Badge>
-                          ))}
+                          {Array.isArray(blog.tags) &&
+                            blog.tags.slice(0, 3).map((tag: any, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs mr-1 mb-1">
+                                #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
+                              </Badge>
+                            ))}
                         </div>
                       )}
 

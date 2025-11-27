@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
-import { Role, type AdminStatsDTO } from '../types/api';
+import { Role, type AdminStatsDTO, BlogStatus } from '../types/api';
 import { api } from '../utils/api';
 import { UserManagement } from '../components/admin/UserManagement';
 import { BlogManagement } from '../components/admin/BlogManagement';
@@ -11,13 +11,37 @@ import { CommentManagement } from '../components/admin/CommentManagement';
 import { CategoryManagement } from '../components/admin/CategoryManagement';
 import { TagManagement } from '../components/admin/TagManagement';
 import { ActivityChart } from '../components/charts/ActivityChart';
-import { Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp, Calendar, FolderOpen, Hash } from 'lucide-react';
+import { Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp, Calendar, FolderOpen, Hash, ClipboardList, PenTool, Home } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments' | 'categories' | 'tags';
 
+const ADMIN_VIEWS: AdminView[] = ['dashboard', 'users', 'blogs', 'comments', 'categories', 'tags'];
+
+const isValidAdminView = (value: string | null): value is AdminView => {
+  return value !== null && ADMIN_VIEWS.includes(value as AdminView);
+};
+
+const parseStatusParam = (value: string | null): BlogStatus | undefined => {
+  if (!value) return undefined;
+  switch (value.toLowerCase()) {
+    case 'draft':
+      return BlogStatus.DRAFT;
+    case 'published':
+      return BlogStatus.PUBLISHED;
+    case 'offline':
+      return BlogStatus.OFFLINE;
+    default:
+      return undefined;
+  }
+};
+
 export const Admin: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
+  const [initialBlogStatus, setInitialBlogStatus] = useState<BlogStatus | undefined>(undefined);
   const [stats, setStats] = useState<AdminStatsDTO>({
     totalUsers: 0,
     totalBlogs: 0,
@@ -40,6 +64,18 @@ export const Admin: React.FC = () => {
       );
     }
   }, [currentView]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    const statusParam = params.get('status');
+
+    if (isValidAdminView(tabParam) && tabParam !== currentView) {
+      setCurrentView(tabParam);
+    }
+
+    setInitialBlogStatus(parseStatusParam(statusParam));
+  }, [location.search]);
 
   const fetchStats = async () => {
     try {
@@ -81,7 +117,12 @@ export const Admin: React.FC = () => {
       case 'users':
         return <UserManagement onBack={() => setCurrentView('dashboard')} />;
       case 'blogs':
-        return <BlogManagement onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <BlogManagement
+            onBack={() => setCurrentView('dashboard')}
+            initialStatusFilter={initialBlogStatus}
+          />
+        );
       case 'comments':
         return <CommentManagement onBack={() => setCurrentView('dashboard')} />;
       case 'categories':
@@ -103,6 +144,16 @@ export const Admin: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">管理员控制台</h1>
           <p className="text-muted-foreground">管理博客系统的各项功能和设置</p>
+          <div className="flex flex-wrap gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              返回首页
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

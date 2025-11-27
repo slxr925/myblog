@@ -22,6 +22,7 @@ import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.SearchService;
+import com.ryan.myblog.service.TagService;
 import com.ryan.myblog.converter.BlogDocumentConverter;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.BlogDetailVO;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -56,13 +58,16 @@ public class BlogServiceImpl implements BlogService {
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
     private final SearchService searchService;
+    private final TagService tagService;
     private final BlogDocumentConverter blogDocumentConverter;
     private final SecurityUtils securityUtils;
     private final RedisTemplate<String, Object> redisTemplate;
     
     @Override
     @Transactional
-    public void saveBlog(BlogSaveDTO blogSaveDTO, Long authorId) {
+    public BlogDetailVO saveBlog(BlogSaveDTO blogSaveDTO, Long authorId) {
+        validateBlogCategory(blogSaveDTO);
+
         // 创建博客实体
         Blog blog = new Blog();
         blog.setTitle(blogSaveDTO.getTitle());
@@ -72,10 +77,13 @@ public class BlogServiceImpl implements BlogService {
         blog.setAuthorId(authorId);
         blog.setCategoryId(blogSaveDTO.getCategoryId());
         blog.setStatus(blogSaveDTO.getStatus());
+        Integer visibility = blogSaveDTO.getVisibility() != null ? blogSaveDTO.getVisibility() : 1;
+        blog.setVisibility(visibility);
         blog.setIsTop(blogSaveDTO.getIsTop());
         blog.setViewCount(0);
         blog.setLikeCount(0);
         blog.setCommentCount(0);
+        blog.setStatusChangedTime(LocalDateTime.now());
         
         if (blogSaveDTO.getStatus() == 1) { // 已发布
             blog.setPublishTime(LocalDateTime.now());
@@ -85,9 +93,8 @@ public class BlogServiceImpl implements BlogService {
         blogMapper.insert(blog);
         
         // 保存标签关联
-        if (blogSaveDTO.getTagIds() != null && !blogSaveDTO.getTagIds().isEmpty()) {
-            saveBlogTags(blog.getId(), blogSaveDTO.getTagIds());
-        }
+        List<Long> tagIds = resolveTagIds(blogSaveDTO);
+        saveBlogTags(blog.getId(), tagIds);
         
         // 清除相关缓存
         clearBlogCaches();
@@ -100,11 +107,19 @@ public class BlogServiceImpl implements BlogService {
                 log.error("同步博客到Elasticsearch失败: {}", blog.getId(), e);
             }
         }
+
+        BlogDetailVO detail = blogMapper.selectBlogDetail(blog.getId());
+        if (detail != null) {
+            detail.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
+        }
+        return detail;
     }
     
     @Override
     @Transactional
-    public void updateBlog(Long id, BlogSaveDTO blogSaveDTO, Long authorId) {
+    public BlogDetailVO updateBlog(Long id, BlogSaveDTO blogSaveDTO, Long authorId) {
+        validateBlogCategory(blogSaveDTO);
+
         // 检查博客是否存在且属于当前用户
         Blog existBlog = blogMapper.selectById(id);
         if (existBlog == null) {
@@ -114,6 +129,8 @@ public class BlogServiceImpl implements BlogService {
             throw new RuntimeException("无权限修改此博客");
         }
         
+        Integer previousStatus = existBlog.getStatus();
+
         // 更新博客信息
         existBlog.setTitle(blogSaveDTO.getTitle());
         existBlog.setSummary(blogSaveDTO.getSummary());
@@ -121,8 +138,14 @@ public class BlogServiceImpl implements BlogService {
         existBlog.setCoverImg(blogSaveDTO.getCoverImg());
         existBlog.setCategoryId(blogSaveDTO.getCategoryId());
         existBlog.setStatus(blogSaveDTO.getStatus());
+        Integer visibility = blogSaveDTO.getVisibility() != null ? blogSaveDTO.getVisibility() : existBlog.getVisibility();
+        existBlog.setVisibility(visibility != null ? visibility : 1);
         existBlog.setIsTop(blogSaveDTO.getIsTop());
         
+        if (!Objects.equals(previousStatus, blogSaveDTO.getStatus())) {
+            existBlog.setStatusChangedTime(LocalDateTime.now());
+        }
+
         if (blogSaveDTO.getStatus() == 1 && existBlog.getPublishTime() == null) {
             existBlog.setPublishTime(LocalDateTime.now());
         }
@@ -131,9 +154,8 @@ public class BlogServiceImpl implements BlogService {
         
         // 更新标签关联
         blogTagMapper.deleteByBlogId(id);
-        if (blogSaveDTO.getTagIds() != null && !blogSaveDTO.getTagIds().isEmpty()) {
-            saveBlogTags(id, blogSaveDTO.getTagIds());
-        }
+        List<Long> tagIds = resolveTagIds(blogSaveDTO);
+        saveBlogTags(id, tagIds);
         
         // 清除缓存
         clearBlogCache(id);
@@ -153,6 +175,12 @@ public class BlogServiceImpl implements BlogService {
             // 如果博客不再是已发布状态，从ES删除
             deleteBlogFromElasticsearch(existBlog.getId());
         }
+
+        BlogDetailVO detail = blogMapper.selectBlogDetail(id);
+        if (detail != null) {
+            detail.setTags(tagMapper.selectTagsByBlogId(id));
+        }
+        return detail;
     }
 
     @Override
@@ -396,13 +424,16 @@ public class BlogServiceImpl implements BlogService {
         if (blog == null) {
             throw new RuntimeException("博客不存在");
         }
-        if (!blog.getAuthorId().equals(authorId)) {
+        if (!checkBlogPermission(blog.getAuthorId(), authorId)) {
             throw new RuntimeException("无权限发布此博客");
         }
         
         blog.setStatus(1);
+        blog.setVisibility(1);
         blog.setPublishTime(LocalDateTime.now());
+        blog.setStatusChangedTime(LocalDateTime.now());
         blogMapper.updateById(blog);
+        log.info("用户 {} 发布博客 {}", authorId, id);
         
         // 清除相关缓存
         clearBlogCache(id);
@@ -427,12 +458,14 @@ public class BlogServiceImpl implements BlogService {
         if (blog == null) {
             throw new RuntimeException("博客不存在");
         }
-        if (!blog.getAuthorId().equals(authorId)) {
+        if (!checkBlogPermission(blog.getAuthorId(), authorId)) {
             throw new RuntimeException("无权限下线此博客");
         }
         
         blog.setStatus(2);
+        blog.setStatusChangedTime(LocalDateTime.now());
         blogMapper.updateById(blog);
+        log.info("用户 {} 将博客 {} 下线", authorId, id);
         
         // 清除相关缓存
         clearBlogCache(id);
@@ -449,6 +482,9 @@ public class BlogServiceImpl implements BlogService {
      * 保存博客标签关联
      */
     private void saveBlogTags(Long blogId, List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
         List<BlogTag> blogTags = tagIds.stream()
                 .map(tagId -> {
                     BlogTag blogTag = new BlogTag();
@@ -568,6 +604,35 @@ public class BlogServiceImpl implements BlogService {
     }
 
     /**
+     * 根据请求中的标签信息生成Tag ID
+     */
+    private List<Long> resolveTagIds(BlogSaveDTO blogSaveDTO) {
+        if (blogSaveDTO.getTagIds() != null && !blogSaveDTO.getTagIds().isEmpty()) {
+            return blogSaveDTO.getTagIds();
+        }
+
+        if (blogSaveDTO.getTags() != null && !blogSaveDTO.getTags().isEmpty()) {
+            return tagService.saveTagsIfNotExist(blogSaveDTO.getTags())
+                    .stream()
+                    .map(Tag::getId)
+                    .collect(Collectors.toList());
+        }
+
+        return List.of();
+    }
+
+    /**
+     * 状态为发布时必须选择分类
+     */
+    private void validateBlogCategory(BlogSaveDTO blogSaveDTO) {
+        if (blogSaveDTO.getStatus() != null
+                && blogSaveDTO.getStatus() == 1
+                && blogSaveDTO.getCategoryId() == null) {
+            throw new RuntimeException("发布文章前请先选择分类");
+        }
+    }
+
+    /**
      * 转换为博客列表VO
      */
     private BlogListVO convertToBlogListVO(Blog blog) {
@@ -579,6 +644,7 @@ public class BlogServiceImpl implements BlogService {
         vo.setAuthorId(blog.getAuthorId());
         vo.setCategoryId(blog.getCategoryId());
         vo.setStatus(blog.getStatus());
+        vo.setVisibility(blog.getVisibility());
         vo.setIsTop(blog.getIsTop() != null && blog.getIsTop() == 1); // 转换Integer为Boolean
         vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L); // 转换Integer为Long
         vo.setLikeCount(blog.getLikeCount() != null ? blog.getLikeCount().longValue() : 0L);
@@ -586,6 +652,7 @@ public class BlogServiceImpl implements BlogService {
         vo.setPublishTime(blog.getPublishTime());
         vo.setCreateTime(blog.getCreateTime());
         vo.setUpdateTime(blog.getUpdateTime());
+        vo.setStatusChangedTime(blog.getStatusChangedTime());
 
         // 获取作者信息
         if (blog.getAuthorId() != null) {
@@ -630,6 +697,53 @@ public class BlogServiceImpl implements BlogService {
                 .orderByDesc(Blog::getIsTop) // 置顶的在前
                 .orderByDesc(Blog::getPublishTime) // 按发布时间倒序
         ).stream().map(this::convertToBlogListVO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BlogDetailVO> getDraftsByAuthor(Long authorId) {
+        List<BlogDetailVO> drafts = blogMapper.selectDraftsByAuthor(authorId);
+        drafts.forEach(draft -> draft.setTags(tagMapper.selectTagsByBlogId(draft.getId())));
+        return drafts;
+    }
+
+    @Override
+    public IPage<BlogDetailVO> getBlogsByAuthor(PageRequest pageRequest, Long authorId, Integer status) {
+        Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        IPage<BlogDetailVO> result = blogMapper.selectBlogsByAuthor(page, authorId, status);
+        result.getRecords().forEach(blog -> blog.setTags(tagMapper.selectTagsByBlogId(blog.getId())));
+        return result;
+    }
+
+    @Override
+    public void updateBlogStatus(Long id, Integer status, Long operatorId) {
+        if (status == null) {
+            throw new RuntimeException("状态不能为空");
+        }
+        if (status == 1) {
+            publishBlog(id, operatorId);
+            return;
+        }
+        if (status == 2) {
+            unpublishBlog(id, operatorId);
+            return;
+        }
+
+        // 草稿状态或其他情况，直接更新
+        Blog blog = blogMapper.selectById(id);
+        if (blog == null) {
+            throw new RuntimeException("博客不存在");
+        }
+
+        if (!checkBlogPermission(blog.getAuthorId(), operatorId)) {
+            throw new RuntimeException("无权限更新该博客状态");
+        }
+
+        blog.setStatus(0);
+        blog.setStatusChangedTime(LocalDateTime.now());
+        blogMapper.updateById(blog);
+
+        // 草稿不应该在ES中出现
+        deleteBlogFromElasticsearch(id);
     }
 
     @Override

@@ -2,6 +2,7 @@ import React from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { AuthModalProvider } from './contexts/AuthModalContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import Profile from './pages/Profile'
@@ -10,13 +11,17 @@ import EnhancedBlog from './components/EnhancedBlog'
 import { Admin } from './pages/Admin'
 import SearchPage from './pages/Search'
 import SearchResultsPage from './pages/SearchResults'
+import BlogEditor from './components/editor/BlogEditor'
+import MyDrafts from './pages/MyDrafts'
+import { Role } from './types/api'
 
 const AppWrapper = () => {
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <Router>
+          <AuthModalProvider>
+            <Router>
           <Routes>
             {/* 公开路由 */}
             <Route path="/" element={<EnhancedBlog />} />
@@ -33,16 +38,43 @@ const AppWrapper = () => {
                 </ProtectedRoute>
               }
             />
+            {/* 管理员专属路由 */}
+            <Route
+              path="/blog/new"
+              element={
+                <ProtectedRoute requiredRole={Role.ADMIN}>
+                  <BlogEditor mode="create" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog/edit/:id"
+              element={
+                <ProtectedRoute requiredRole={Role.ADMIN}>
+                  <BlogEditor mode="edit" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog/drafts"
+              element={
+                <ProtectedRoute requiredRole={Role.ADMIN}>
+                  <MyDrafts />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole={Role.ADMIN}>
                   <Admin />
                 </ProtectedRoute>
               }
             />
           </Routes>
         </Router>
+          </AuthModalProvider>
       </AuthProvider>
     </ThemeProvider>
   </ErrorBoundary>

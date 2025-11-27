@@ -1,10 +1,11 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { Role } from '../../types/api';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: number; // 可选：需要的角色权限
+  requiredRole?: Role; // 可选：需要的角色权限
   redirectTo?: string; // 可选：重定向路径
 }
 
@@ -32,9 +33,26 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 如果需要特定角色权限，检查用户角色
-  if (requiredRole !== undefined && user && user.role < requiredRole) {
-    // 用户角色权限不足，重定向到首页或无权限页面
-    return <Navigate to="/" replace />;
+  if (requiredRole !== undefined && user) {
+    const hasPermission = (user.role ?? Role.USER) >= requiredRole;
+    if (!hasPermission) {
+      return (
+        <div className="min-h-screen flex items-center justify-center px-6 text-center">
+          <div className="space-y-3">
+            <h2 className="text-2xl font-semibold">权限不足</h2>
+            <p className="text-muted-foreground">
+              当前账号无权访问此页面，请使用管理员账号登录。
+            </p>
+            <button
+              className="text-sm text-primary underline underline-offset-2"
+              onClick={() => window.history.back()}
+            >
+              返回上一页
+            </button>
+          </div>
+        </div>
+      );
+    }
   }
 
   // 认证通过，渲染子组件

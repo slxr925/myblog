@@ -7,7 +7,7 @@ import { Badge } from './ui/badge';
 import { api } from '../utils/api';
 import type { BlogPost } from '../types/api';
 import { useAuth } from '../contexts/AuthContext';
-import { AuthModal } from './auth/AuthModal';
+import { useAuthModal } from '../contexts/AuthModalContext';
 import { AnimatedLights } from './effects/AnimatedLights';
 import Navigation from './layout/Navigation';
 import CategoryNavigation from './navigation/CategoryNavigation';
@@ -363,15 +363,102 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
   const [searchMode, setSearchMode] = useState<'all' | 'search' | 'tag' | 'category'>('all');
+
+  const extractBlogArray = (payload: unknown): any[] => {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+    if (payload && typeof payload === 'object') {
+      const recordPayload = payload as Record<string, unknown>;
+      if (Array.isArray(recordPayload.records)) {
+        return recordPayload.records as any[];
+      }
+      if (Array.isArray(recordPayload.content)) {
+        return recordPayload.content as any[];
+      }
+      if (Array.isArray(recordPayload.data)) {
+        return recordPayload.data as any[];
+      }
+    }
+    return [];
+  };
+
+  const convertBlogsToPosts = (blogData: any[]): BlogPost[] => {
+    return blogData.map((blog: any) => {
+      let publishDate = '';
+      const publishSource = blog.publishTime ?? blog.date ?? blog.createTime ?? blog.updateTime;
+      if (publishSource) {
+        try {
+          let dateObj: Date;
+          if (Array.isArray(publishSource)) {
+            const [year, month, day, hour, minute, second] = publishSource;
+            dateObj = new Date(year, (month ?? 1) - 1, day ?? 1, hour || 0, minute || 0, second || 0);
+          } else {
+            dateObj = new Date(publishSource);
+          }
+          publishDate = dateObj.toLocaleDateString('zh-CN');
+        } catch (error) {
+          publishDate = '未知日期';
+        }
+      }
+
+      const tags = Array.isArray(blog.tags)
+        ? blog.tags
+            .map((tag: any) => {
+              if (typeof tag === 'string') {
+                return tag;
+              }
+              if (tag && typeof tag === 'object' && 'name' in tag) {
+                return (tag as { name?: string }).name ?? '';
+              }
+              return '';
+            })
+            .filter(Boolean)
+        : [];
+
+      const content = blog.content || '';
+      const summary = blog.summary || blog.excerpt || blog.description || '';
+      const textForReadTime = content || summary;
+
+      return {
+        id: Number(blog.id) || blog.id,
+        title: blog.title || '未命名文章',
+        excerpt: summary,
+        content,
+        author: blog.authorName || blog.authorNickname || blog.author || '未知作者',
+        date: publishDate,
+        readTime: `${Math.max(1, Math.ceil((textForReadTime?.length || 0) / 500))}分钟`,
+        views: blog.viewCount ?? blog.views ?? 0,
+        likes: blog.likeCount ?? blog.likes ?? 0,
+        comments: blog.commentCount ?? blog.comments ?? 0,
+        tags,
+        image: blog.coverImg || blog.coverImage || blog.image || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
+        featured: blog.isTop === 1 || blog.isTop === true,
+        categoryId: blog.categoryId,
+        categoryName: blog.categoryName,
+      };
+    });
+  };
+
+  const fetchPostsByKeyword = async (term: string): Promise<BlogPost[]> => {
+    try {
+      const result = await api.search.searchBlogs(term, 10);
+      return convertBlogsToPosts(extractBlogArray(result));
+    } catch (error) {
+      console.warn('搜索服务不可用，使用数据库结果:', error);
+      const fallback = await api.blog.getBlogList({ keyword: term, size: 10 });
+      return fallback.posts;
+    }
+  };
 
   // 处理搜索
   const handleSearch = async (term: string) => {
@@ -386,102 +473,56 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
   };
 
   // 处理标签选择
-  const handleTagSelect = (tagName: string) => {
-    setSelectedTag(tagName);
+  const handleTagSelect = (tagName: string | null) => {
     setSearchTerm('');
-    setSearchMode('tag');
     setSelectedCategory(null);
+    if (tagName) {
+      setSelectedTag(tagName);
+      setSearchMode('tag');
+    } else {
+      setSelectedTag(null);
+      setSearchMode('all');
+    }
   };
 
   // 处理分类选择
-  const handleCategorySelect = (categoryId: number) => {
-    setSelectedCategory(categoryId);
+  const handleCategorySelect = (categoryId: number | null) => {
     setSearchTerm('');
     setSelectedTag(null);
-    setSearchMode('category'); // 预留，后续可以实现
+    if (categoryId) {
+      setSelectedCategory(categoryId);
+      setSearchMode('category');
+    } else {
+      setSelectedCategory(null);
+      setSearchMode('all');
+    }
   };
 
   // 获取博客数据
   useEffect(() => {
     const fetchPosts = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        let response;
+        let nextPosts: BlogPost[] = [];
 
-        if (searchMode === 'search' && searchTerm) {
-          // 搜索模式：使用关键词搜索
-          response = await api.blog.search(searchTerm, 10);
+        if (searchMode === 'search' && searchTerm.trim()) {
+          nextPosts = await fetchPostsByKeyword(searchTerm.trim());
         } else if (searchMode === 'tag' && selectedTag) {
-          // 标签模式：根据标签搜索
-          response = await api.blog.searchByTag(selectedTag, 10);
+          const result = await api.blog.searchByTag(selectedTag, 12);
+          nextPosts = convertBlogsToPosts(result);
         } else if (searchMode === 'category' && selectedCategory) {
-          // 分类模式：根据分类获取文章
-          response = await api.blog.getByCategory(selectedCategory, 10);
+          const result = await api.blog.getByCategoryPublic(selectedCategory, 12);
+          nextPosts = convertBlogsToPosts(result);
         } else {
-          // 默认模式：获取最新文章
-          response = await api.blog.getLatest(6);
+          const result = await api.blog.getLatest(6);
+          nextPosts = convertBlogsToPosts(extractBlogArray(result));
         }
 
-        // 由于响应拦截器已经提取了data部分，response就是文章数组
-        const blogData = response;
-        if (!blogData || !Array.isArray(blogData)) {
-          throw new Error('API返回的数据格式不正确');
-        }
-
-
-        const transformedPosts = blogData.map((blog: any) => {
-          // 处理日期格式
-          let publishDate = '';
-          if (blog.publishTime) {
-            try {
-              let dateObj: Date;
-              if (Array.isArray(blog.publishTime)) {
-                const [year, month, day, hour, minute, second] = blog.publishTime;
-                dateObj = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
-              } else {
-                dateObj = new Date(blog.publishTime);
-              }
-              publishDate = dateObj.toLocaleDateString('zh-CN');
-            } catch (error) {
-              publishDate = '未知日期';
-            }
-          }
-
-          // 处理标签
-          const tags = blog.tags ? blog.tags.map((tag: any) => {
-            if (typeof tag === 'string') {
-              return tag;
-            } else if (tag && typeof tag === 'object' && 'name' in tag) {
-              return tag.name;
-            }
-            return '';
-          }).filter((tag: string) => tag) : [];
-
-          return {
-            id: blog.id,
-            title: blog.title,
-            excerpt: blog.summary || '',
-            content: blog.content || '',
-            author: blog.authorName || '未知作者',
-            date: publishDate,
-            readTime: `${Math.ceil((blog.content?.length || 0) / 500)}分钟`,
-            views: blog.viewCount || 0,
-            likes: blog.likeCount || 0,
-            comments: blog.commentCount || 0,
-            tags: tags,
-            image: blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
-            featured: blog.isTop === 1,
-            categoryId: blog.categoryId,
-            categoryName: blog.categoryName,
-          };
-        });
-
-        setPosts(transformedPosts);
-        setFilteredPosts(transformedPosts);
-
+        setPosts(nextPosts);
+        setFilteredPosts(nextPosts);
       } catch (error) {
-        // 如果API失败，使用模拟数据
-        const fallbackPosts = [
+        console.error('获取文章失败，使用默认内容:', error);
+        const fallbackPosts: BlogPost[] = [
           {
             id: 1,
             title: "Spring Boot 3.x 新特性详解",
@@ -531,7 +572,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
             categoryName: "技术分享"
           }
         ];
-
         setPosts(fallbackPosts);
         setFilteredPosts(fallbackPosts);
       } finally {
@@ -552,32 +592,40 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
 
   const handleLike = async (postId: number) => {
     if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
+      openAuthModal();
       return;
     }
 
+    const wasLiked = likedPosts.has(postId);
+
     try {
-      await api.blog.toggleLike(postId);
+      const result = await api.blog.toggleLikeWithDetails(postId);
+      const nextLiked = result?.isLiked ?? !wasLiked;
+      const nextLikeCountDelta = result?.likeCount;
+      const nextViewCount = result?.viewCount;
+
       setLikedPosts(prev => {
         const newSet = new Set(prev);
-        if (newSet.has(postId)) {
-          newSet.delete(postId);
-        } else {
+        if (nextLiked) {
           newSet.add(postId);
+        } else {
+          newSet.delete(postId);
         }
         return newSet;
       });
 
-      // 更新本地文章数据
       setPosts(prevPosts =>
-        prevPosts.map(post =>
-          post.id === postId
-            ? {
-                ...post,
-                likes: likedPosts.has(postId) ? post.likes - 1 : post.likes + 1
-              }
-            : post
-        )
+        prevPosts.map(post => {
+          if (post.id !== postId) {
+            return post;
+          }
+          const fallbackLikes = wasLiked ? Math.max(0, post.likes - 1) : post.likes + 1;
+          return {
+            ...post,
+            likes: nextLikeCountDelta ?? fallbackLikes,
+            views: nextViewCount ?? post.views
+          };
+        })
       );
     } catch (error) {
       console.error('点赞失败:', error);
@@ -615,8 +663,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
             </Button>
           </div>
         }
-        isAuthModalOpen={isAuthModalOpen}
-        setIsAuthModalOpen={setIsAuthModalOpen}
       />
 
       
@@ -725,10 +771,6 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
       </footer>
 
       {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
     </div>
   );
 };

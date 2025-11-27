@@ -50,18 +50,20 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
     try {
       setLoading(true);
-      const response = await api.blog.search(term, 8); // 限制建议数量为8个
-      const searchData = Array.isArray(response) ? response : (response?.data || []);
+      const response = await api.search.searchBlogs(term, 8);
+      const searchData = response?.content ?? [];
 
-      const formattedSuggestions = searchData.map((blog: any) => ({
-        id: blog.id,
-        title: blog.title,
-        summary: blog.summary,
-        categoryName: blog.categoryName,
-        tags: blog.tags ? (Array.isArray(blog.tags) ? blog.tags.map((tag: any) =>
-          typeof tag === 'string' ? tag : tag.name
-        ) : []) : []
-      }));
+      const formattedSuggestions = searchData.map((doc: any) => {
+        const docTags = Array.isArray(doc.tags) ? doc.tags : [];
+        const numericId = Number(doc.id);
+        return {
+          id: Number.isNaN(numericId) ? doc.id : numericId,
+          title: doc.title,
+          summary: doc.summary,
+          categoryName: doc.categoryName,
+          tags: docTags
+        };
+      });
 
       setSuggestions(formattedSuggestions);
       setIsOpen(true);

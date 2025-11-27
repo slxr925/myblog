@@ -58,6 +58,12 @@ public class Blog {
      */
     @TableField("status")
     private Integer status;
+
+    /**
+     * 可见性：0-私密，1-公开
+     */
+    @TableField("visibility")
+    private Integer visibility;
     
     /**
      * 是否置顶：0-否，1-是
@@ -88,6 +94,12 @@ public class Blog {
      */
     @TableField("publish_time")
     private LocalDateTime publishTime;
+
+    /**
+     * 状态变更时间
+     */
+    @TableField("status_changed_time")
+    private LocalDateTime statusChangedTime;
     
     /**
      * 创建时间

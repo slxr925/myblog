@@ -23,6 +23,7 @@ public class BlogDetailVO {
     private String categoryName;
     private List<TagVO> tags;
     private Integer status;
+    private Integer visibility;
     private Integer isTop;
     private Integer viewCount;
     private Integer likeCount;
@@ -31,4 +32,5 @@ public class BlogDetailVO {
     private LocalDateTime publishTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private LocalDateTime statusChangedTime;
 }

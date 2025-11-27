@@ -41,17 +41,13 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({ onBack }
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await api.category.getAll();
+      const response = await api.admin.getCategories();
 
-      // 处理不同的数据结构
-      let categoryData = [];
-      if (response.data) {
-        if (Array.isArray(response.data)) {
-          categoryData = response.data;
-        } else if (response.data.records && Array.isArray(response.data.records)) {
-          categoryData = response.data.records;
-        }
-      }
+      const categoryData = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.records)
+          ? response.records
+          : [];
 
       setCategories(categoryData);
     } catch (err) {

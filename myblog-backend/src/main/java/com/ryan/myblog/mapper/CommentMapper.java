@@ -16,9 +16,10 @@ public interface CommentMapper extends BaseMapper<Comment> {
     /**
      * 分页查询评论列表（包含用户信息）
      */
-    IPage<Comment> selectCommentPage(Page<Comment> page, 
-                                   @Param("blogId") Long blogId,
-                                   @Param("status") Integer status);
+    IPage<Comment> selectCommentPage(Page<Comment> page,
+                                    @Param("blogId") Long blogId,
+                                    @Param("status") Integer status,
+                                    @Param("keyword") String keyword);
     
     /**
      * 增加点赞数

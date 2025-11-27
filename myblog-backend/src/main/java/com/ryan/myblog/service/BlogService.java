@@ -18,12 +18,12 @@ public interface BlogService {
     /**
      * 保存博客
      */
-    void saveBlog(BlogSaveDTO blogSaveDTO, Long authorId);
+    BlogDetailVO saveBlog(BlogSaveDTO blogSaveDTO, Long authorId);
     
     /**
      * 更新博客
      */
-    void updateBlog(Long id, BlogSaveDTO blogSaveDTO, Long authorId);
+    BlogDetailVO updateBlog(Long id, BlogSaveDTO blogSaveDTO, Long authorId);
     
     /**
      * 删除博客
@@ -129,4 +129,19 @@ public interface BlogService {
      * 获取所有公开文章
      */
     List<BlogListVO> getAllPublicBlogs();
+
+    /**
+     * 获取当前作者的草稿列表
+     */
+    List<BlogDetailVO> getDraftsByAuthor(Long authorId);
+
+    /**
+     * 获取当前作者的文章（支持状态过滤）
+     */
+    IPage<BlogDetailVO> getBlogsByAuthor(PageRequest pageRequest, Long authorId, Integer status);
+
+    /**
+     * 更新博客状态
+     */
+    void updateBlogStatus(Long id, Integer status, Long operatorId);
 }

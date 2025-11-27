@@ -245,3 +245,9 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+// 检查用户是否是管理员的hook
+export const useAdmin = (): boolean => {
+  const { user, isAuthenticated } = useAuth();
+  return isAuthenticated ? user?.role === Role.ADMIN : false;
+};

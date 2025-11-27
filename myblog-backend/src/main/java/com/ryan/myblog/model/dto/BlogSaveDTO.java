@@ -25,13 +25,22 @@ public class BlogSaveDTO {
     
     private String coverImg;
     
-    @NotNull(message = "分类不能为空")
     private Long categoryId;
     
     private List<Long> tagIds;
+
+    /**
+     * 标签名称列表（前端编辑器使用）
+     */
+    private List<String> tags;
     
     @NotNull(message = "状态不能为空")
     private Integer status;
     
     private Integer isTop = 0;
+
+    /**
+     * 文章可见性：0-私密，1-公开
+     */
+    private Integer visibility = 1;
 }

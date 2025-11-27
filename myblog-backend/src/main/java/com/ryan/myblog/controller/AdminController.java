@@ -9,9 +9,17 @@ import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.model.entity.VisitLog;
 import com.ryan.myblog.mapper.VisitLogMapper;
 import com.ryan.myblog.service.AdminStatsService;
+import com.ryan.myblog.service.BlogService;
+import com.ryan.myblog.service.CategoryService;
+import com.ryan.myblog.service.CommentService;
+import com.ryan.myblog.service.TagService;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.UserRoleUtils;
 import com.ryan.myblog.utils.SecurityUtils;
+import com.ryan.myblog.model.entity.Category;
+import com.ryan.myblog.model.entity.Tag;
+import com.ryan.myblog.model.vo.BlogDetailVO;
+import com.ryan.myblog.model.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +42,10 @@ public class AdminController {
     private final UserService userService;
     private final AdminStatsService adminStatsService;
     private final VisitLogMapper visitLogMapper;
+    private final BlogService blogService;
+    private final CommentService commentService;
+    private final CategoryService categoryService;
+    private final TagService tagService;
 
     /**
      * 获取管理员统计数据
@@ -48,6 +60,113 @@ public class AdminController {
             log.error("获取统计数据失败", e);
             return Result.error("获取统计数据失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 分页获取评论列表
+     */
+    @GetMapping("/comments")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<PageResult<CommentVO>> getComments(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "12") Integer size,
+            @RequestParam(required = false) Long blogId,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String keyword) {
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+
+        IPage<CommentVO> commentPage = commentService.getCommentPage(pageRequest, blogId, status, keyword);
+        PageResult<CommentVO> pageResult = PageResult.of(
+                commentPage.getRecords(),
+                commentPage.getTotal(),
+                commentPage.getCurrent(),
+                commentPage.getSize()
+        );
+        return Result.success(pageResult);
+    }
+
+    /**
+     * 删除评论
+     */
+    @DeleteMapping("/comments/{commentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteComment(@PathVariable Long commentId) {
+        Long operatorId = SecurityUtils.getCurrentUserId();
+        commentService.deleteComment(commentId, operatorId);
+        return Result.success();
+    }
+
+    /**
+     * 分页获取文章列表
+     */
+    @GetMapping("/blogs")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<PageResult<BlogDetailVO>> getBlogs(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "12") Integer size,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String keyword) {
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+
+        IPage<BlogDetailVO> blogPage = blogService.getBlogPage(pageRequest, null, null, keyword, status);
+        PageResult<BlogDetailVO> pageResult = PageResult.of(
+                blogPage.getRecords(),
+                blogPage.getTotal(),
+                blogPage.getCurrent(),
+                blogPage.getSize()
+        );
+        return Result.success(pageResult);
+    }
+
+    /**
+     * 获取分类列表
+     */
+    @GetMapping("/categories")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<List<Category>> getCategories() {
+        List<Category> categories = categoryService.getAllCategoriesWithCount();
+        return Result.success(categories);
+    }
+
+    /**
+     * 获取标签列表
+     */
+    @GetMapping("/tags")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<List<Tag>> getTags() {
+        List<Tag> tags = tagService.getAllTags();
+        return Result.success(tags);
+    }
+
+    /**
+     * 更新文章状态
+     */
+    @PutMapping("/blogs/{blogId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> updateBlogStatus(@PathVariable Long blogId,
+                                         @RequestBody Map<String, Integer> request) {
+        Integer status = request.get("status");
+        if (status == null) {
+            return Result.error("状态值不能为空");
+        }
+        Long operatorId = SecurityUtils.getCurrentUserId();
+        blogService.updateBlogStatus(blogId, status, operatorId);
+        return Result.success();
+    }
+
+    /**
+     * 删除文章
+     */
+    @DeleteMapping("/blogs/{blogId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteBlog(@PathVariable Long blogId) {
+        Long operatorId = SecurityUtils.getCurrentUserId();
+        blogService.deleteBlog(blogId, operatorId);
+        return Result.success();
     }
 
     /**

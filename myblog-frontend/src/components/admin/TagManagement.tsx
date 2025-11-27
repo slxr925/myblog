@@ -40,17 +40,13 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
   const fetchTags = async () => {
     try {
       setLoading(true);
-      const response = await api.tag.getAll();
+      const response = await api.admin.getTags();
 
-      // 处理不同的数据结构
-      let tagData = [];
-      if (response.data) {
-        if (Array.isArray(response.data)) {
-          tagData = response.data;
-        } else if (response.data.records && Array.isArray(response.data.records)) {
-          tagData = response.data.records;
-        }
-      }
+      const tagData = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.records)
+          ? response.records
+          : [];
 
       setTags(tagData);
     } catch (err) {
