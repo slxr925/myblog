@@ -25,6 +25,18 @@
         <result column="status_changed_time" property="statusChangedTime"/>
     </resultMap>
 
+    <sql id="BlogBaseColumns">
+        id, title, summary, content, cover_img, author_id, category_id, status,
+        visibility, is_top, view_count, like_count, comment_count,
+        publish_time, status_changed_time, create_time, update_time, deleted
+    </sql>
+
+    <select id="selectById" resultType="com.ryan.myblog.model.entity.Blog">
+        SELECT <include refid="BlogBaseColumns"/>
+        FROM tb_blog
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
     <select id="selectBlogPage" resultMap="BlogDetailMap">
         SELECT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
         FROM tb_blog b
