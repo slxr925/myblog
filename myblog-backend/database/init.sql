@@ -196,10 +196,10 @@ INSERT INTO tb_tag (name, color) VALUES
 ON DUPLICATE KEY UPDATE color = VALUES(color);
 
 -- 插入示例博客文章
-INSERT INTO tb_blog (title, summary, content, author_id, category_id, status, visibility, is_top, publish_time) VALUES
-('Spring Boot 3.x 新特性详解', 'Spring Boot 3.x 版本带来了很多令人兴奋的新特性，本文将详细介绍这些新特性的使用方法和最佳实践。', '# Spring Boot 3.x 新特性详解\n\nSpring Boot 3.x 是一个重要的版本升级，带来了许多令人兴奋的新特性。\n\n## 主要特性\n\n1. **基于 Jakarta EE 9+**\n2. **原生镜像支持**\n3. **性能优化**\n4. **新的配置属性**\n\n...', 1, 1, 1, 1, 1, NOW()),
-('Docker 容器化部署实践', '详细介绍如何使用 Docker 容器化部署 Spring Boot 应用，包括 Dockerfile 编写和容器编排。', '# Docker 容器化部署实践\n\n本文将详细介绍如何使用 Docker 来容器化部署 Spring Boot 应用。\n\n## Dockerfile 示例\n\n```dockerfile\nFROM openjdk:17-jdk-slim\nCOPY target/app.jar /app.jar\nENTRYPOINT ["java", "-jar", "/app.jar"]\n```\n\n## 部署步骤\n\n1. 构建镜像\n2. 运行容器\n3. 配置网络\n4. 数据持久化\n\n...', 1, 2, 1, 1, 0, NOW()),
-('Redis 缓存设计与优化', '分享 Redis 在项目中的缓存设计模式和性能优化技巧，包括缓存穿透、雪崩等问题的解决方案。', '# Redis 缓存设计与优化\n\nRedis 作为高性能的内存数据库，在缓存设计中有很多最佳实践。\n\n## 缓存模式\n\n1. **Cache-Aside**\n2. **Write-Through**\n3. **Write-Behind**\n\n## 常见问题\n\n- 缓存穿透\n- 缓存雪崩\n- 缓存击穿\n\n...', 1, 1, 1, 1, 0, NOW())
+INSERT INTO tb_blog (title, summary, content, author_id, category_id, status, visibility, is_top, publish_time, status_changed_time) VALUES
+('Spring Boot 3.x 新特性详解', 'Spring Boot 3.x 版本带来了很多令人兴奋的新特性，本文将详细介绍这些新特性的使用方法和最佳实践。', '# Spring Boot 3.x 新特性详解\n\nSpring Boot 3.x 是一个重要的版本升级，带来了许多令人兴奋的新特性。\n\n## 主要特性\n\n1. **基于 Jakarta EE 9+**\n2. **原生镜像支持**\n3. **性能优化**\n4. **新的配置属性**\n\n...', 1, 1, 1, 1, 1, NOW(), NOW()),
+('Docker 容器化部署实践', '详细介绍如何使用 Docker 容器化部署 Spring Boot 应用，包括 Dockerfile 编写和容器编排。', '# Docker 容器化部署实践\n\n本文将详细介绍如何使用 Docker 来容器化部署 Spring Boot 应用。\n\n## Dockerfile 示例\n\n```dockerfile\nFROM openjdk:17-jdk-slim\nCOPY target/app.jar /app.jar\nENTRYPOINT ["java", "-jar", "/app.jar"]\n```\n\n## 部署步骤\n\n1. 构建镜像\n2. 运行容器\n3. 配置网络\n4. 数据持久化\n\n...', 1, 2, 1, 1, 0, NOW(), NOW()),
+('Redis 缓存设计与优化', '分享 Redis 在项目中的缓存设计模式和性能优化技巧，包括缓存穿透、雪崩等问题的解决方案。', '# Redis 缓存设计与优化\n\nRedis 作为高性能的内存数据库，在缓存设计中有很多最佳实践。\n\n## 缓存模式\n\n1. **Cache-Aside**\n2. **Write-Through**\n3. **Write-Behind**\n\n## 常见问题\n\n- 缓存穿透\n- 缓存雪崩\n- 缓存击穿\n\n...', 1, 1, 1, 1, 0, NOW(), NOW())
 ON DUPLICATE KEY UPDATE content = VALUES(content), update_time = NOW();
 
 -- 插入博客标签关联
