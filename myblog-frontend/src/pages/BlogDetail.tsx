@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, Eye, Heart, MessageCircle, ArrowLeft, Share2, ThumbsUp } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/card';
+import { Calendar, Clock, Heart, Share2, MessageCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,7 +9,6 @@ import { api } from '../utils/api';
 import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
-import Navigation from '../components/layout/Navigation';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,49 +16,35 @@ const BlogDetail: React.FC = () => {
   const { user } = useAuth();
   const [blog, setBlog] = useState<BlogDetailVO | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const { openAuthModal } = useAuthModal();
 
-  // 为了兼容性，保持blogData变量
-  const blogData = blog || {};
+  const blogData = blog || {} as BlogDetailVO;
 
   useEffect(() => {
     const fetchBlogDetail = async () => {
       if (!id) return;
-      
       try {
         setLoading(true);
-        setError(null);
-        
-        // 先尝试使用普通文章详情API，避免增强版API的问题
         const response = await api.blog.getDetail(Number(id));
-
-        // 直接使用响应数据（已经通过响应拦截器提取了data部分）
-
         setBlog(response);
         setLikeCount(response.likeCount || 0);
         setIsLiked(response.isLiked || false);
-
-        // 记录博客访问
+        
         api.admin.trackVisit(`/blog/${id}`).catch(err =>
           console.warn('记录博客访问失败:', err)
         );
       } catch (err: any) {
         console.error('获取文章详情失败:', err);
-        console.error('错误详情:', err.response?.data || err.message);
-        setError(err.response?.data?.message || '获取文章详情失败，请稍后重试');
       } finally {
         setLoading(false);
       }
     };
-
     fetchBlogDetail();
   }, [id]);
 
-  // 点赞处理函数
   const handleLike = async () => {
     if (!user) {
       openAuthModal();
@@ -71,15 +54,9 @@ const BlogDetail: React.FC = () => {
 
     try {
       setIsLiking(true);
-
-      // 调用新的点赞API，获取详细结果
       const result: LikeResultDTO = await api.blog.toggleLikeWithDetails(blog.id);
-
-      // 直接使用API返回的数据更新状态
       setIsLiked(result.isLiked);
       setLikeCount(result.likeCount);
-
-      // 更新博客对象中的浏览量（保持一致）
       if (blog) {
         setBlog({
           ...blog,
@@ -95,7 +72,6 @@ const BlogDetail: React.FC = () => {
     }
   };
 
-  // 分享处理函数
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -104,183 +80,133 @@ const BlogDetail: React.FC = () => {
           text: blogData.summary,
           url: window.location.href,
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     } else {
-      // 复制链接到剪贴板
       navigator.clipboard.writeText(window.location.href);
-      // 这里可以添加一个toast提示
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载中...</p>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
       </div>
     );
   }
 
-  if (error || !blog) {
+  if (!blog) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-2">文章不存在</h2>
-            <p className="text-muted-foreground mb-4">{error || '该文章可能已被删除或不存在'}</p>
-            <Button onClick={() => navigate('/')}>返回首页</Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+        <h2 className="text-xl font-bold mb-2">文章不存在</h2>
+        <Button onClick={() => navigate('/')}>返回首页</Button>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-background"
-    >
-      <Navigation title="Ryan's Blog" showHero={false} />
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* 文章头部信息 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              {blogData.title}
-            </h1>
-            
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-              {blogData.authorName && (
-                <span className="flex items-center">
-                  <span className="font-medium">作者:</span> {blogData.authorName}
-                </span>
-              )}
-              {blogData.categoryName && (
-                <span className="flex items-center">
-                  <span className="font-medium">分类:</span> {blogData.categoryName}
-                </span>
-              )}
-              <span className="flex items-center">
-                <Calendar className="w-4 h-4 mr-1" />
-                {blogData.publishTime ? new Date(blogData.publishTime).toLocaleDateString('zh-CN') : '未知日期'}
-              </span>
-              <span className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                {Math.ceil((blogData.content?.length || 0) / 500)}分钟阅读
-              </span>
-              <span className="flex items-center">
-                <Eye className="w-4 h-4 mr-1" />
-                {blogData.viewCount || 0}
-              </span>
-              <span className="flex items-center">
-                <Heart className={`w-4 h-4 mr-1 ${isLiked ? 'fill-current text-red-500' : ''}`} />
-                {likeCount}
-              </span>
-              <span className="flex items-center">
-                <MessageCircle className="w-4 h-4 mr-1" />
-                {blogData.commentCount || 0}
-              </span>
+    <div className="min-h-screen bg-white">
+      {/* Article Header */}
+      <div className="bg-slate-50 border-b border-slate-100 py-20">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Badge variant="default">{blogData.categoryName || '未分类'}</Badge>
+            <span className="text-slate-400">|</span>
+            <span className="text-slate-500 text-sm flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {blogData.publishTime ? new Date(blogData.publishTime).toLocaleDateString('zh-CN') : '未知日期'}
+            </span>
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-8 leading-tight">
+            {blogData.title}
+          </h1>
+          
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
+                {(blogData.authorName || 'R').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="font-bold text-slate-900">{blogData.authorName || 'Unknown'}</div>
+                <div className="text-sm text-slate-500 flex items-center gap-2">
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {Math.ceil((blogData.content?.length || 0) / 500)} min read</span>
+                  <span>·</span>
+                  <span>{blogData.viewCount} views</span>
+                </div>
+              </div>
             </div>
-
-            {blogData.tags && Array.isArray(blogData.tags) && blogData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="text-sm font-medium text-muted-foreground">标签:</span>
-                {blogData.tags.map((tag, index) => (
-                  <Badge key={tag.id || index} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                    {tag.name || (typeof tag === 'string' ? tag : '未知标签')}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            {blogData.summary && (
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-foreground/80 leading-relaxed">{blogData.summary}</p>
-              </div>
-            )}
-
-            {/* 互动按钮区域 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="flex flex-wrap gap-4 py-4 border-y border-border"
-            >
-              <Button
-                variant={isLiked ? "default" : "outline"}
-                size="sm"
+            
+            <div className="flex gap-2">
+              <Button 
+                variant={isLiked ? "default" : "secondary"} 
+                className={`rounded-full w-10 h-10 p-0 flex items-center justify-center ${isLiked ? 'bg-red-500 hover:bg-red-600' : ''}`}
                 onClick={handleLike}
                 disabled={isLiking}
-                className={`flex items-center space-x-2 ${
-                  isLiked ? "bg-red-500 hover:bg-red-600 text-white" : ""
-                }`}
               >
-                <ThumbsUp className={`w-4 h-4 ${isLiking ? "animate-pulse" : ""}`} />
-                <span>{isLiked ? "已点赞" : "点赞"}</span>
-                <Badge variant="secondary" className="ml-1">
-                  {likeCount}
-                </Badge>
+                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
               </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShare}
-                className="flex items-center space-x-2"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>分享</span>
+              <Button variant="secondary" className="rounded-full w-10 h-10 p-0 flex items-center justify-center" onClick={handleShare}>
+                <Share2 className="w-5 h-5" />
               </Button>
-
-              {!user && (
-                <p className="text-sm text-muted-foreground self-center">
-                  <button
-                    onClick={openAuthModal}
-                    className="text-primary hover:underline bg-transparent border-0 cursor-pointer p-0"
-                  >
-                    登录
-                  </button>
-                  后可以点赞文章
-                </p>
-              )}
-            </motion.div>
-          </motion.div>
-
-          {/* 文章内容 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="prose prose-lg max-w-none"
-          >
-            {blogData.content ? (
-              <MarkdownRenderer content={blogData.content} />
-            ) : (
-              <div className="bg-muted/30 p-8 rounded-lg text-center">
-                <p className="text-muted-foreground">文章内容正在加载中或暂无内容</p>
-              </div>
-            )}
-          </motion.div>
-
-          {/* 评论区域 */}
-          {blog && (
-            <CommentSection blogId={blog.id} />
-          )}
-
-          {/* 相关推荐 - 暂时移除，因为普通API不包含相关推荐数据 */}
+            </div>
+          </div>
         </div>
       </div>
 
-    </motion.div>
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12 max-w-4xl grid grid-cols-1 md:grid-cols-[1fr_250px] gap-12">
+        {/* Main Content */}
+        <article className="prose prose-lg prose-indigo max-w-none prose-headings:font-bold prose-p:text-slate-600 prose-img:rounded-2xl prose-img:shadow-xl">
+          {blogData.coverImg && (
+            <img 
+              src={blogData.coverImg} 
+              alt={blogData.title} 
+              className="w-full aspect-video object-cover mb-10 rounded-2xl"
+            />
+          )}
+          
+          {blogData.content ? (
+            <MarkdownRenderer content={blogData.content} />
+          ) : (
+            <p className="text-slate-500">暂无内容</p>
+          )}
+        </article>
+
+        {/* Sidebar */}
+        <aside className="hidden md:block space-y-8 sticky top-24 h-fit">
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4">目录</h3>
+            {/* TODO: Implement dynamic TOC based on markdown content */}
+            <p className="text-sm text-slate-500">目录生成功能开发中...</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
+            <h3 className="font-bold text-lg mb-2">订阅更新</h3>
+            <p className="text-indigo-100 text-sm mb-4">每周精选技术文章，直接发送到你的邮箱。</p>
+            <div className="space-y-3">
+              <input 
+                type="email" 
+                placeholder="your@email.com" 
+                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+              />
+              <Button className="w-full bg-white text-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-50 border-none">
+                订阅
+              </Button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* Comments Section */}
+      <div className="container mx-auto px-4 max-w-4xl pb-20">
+        <div className="border-t border-slate-100 pt-10">
+          <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-2">
+            <MessageCircle className="w-6 h-6" /> 评论 ({blogData.commentCount || 0})
+          </h3>
+          <CommentSection blogId={blog.id} />
+        </div>
+      </div>
+    </div>
   );
 };
 

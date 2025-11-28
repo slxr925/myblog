@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Input } from '../ui/input';
 import {
-  ArrowLeft,
   Search,
-  Reply,
   Trash2,
   Calendar,
   MessageSquare,
@@ -19,11 +17,7 @@ import {
 import { type CommentVO } from '../../types/api';
 import { api } from '../../utils/api';
 
-interface CommentManagementProps {
-  onBack: () => void;
-}
-
-export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) => {
+export const CommentManagement: React.FC = () => {
   const [comments, setComments] = useState<CommentVO[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,7 +107,7 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">加载中...</p>
@@ -127,25 +121,16 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="min-h-screen bg-background"
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回控制台
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">评论管理</h1>
-              <p className="text-muted-foreground">管理系统中的所有用户评论</p>
-            </div>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">评论管理</h2>
+          <p className="text-muted-foreground">管理系统中的所有用户评论</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -205,7 +190,6 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6"
             >
               <Card className={`border-${message.type === 'success' ? 'green' : 'red'}-200 bg-${message.type === 'success' ? 'green' : 'red'}-50`}>
                 <CardContent className="p-4 flex items-center gap-3">
@@ -224,7 +208,7 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
         </AnimatePresence>
 
         {/* Search Bar */}
-        <Card className="mb-6">
+        <Card>
           <CardContent className="p-4">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -239,7 +223,7 @@ export const CommentManagement: React.FC<CommentManagementProps> = ({ onBack }) 
         </Card>
 
         {/* Comments Grid */}
-        <div className="grid gap-6">
+        <div>
           {filteredComments.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">

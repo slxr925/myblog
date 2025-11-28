@@ -5,33 +5,29 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import {
-  ArrowLeft,
   Search,
   Eye,
-  Edit,
   Trash2,
-  Calendar,
   FileText,
   AlertCircle,
   CheckCircle,
-  Clock,
-  User,
   TrendingUp,
   Archive,
   PenTool,
   ClipboardList,
-  Loader2
+  Loader2,
+  User,
+  Calendar
 } from 'lucide-react';
 import { BlogStatus, type BlogDetailVO } from '../../types/api';
 import { api } from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 interface BlogManagementProps {
-  onBack: () => void;
   initialStatusFilter?: BlogStatus;
 }
 
-export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialStatusFilter }) => {
+export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFilter }) => {
   const navigate = useNavigate();
   const [blogs, setBlogs] = useState<BlogDetailVO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +173,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">加载中...</p>
@@ -191,20 +187,13 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="min-h-screen bg-background"
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回控制台
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">文章管理</h1>
-              <p className="text-muted-foreground">管理系统中的所有博客文章</p>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">文章管理</h2>
+            <p className="text-muted-foreground">管理系统中的所有博客文章</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -223,7 +212,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -294,7 +283,6 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6"
             >
               <Card className={`border-${message.type === 'success' ? 'green' : 'red'}-200 bg-${message.type === 'success' ? 'green' : 'red'}-50`}>
                 <CardContent className="p-4 flex items-center gap-3">
@@ -313,7 +301,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
         </AnimatePresence>
 
         {/* Search and Filter Bar */}
-        <Card className="mb-6">
+        <Card>
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
@@ -360,7 +348,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
         </Card>
 
         {/* Blogs Grid */}
-        <div className="grid gap-6">
+        <div>
           {filteredBlogs.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">

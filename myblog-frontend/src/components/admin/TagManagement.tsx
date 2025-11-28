@@ -6,7 +6,6 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import {
-  ArrowLeft,
   Plus,
   Edit2,
   Trash2,
@@ -20,11 +19,7 @@ import {
 import { api } from '../../utils/api';
 import type { Tag } from '../../types/api';
 
-interface TagManagementProps {
-  onBack: () => void;
-}
-
-export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
+export const TagManagement: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -88,7 +83,6 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
       return;
     }
 
-    // 检查是否重复
     const existingTag = tags.find(tag =>
       tag.name.toLowerCase() === formData.name.trim().toLowerCase() &&
       tag.id !== editingId
@@ -141,7 +135,7 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">加载中...</p>
@@ -155,20 +149,13 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="min-h-screen bg-background"
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回控制台
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">标签管理</h1>
-              <p className="text-muted-foreground">管理博客标签</p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">标签管理</h2>
+            <p className="text-muted-foreground">管理博客标签</p>
           </div>
           <Button onClick={handleCreate} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
@@ -177,7 +164,7 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -237,7 +224,6 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6"
             >
               <Card className="border-red-200 bg-red-50">
                 <CardContent className="p-4 flex items-center gap-3">
@@ -253,7 +239,6 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6"
             >
               <Card className="border-green-200 bg-green-50">
                 <CardContent className="p-4 flex items-center gap-3">
@@ -272,7 +257,6 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mb-8"
             >
               <Card>
                 <CardHeader>
@@ -313,7 +297,7 @@ export const TagManagement: React.FC<TagManagementProps> = ({ onBack }) => {
         </AnimatePresence>
 
         {/* Tags Grid */}
-        <div className="grid gap-6">
+        <div>
           {tags.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">

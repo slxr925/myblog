@@ -6,7 +6,6 @@ import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Input } from '../ui/input';
 import {
-  ArrowLeft,
   Search,
   Ban,
   Shield,
@@ -23,11 +22,7 @@ import { Role, UserStatus, type User as UserType } from '../../types/api';
 import { api } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface UserManagementProps {
-  onBack: () => void;
-}
-
-export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
+export const UserManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,11 +32,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [statusLoadingId, setStatusLoadingId] = useState<number | null>(null);
 
-  // 防抖相关状态
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // 防抖函数
   const debounceSearch = useCallback((value: string) => {
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -49,22 +42,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
 
     debounceTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchTerm(value);
-    }, 300); // 300ms延迟
+    }, 300);
   }, []);
 
-  // 处理搜索输入变化
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     debounceSearch(value);
   }, [debounceSearch]);
 
-  // 只在页面变化和防抖后的搜索词变化时才获取数据
   useEffect(() => {
     fetchUsers();
   }, [currentPage, debouncedSearchTerm]);
 
-  // 组件卸载时清理定时器
   useEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
@@ -142,13 +132,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
     return name.slice(0, 2).toUpperCase();
   };
 
-  // 由于后端已经处理了搜索，这里直接使用用户数据
-  // filteredUsers 改名为 displayUsers 以提高可读性
   const displayUsers = users;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">加载中...</p>
@@ -162,25 +150,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="min-h-screen bg-background"
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回控制台
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">用户管理</h1>
-              <p className="text-muted-foreground">管理系统中的所有用户账户</p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">用户管理</h2>
+            <p className="text-muted-foreground">管理系统中的所有用户账户</p>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -235,7 +216,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6"
             >
               <Card className={`border-${message.type === 'success' ? 'green' : 'red'}-200 bg-${message.type === 'success' ? 'green' : 'red'}-50`}>
                 <CardContent className="p-4 flex items-center gap-3">
@@ -254,7 +234,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
         </AnimatePresence>
 
         {/* Search Bar */}
-        <Card className="mb-6">
+        <Card>
           <CardContent className="p-4">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -274,7 +254,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
         </Card>
 
         {/* Users Grid */}
-        <div className="grid gap-6">
+        <div>
           {displayUsers.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
