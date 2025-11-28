@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 博客服务实现类（简化版）
@@ -172,8 +173,12 @@ public class BlogServiceImpl implements BlogService {
                 log.error("同步博客更新到Elasticsearch失败: {}", existBlog.getId(), e);
             }
         } else if (existBlog.getStatus() != 1) {
-            // 如果博客不再是已发布状态，从ES删除
-            deleteBlogFromElasticsearch(existBlog.getId());
+            // 如果博客不再是已发布状态，从ES删除 - 不阻塞主流程
+            try {
+                deleteBlogFromElasticsearch(existBlog.getId());
+            } catch (Exception e) {
+                log.error("从ES删除博客索引失败(不影响主流程): {}", existBlog.getId(), e);
+            }
         }
 
         BlogDetailVO detail = blogMapper.selectBlogDetail(id);
@@ -212,8 +217,12 @@ public class BlogServiceImpl implements BlogService {
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("blog:*", "博客删除");
 
-        // 从ES删除索引
-        deleteBlogFromElasticsearch(id);
+        // 从ES删除索引 - 不阻塞主流程
+        try {
+            deleteBlogFromElasticsearch(id);
+        } catch (Exception e) {
+            log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
+        }
     }
     
     @Override
@@ -474,8 +483,12 @@ public class BlogServiceImpl implements BlogService {
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("blog:*", "博客下线");
 
-        // 从ES删除索引（因为博客不再是已发布状态）
-        deleteBlogFromElasticsearch(id);
+        // 从ES删除索引（因为博客不再是已发布状态）- 异步操作,不阻塞主流程
+        try {
+            deleteBlogFromElasticsearch(id);
+        } catch (Exception e) {
+            log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
+        }
     }
     
     /**
@@ -742,8 +755,12 @@ public class BlogServiceImpl implements BlogService {
         blog.setStatusChangedTime(LocalDateTime.now());
         blogMapper.updateById(blog);
 
-        // 草稿不应该在ES中出现
-        deleteBlogFromElasticsearch(id);
+        // 草稿不应该在ES中出现 - 不阻塞主流程
+        try {
+            deleteBlogFromElasticsearch(id);
+        } catch (Exception e) {
+            log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
+        }
     }
 
     @Override
@@ -887,39 +904,52 @@ public class BlogServiceImpl implements BlogService {
      * 同步博客到Elasticsearch
      */
     private void syncBlogToElasticsearch(Blog blog) {
-        try {
-            // 获取作者信息
-            User author = userMapper.selectById(blog.getAuthorId());
-            // 获取分类信息
-            Category category = categoryMapper.selectById(blog.getCategoryId());
-            // 获取标签信息
-            List<Tag> tags = getBlogTags(blog.getId());
-
-            // 转换为ES文档
-            var document = blogDocumentConverter.convertToDocument(blog, author, category, tags);
-
-            // 索引到ES
-            searchService.indexBlog(document);
-
-            log.info("成功同步博客到ES: {}", blog.getId());
-        } catch (Exception e) {
-            log.error("同步博客到ES失败: {}", blog.getId(), e);
-            throw e;
+        if (!searchService.isAvailable()) {
+            log.warn("Elasticsearch不可用，跳过同步博客: {}", blog.getId());
+            return;
         }
+
+        // 异步执行，避免阻塞主流程
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 获取作者信息
+                User author = userMapper.selectById(blog.getAuthorId());
+                // 获取分类信息
+                Category category = categoryMapper.selectById(blog.getCategoryId());
+                // 获取标签信息
+                List<Tag> tags = getBlogTags(blog.getId());
+
+                // 转换为ES文档
+                var document = blogDocumentConverter.convertToDocument(blog, author, category, tags);
+
+                // 索引到ES
+                searchService.indexBlog(document);
+
+                log.info("成功同步博客到ES: {}", blog.getId());
+            } catch (Exception e) {
+                log.error("异步同步博客到ES失败: {}", blog.getId(), e);
+            }
+        });
     }
 
     /**
      * 从ES删除博客索引
      */
     private void deleteBlogFromElasticsearch(Long blogId) {
-        if (searchService.isAvailable()) {
+        if (!searchService.isAvailable()) {
+            log.warn("Elasticsearch不可用，跳过删除索引: {}", blogId);
+            return;
+        }
+
+        // 异步执行删除，避免阻塞主流程
+        CompletableFuture.runAsync(() -> {
             try {
                 searchService.deleteIndex(blogId.toString());
                 log.info("成功从ES删除博客索引: {}", blogId);
             } catch (Exception e) {
-                log.error("从ES删除博客索引失败: {}", blogId, e);
+                log.error("异步从ES删除博客索引失败: {}", blogId, e);
             }
-        }
+        });
     }
 
     /**

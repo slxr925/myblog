@@ -224,6 +224,11 @@ public class UserServiceImpl implements UserService {
             log.warn("获取当前用户ID失败", e);
         }
 
+        // 防止禁用任何管理员账户
+        if (user.getRole() != null && user.getRole() == 1) {
+            throw new RuntimeException("不能禁用管理员账户");
+        }
+
         // 更新用户状态
         user.setStatus(status);
         user.setUpdateTime(LocalDateTime.now());

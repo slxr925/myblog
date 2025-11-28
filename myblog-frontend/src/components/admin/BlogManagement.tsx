@@ -19,7 +19,8 @@ import {
   TrendingUp,
   Archive,
   PenTool,
-  ClipboardList
+  ClipboardList,
+  Loader2
 } from 'lucide-react';
 import { BlogStatus, type BlogDetailVO } from '../../types/api';
 import { api } from '../../utils/api';
@@ -39,6 +40,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
   const [currentPage, setCurrentPage] = useState(1);
   const [totalBlogs, setTotalBlogs] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loadingBlogId, setLoadingBlogId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchBlogs();
@@ -75,6 +77,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
 
   const handleToggleBlogStatus = async (blogId: number, currentStatus: number) => {
     try {
+      setLoadingBlogId(blogId);
       let newStatus: number;
       let statusText: string;
 
@@ -91,7 +94,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
 
       await api.admin.updateBlogStatus(blogId, newStatus);
       setMessage({ type: 'success', text: statusText });
-      fetchBlogs();
+      await fetchBlogs();
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
       console.error('更新文章状态失败:', error);
@@ -100,6 +103,8 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
         text: error.response?.data?.message || '更新文章状态失败'
       });
       setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setLoadingBlogId(null);
     }
   };
 
@@ -109,9 +114,10 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
     }
 
     try {
+      setLoadingBlogId(blogId);
       await api.admin.deleteBlog(blogId);
       setMessage({ type: 'success', text: '文章删除成功' });
-      fetchBlogs();
+      await fetchBlogs();
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
       console.error('删除文章失败:', error);
@@ -120,6 +126,8 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
         text: error.response?.data?.message || '删除文章失败'
       });
       setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setLoadingBlogId(null);
     }
   };
 
@@ -367,59 +375,65 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
             </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredBlogs.map((blog) => (
+              {filteredBlogs.map((blog) => {
+                const isLoading = loadingBlogId === blog.id;
+                return (
                 <motion.div
                   key={blog.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ scale: 1.02 }}
-                  className="group"
+                  className="group h-full"
                 >
-                  <Card className="hover:shadow-md transition-all duration-200">
-                    <CardContent className="p-6">
-                      {/* Blog Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg mb-2 line-clamp-2">
+                  <Card className="hover:shadow-md transition-all duration-200 h-full flex flex-col">
+                    <CardContent className="p-6 flex flex-col flex-1">
+                      {/* Blog Header - 固定高度 */}
+                      <div className="mb-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-lg line-clamp-2 flex-1 min-h-[3.5rem]">
                             {blog.title || '无标题'}
                           </h3>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1">
-                              {getStatusIcon(blog.status || 1)}
-                              {getStatusText(blog.status || 1)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1">
+                            {getStatusIcon(blog.status || 1)}
+                            {getStatusText(blog.status || 1)}
+                          </Badge>
+                          {blog.isTop === 1 && (
+                            <Badge variant="outline" className="text-xs">
+                              置顶
                             </Badge>
-                            {blog.isTop === 1 && (
-                              <Badge variant="outline" className="text-xs">
-                                置顶
-                              </Badge>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Blog Summary */}
-                      {blog.summary && (
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                          {blog.summary}
-                        </p>
-                      )}
+                      {/* Blog Summary - 固定高度 */}
+                      <div className="h-16 mb-4">
+                        {blog.summary && (
+                          <p className="text-sm text-muted-foreground line-clamp-3">
+                            {blog.summary}
+                          </p>
+                        )}
+                      </div>
 
                       {/* Blog Metadata */}
-                      <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                      <div className="space-y-2 text-sm text-muted-foreground mb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <User className="w-3 h-3" />
                             <span className="truncate">{blog.authorName || '未知作者'}</span>
                           </div>
-                          <span>ID: {blog.id}</span>
+                          <span className="text-xs">ID: {blog.id}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {blog.publishTime ?
-                              new Date(blog.publishTime).toLocaleDateString('zh-CN') :
-                              '未发布'
-                            }
+                            <span className="text-xs">
+                              {blog.publishTime ?
+                                new Date(blog.publishTime).toLocaleDateString('zh-CN') :
+                                '未发布'
+                              }
+                            </span>
                           </div>
                           <div className="flex items-center gap-3 text-xs">
                             <div className="flex items-center gap-1">
@@ -434,52 +448,61 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ onBack, initialS
                         </div>
                       </div>
 
-                      {blog.statusChangedTime && (
-                        <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          状态更新：{new Date(blog.statusChangedTime).toLocaleString('zh-CN', { hour12: false })}
-                        </div>
-                      )}
-
-                      {/* Blog Categories and Tags */}
-                      {(blog.categoryName || blog.tags) && (
-                        <div className="mb-4">
-                          {blog.categoryName && (
-                            <Badge variant="outline" className="text-xs mr-2 mb-1">
-                              📁 {blog.categoryName}
+                      {/* Blog Categories and Tags - 固定高度 */}
+                      <div className="h-8 mb-3 flex items-center flex-wrap gap-1">
+                        {blog.categoryName && (
+                          <Badge variant="outline" className="text-xs">
+                            📁 {blog.categoryName}
+                          </Badge>
+                        )}
+                        {Array.isArray(blog.tags) &&
+                          blog.tags.slice(0, 2).map((tag: any, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
                             </Badge>
-                          )}
-                          {Array.isArray(blog.tags) &&
-                            blog.tags.slice(0, 3).map((tag: any, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs mr-1 mb-1">
-                                #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
-                              </Badge>
-                            ))}
-                        </div>
-                      )}
+                          ))}
+                      </div>
 
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        <Button
-                          variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
-                          size="sm"
-                          onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
-                          className="flex-1"
-                        >
-                          {blog.status === BlogStatus.PUBLISHED ? '下线' : '发布'}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      {/* Spacer to push buttons to bottom */}
+                      <div className="flex-1"></div>
+
+                      {/* Actions - 固定在底部 */}
+                      <div className="flex gap-2 mt-auto">
+                        <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
+                            size="sm"
+                            onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
+                            disabled={isLoading}
+                            className="w-full"
+                          >
+                            {isLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              blog.status === BlogStatus.PUBLISHED ? '下线' : '发布'
+                            )}
+                          </Button>
+                        </motion.div>
+                        <motion.div whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </motion.div>
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

@@ -51,7 +51,14 @@ apiClient.interceptors.response.use(
   (response) => {
     // 如果后端返回统一格式 {code, message, data}，则提取data部分
     if (response.data && typeof response.data === 'object' && 'code' in response.data) {
-      return response.data.data; // 返回data部分
+      // 检查响应是否成功
+      if (response.data.code === 200 || response.data.code === 0) {
+        // 对于void类型的响应,data可能为null,返回整个response.data以保留message
+        return response.data.data !== undefined ? response.data.data : response.data;
+      } else {
+        // 如果code不是成功码,抛出错误
+        return Promise.reject(new Error(response.data.message || '请求失败'));
+      }
     }
 
     return response;

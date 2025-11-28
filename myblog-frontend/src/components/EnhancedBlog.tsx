@@ -501,7 +501,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
   // 获取博客数据
   useEffect(() => {
     const fetchPosts = async () => {
-      setLoading(true);
+        setLoading(true);
       try {
         let nextPosts: BlogPost[] = [];
 
@@ -621,7 +621,7 @@ const EnhancedBlog: React.FC<EnhancedBlogProps> = ({
           }
           const fallbackLikes = wasLiked ? Math.max(0, post.likes - 1) : post.likes + 1;
           return {
-            ...post,
+                ...post,
             likes: nextLikeCountDelta ?? fallbackLikes,
             views: nextViewCount ?? post.views
           };

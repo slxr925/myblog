@@ -21,12 +21,14 @@ import {
 } from 'lucide-react';
 import { Role, UserStatus, type User as UserType } from '../../types/api';
 import { api } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface UserManagementProps {
   onBack: () => void;
 }
 
 export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -291,6 +293,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
                 const normalizedRole = user.role ?? Role.USER;
                 const normalizedStatus = user.status ?? UserStatus.NORMAL;
                 const isStatusLoading = statusLoadingId === user.id;
+                const isCurrentUser = currentUser?.id === user.id;
+                const isAdmin = normalizedRole === Role.ADMIN;
+                const isDisabled = isStatusLoading || isCurrentUser || isAdmin;
+                
+                let disabledReason = '';
+                if (isCurrentUser) {
+                  disabledReason = '不能修改自己的状态';
+                } else if (isAdmin) {
+                  disabledReason = '不能禁用管理员账户';
+                }
+                
                 return (
                   <motion.div
                     key={user.id}
@@ -348,30 +361,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button
-                            variant={normalizedStatus === UserStatus.NORMAL ? "destructive" : "default"}
-                            size="sm"
-                            onClick={() => handleToggleUserStatus(user.id, normalizedStatus)}
-                            className="flex-1 flex items-center gap-1"
-                            disabled={isStatusLoading}
-                          >
-                            {isStatusLoading ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                处理中...
-                              </>
-                            ) : normalizedStatus === UserStatus.NORMAL ? (
-                              <>
-                                <Ban className="w-4 h-4" />
-                                禁用
-                              </>
-                            ) : (
-                              <>
-                                <Shield className="w-4 h-4" />
-                                启用
-                              </>
+                          <div className="flex-1 relative group/btn">
+                            <Button
+                              variant={normalizedStatus === UserStatus.NORMAL ? "destructive" : "default"}
+                              size="sm"
+                              onClick={() => handleToggleUserStatus(user.id, normalizedStatus)}
+                              className="w-full flex items-center gap-1"
+                              disabled={isDisabled}
+                            >
+                              {isStatusLoading ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  处理中...
+                                </>
+                              ) : normalizedStatus === UserStatus.NORMAL ? (
+                                <>
+                                  <Ban className="w-4 h-4" />
+                                  禁用
+                                </>
+                              ) : (
+                                <>
+                                  <Shield className="w-4 h-4" />
+                                  启用
+                                </>
+                              )}
+                            </Button>
+                            {disabledReason && (
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                {disabledReason}
+                              </div>
                             )}
-                          </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
