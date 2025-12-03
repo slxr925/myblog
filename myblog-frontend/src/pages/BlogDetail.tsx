@@ -88,7 +88,7 @@ const BlogDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
       </div>
     );
@@ -96,7 +96,7 @@ const BlogDetail: React.FC = () => {
 
   if (!blog) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
             <h2 className="text-xl font-bold mb-2">文章不存在</h2>
             <Button onClick={() => navigate('/')}>返回首页</Button>
       </div>
@@ -104,20 +104,20 @@ const BlogDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Article Header */}
-      <div className="bg-slate-50 border-b border-slate-100 py-20">
+      <div className="bg-muted/30 border-b border-border py-20">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="flex items-center gap-3 mb-6">
             <Badge variant="default">{blogData.categoryName || '未分类'}</Badge>
-            <span className="text-slate-400">|</span>
-            <span className="text-slate-500 text-sm flex items-center gap-1">
+            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground text-sm flex items-center gap-1">
               <Calendar className="w-4 h-4" />
               {blogData.publishTime ? new Date(blogData.publishTime).toLocaleDateString('zh-CN') : '未知日期'}
             </span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-8 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-8 leading-tight">
               {blogData.title}
             </h1>
             
@@ -127,8 +127,8 @@ const BlogDetail: React.FC = () => {
                 {(blogData.authorName || 'R').charAt(0).toUpperCase()}
               </div>
               <div>
-                <div className="font-bold text-slate-900">{blogData.authorName || 'Unknown'}</div>
-                <div className="text-sm text-slate-500 flex items-center gap-2">
+                <div className="font-bold text-foreground">{blogData.authorName || 'Unknown'}</div>
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {Math.ceil((blogData.content?.length || 0) / 500)} min read</span>
                   <span>·</span>
                   <span>{blogData.viewCount} views</span>
@@ -156,7 +156,7 @@ const BlogDetail: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-12 max-w-4xl grid grid-cols-1 md:grid-cols-[1fr_250px] gap-12">
         {/* Main Content */}
-        <article className="prose prose-lg prose-indigo max-w-none prose-headings:font-bold prose-p:text-slate-600 prose-img:rounded-2xl prose-img:shadow-xl">
+        <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
           {blogData.coverImg && (
             <img 
               src={blogData.coverImg} 
@@ -168,16 +168,16 @@ const BlogDetail: React.FC = () => {
             {blogData.content ? (
               <MarkdownRenderer content={blogData.content} />
             ) : (
-            <p className="text-slate-500">暂无内容</p>
+            <p className="text-muted-foreground">暂无内容</p>
           )}
         </article>
 
         {/* Sidebar */}
         <aside className="hidden md:block space-y-8 sticky top-24 h-fit">
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-4">目录</h3>
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+            <h3 className="font-bold text-foreground mb-4">目录</h3>
             {/* TODO: Implement dynamic TOC based on markdown content */}
-            <p className="text-sm text-slate-500">目录生成功能开发中...</p>
+            <p className="text-sm text-muted-foreground">目录生成功能开发中...</p>
           </div>
 
           <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
@@ -199,8 +199,8 @@ const BlogDetail: React.FC = () => {
 
       {/* Comments Section */}
       <div className="container mx-auto px-4 max-w-4xl pb-20">
-        <div className="border-t border-slate-100 pt-10">
-          <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-2">
+        <div className="border-t border-border pt-10">
+          <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
             <MessageCircle className="w-6 h-6" /> 评论 ({blogData.commentCount || 0})
           </h3>
             <CommentSection blogId={blog.id} />

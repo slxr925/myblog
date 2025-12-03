@@ -80,10 +80,10 @@ const EnhancedBlog = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20">
+    <div className="min-h-screen bg-muted/30 pb-20">
       {/* Hero Section */}
-      <div className="relative bg-white border-b border-slate-100 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/30 pointer-events-none" />
+      <div className="relative bg-background border-b border-border overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-background to-purple-50/30 dark:from-indigo-950/30 dark:via-background dark:to-purple-950/20 pointer-events-none" />
         
         <div className="container mx-auto px-4 pt-20 pb-24 relative">
           <div className="max-w-4xl mx-auto text-center">
@@ -93,13 +93,13 @@ const EnhancedBlog = () => {
               transition={{ duration: 0.5 }}
             >
               <Badge className="mb-6">👋 Welcome to my digital garden</Badge>
-              <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mt-2 mb-8 tracking-tight leading-tight">
+              <h1 className="text-5xl md:text-7xl font-bold text-foreground mt-2 mb-8 tracking-tight leading-tight">
                 探索技术边界 <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
                   分享代码与思考
                 </span>
               </h1>
-              <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
                 这里是 Ryan 的个人博客。我热衷于分享全栈开发、架构设计与 AI 技术落地的心得体会。希望这些文字能给你带来启发。
               </p>
               <div className="flex justify-center gap-4">
@@ -119,8 +119,8 @@ const EnhancedBlog = () => {
       <div id="posts-grid" className="container mx-auto px-4 py-16">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">最新文章</h2>
-            <p className="text-slate-500 mt-2">探索最新的深度技术分享</p>
+            <h2 className="text-3xl font-bold text-foreground">最新文章</h2>
+            <p className="text-muted-foreground mt-2">探索最新的深度技术分享</p>
           </div>
           <Button variant="ghost" onClick={() => navigate('/blog')}>查看全部 <ArrowRight className="w-4 h-4 ml-2" /></Button>
           </div>
@@ -128,7 +128,7 @@ const EnhancedBlog = () => {
               {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-3xl h-96 animate-pulse border border-slate-100" />
+              <div key={i} className="bg-card rounded-3xl h-96 animate-pulse border border-border" />
             ))}
           </div>
               ) : (
@@ -140,7 +140,7 @@ const EnhancedBlog = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => navigate(`/blog/${post.id}`)}
-                className="group bg-white rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col h-full cursor-pointer"
+                className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col h-full cursor-pointer"
                   >
                 <div className="relative h-56 overflow-hidden">
                   <img 
@@ -158,30 +158,30 @@ const EnhancedBlog = () => {
             </div>
 
                 <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                     <Calendar className="w-4 h-4" />
                     <span>{post.date}</span>
-                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                    <span className="w-1 h-1 bg-border rounded-full" />
                     <Clock className="w-4 h-4 ml-1" />
                     <span>{post.readTime}</span>
               </div>
                   
-                  <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
                     {post.title}
                   </h3>
                   
-                  <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
                     {post.excerpt}
                   </p>
                   
-                  <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
+                  <div className="flex items-center justify-between pt-6 border-t border-border mt-auto">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                         {post.author.charAt(0).toUpperCase()}
               </div>
-                      <span className="text-sm font-medium text-slate-700">{post.author}</span>
+                      <span className="text-sm font-medium text-foreground">{post.author}</span>
           </div>
-                    <div className="flex items-center gap-4 text-slate-400 text-sm">
+                    <div className="flex items-center gap-4 text-muted-foreground text-sm">
                       <span className="flex items-center gap-1">
                         <Heart className="w-4 h-4" /> {post.likes}
                       </span>

@@ -85,14 +85,14 @@ export const Admin: React.FC = () => {
 
   if (!user || user.role !== Role.ADMIN) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <LogOut className="w-8 h-8 text-red-600" />
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogOut className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold mb-2 text-slate-900">访问被拒绝</h2>
-            <p className="text-slate-500 mb-6">您没有访问此页面的权限。</p>
+            <h2 className="text-2xl font-bold mb-2 text-foreground">访问被拒绝</h2>
+            <p className="text-muted-foreground mb-6">您没有访问此页面的权限。</p>
             <Button onClick={() => navigate('/')} className="w-full">返回首页</Button>
           </CardContent>
         </Card>
@@ -130,15 +130,15 @@ export const Admin: React.FC = () => {
           { label: "总评论数", value: stats.totalComments, change: `+${stats.todayNewComments}`, icon: MessageSquare, color: "text-orange-600", bg: "bg-orange-50" },
           { label: "总点赞数", value: stats.totalLikes, change: "累计", icon: ThumbsUp, color: "text-pink-600", bg: "bg-pink-50" },
         ].map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <div key={index} className="bg-card p-6 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
               </div>
-              <span className="text-green-600 text-sm font-semibold bg-green-50 px-2 py-1 rounded-lg">{stat.change}</span>
+              <span className="text-green-600 dark:text-green-400 text-sm font-semibold bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-lg">{stat.change}</span>
             </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1">{stat.value}</div>
-            <div className="text-slate-500 text-sm">{stat.label}</div>
+            <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
+            <div className="text-muted-foreground text-sm">{stat.label}</div>
           </div>
         ))}
         </div>
@@ -158,12 +158,12 @@ export const Admin: React.FC = () => {
             </CardHeader>
             <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-slate-50 rounded-xl">
+            <div className="text-center p-4 bg-muted/30 rounded-xl">
               <div className="flex items-center justify-center mb-2 text-indigo-600">
                 <Eye className="w-6 h-6 mr-2" />
                 <span className="text-3xl font-bold">{stats.todayViews}</span>
               </div>
-              <div className="text-sm text-slate-500">今日访问量</div>
+              <div className="text-sm text-muted-foreground">今日访问量</div>
                     </div>
             {/* More detailed stats can be added here */}
               </div>
@@ -173,12 +173,12 @@ export const Admin: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-muted/30 flex">
       {/* Sidebar */}
-      <div className="w-64 bg-slate-50 border-r border-slate-200 fixed h-full z-10 hidden lg:flex flex-col">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-200 h-20">
+      <div className="w-64 bg-sidebar border-r border-sidebar-border fixed h-full z-10 hidden lg:flex flex-col">
+        <div className="p-6 flex items-center gap-3 border-b border-sidebar-border h-20">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">R</div>
-          <span className="text-xl font-bold text-slate-900">RyanAdmin</span>
+          <span className="text-xl font-bold text-sidebar-foreground">RyanAdmin</span>
         </div>
 
         <div className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -191,8 +191,8 @@ export const Admin: React.FC = () => {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
                 currentView === item.id 
-                  ? "bg-white text-indigo-600 font-medium shadow-sm" 
-                  : "text-slate-600 hover:bg-white/50"
+                  ? "bg-sidebar-accent text-sidebar-primary font-medium shadow-sm" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -200,18 +200,18 @@ export const Admin: React.FC = () => {
             </button>
           ))}
           
-          <div className="pt-4 mt-4 border-t border-slate-200">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 cursor-not-allowed hover:bg-white/50">
+          <div className="pt-4 mt-4 border-t border-sidebar-border">
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground cursor-not-allowed hover:bg-sidebar-accent/50">
               <Settings className="w-5 h-5" />
               系统设置
             </button>
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-sidebar-border">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <LogOut className="w-5 h-5" />
             退出登录
@@ -223,10 +223,10 @@ export const Admin: React.FC = () => {
       <div className="flex-1 lg:ml-64 p-8">
         <header className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-foreground">
               {menuItems.find(i => i.id === currentView)?.label}
             </h1>
-            <p className="text-slate-500 text-sm mt-1">欢迎回来，{user?.nickname || '管理员'}</p>
+            <p className="text-muted-foreground text-sm mt-1">欢迎回来，{user?.nickname || '管理员'}</p>
                   </div>
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate('/')} className="gap-2">

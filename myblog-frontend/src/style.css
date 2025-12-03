@@ -8,7 +8,7 @@
 @import "tw-animate-css";
 
 /* Custom dark variant for targeting dark mode elements */
-@custom-variant dark (&:is(.dark *));
+@variant dark (&:where(.dark, .dark *));
 
 /* CSS variables and theme definitions */
 @theme inline {
@@ -85,39 +85,62 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* Dark theme variables */
+/* Dark theme variables - 使用舒适的深灰色系 */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
+  /* 主背景：舒适的深灰色 #1a1a1a */
+  --background: oklch(0.20 0 0);
+  --foreground: oklch(0.95 0 0);
+  
+  /* 卡片：稍浅的灰色 #242424 */
+  --card: oklch(0.24 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  
+  /* 弹窗：与卡片相同 */
+  --popover: oklch(0.24 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  
+  /* 主色：indigo-600 用于按钮等 */
+  --primary: oklch(0.555 0.224 264.4);
+  --primary-foreground: oklch(0.985 0 0);
+  
+  /* 次要色：中灰色 #2d2d2d */
+  --secondary: oklch(0.28 0 0);
+  --secondary-foreground: oklch(0.95 0 0);
+  
+  /* 静音色：中灰色 */
+  --muted: oklch(0.28 0 0);
+  --muted-foreground: oklch(0.62 0 0);
+  
+  /* 强调色：略深于卡片 */
+  --accent: oklch(0.28 0 0);
+  --accent-foreground: oklch(0.95 0 0);
+  
+  /* 破坏性操作：红色 */
+  --destructive: oklch(0.577 0.245 27.325);
+  
+  /* 边框：中灰色半透明 */
+  --border: oklch(0.32 0 0 / 50%);
+  
+  /* 输入框：略深的边框 */
+  --input: oklch(0.32 0 0 / 70%);
+  --ring: oklch(0.555 0.224 264.4);
+  
+  /* Charts - 保持原有颜色 */
+  --chart-1: oklch(0.555 0.224 264.4);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.828 0.189 84.429);
   --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --chart-5: oklch(0.577 0.245 27.325);
+  
+  /* Sidebar: 与卡片相同 */
+  --sidebar: oklch(0.24 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.555 0.224 264.4);
+  --sidebar-primary-foreground: oklch(0.95 0 0);
+  --sidebar-accent: oklch(0.28 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.32 0 0 / 50%);
+  --sidebar-ring: oklch(0.555 0.224 264.4);
 }
 
 /* Tailwind base styles */

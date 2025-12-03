@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: ./myblog-backend
+      dockerfile: Dockerfile
+    container_name: myblog-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-myblog_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_OPTS: "-Xms1g -Xmx2g -XX:+UseG1GC -XX:+UseContainerSupport"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data/backend/logs:/app/logs
+      - ./data/backend/uploads:/app/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - myblog-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./myblog-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://49.235.139.118:8081
+    container_name: myblog-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - myblog-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  myblog-network:
+    driver: bridge
+
