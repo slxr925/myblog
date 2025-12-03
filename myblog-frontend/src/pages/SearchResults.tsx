@@ -153,32 +153,32 @@ const SearchResultsPage: React.FC = () => {
           {searchTerm && (
             <Button variant="link" onClick={() => navigate('/blog')} className="mt-4 text-indigo-600">
               <ArrowLeft className="w-4 h-4 mr-2" /> 查看所有文章
-            </Button>
+              </Button>
           )}
-        </div>
+            </div>
 
         {/* Filters */}
         <div className="flex flex-wrap justify-center gap-2 mb-8">
-          <Button
-            variant={!selectedCategory ? "default" : "outline"}
+              <Button
+                variant={!selectedCategory ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
-            size="sm"
+                size="sm"
             className="rounded-full"
-          >
+              >
             全部
-          </Button>
-          {allCategories.map(category => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
+              </Button>
+              {allCategories.map(category => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
               onClick={() => setSelectedCategory(category)}
-              size="sm"
+                  size="sm"
               className="rounded-full"
-            >
+                >
               {category}
-            </Button>
-          ))}
-        </div>
+                </Button>
+              ))}
+            </div>
 
         {/* Grid */}
         {loading ? (
@@ -206,9 +206,9 @@ const SearchResultsPage: React.FC = () => {
                     <Badge className="bg-white/90 backdrop-blur-md text-indigo-600 shadow-sm">
                       {post.categoryName || '未分类'}
                     </Badge>
-                  </div>
-                </div>
-                
+          </div>
+        </div>
+
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
                     <Calendar className="w-4 h-4" />
@@ -217,13 +217,13 @@ const SearchResultsPage: React.FC = () => {
                     <Clock className="w-4 h-4 ml-1" />
                     <span>{post.readTime}</span>
                   </div>
-                  
+
                   <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
                     {post.title}
                   </h3>
                   
                   <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
-                    {post.excerpt}
+                      {post.excerpt}
                   </p>
                   
                   <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
@@ -236,8 +236,8 @@ const SearchResultsPage: React.FC = () => {
                     <div className="flex items-center gap-4 text-slate-400 text-sm">
                       <span className="flex items-center gap-1">
                         <Heart className={`w-4 h-4 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current text-red-500' : ''}`} /> 
-                        {post.likes}
-                      </span>
+                          {post.likes}
+                        </span>
                       <span className="flex items-center gap-1">
                         <MessageCircle className="w-4 h-4" /> {post.comments}
                       </span>

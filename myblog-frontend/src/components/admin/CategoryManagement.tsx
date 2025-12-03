@@ -159,9 +159,9 @@ export const CategoryManagement: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+            <div>
             <h2 className="text-2xl font-bold tracking-tight">分类管理</h2>
-            <p className="text-muted-foreground">管理博客分类</p>
+              <p className="text-muted-foreground">管理博客分类</p>
           </div>
           <Button onClick={handleCreate} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />

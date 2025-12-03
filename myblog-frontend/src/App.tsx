@@ -23,63 +23,63 @@ const AppWrapper = () => {
         <AuthProvider>
           <AuthModalProvider>
             <Router>
-              <Routes>
+          <Routes>
                 {/* 前台布局路由 */}
                 <Route element={<ModernLayout />}>
-                  <Route path="/" element={<EnhancedBlog />} />
-                  <Route path="/blog/:id" element={<BlogDetail />} />
-                  <Route path="/blog" element={<SearchPage />} />
-                  <Route path="/search" element={<SearchResultsPage />} />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
+            <Route path="/" element={<EnhancedBlog />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/blog" element={<SearchPage />} />
+            <Route path="/search" element={<SearchResultsPage />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
                 </Route>
 
                 {/* 管理员专属路由 (独立布局) */}
-                <Route
-                  path="/blog/new"
-                  element={
+            <Route
+              path="/blog/new"
+              element={
                     <ProtectedRoute requiredRole={Role.ADMIN}>
-                      <BlogEditor mode="create" />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/blog/edit/:id"
-                  element={
+                  <BlogEditor mode="create" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog/edit/:id"
+              element={
                     <ProtectedRoute requiredRole={Role.ADMIN}>
-                      <BlogEditor mode="edit" />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/blog/drafts"
-                  element={
+                  <BlogEditor mode="edit" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog/drafts"
+              element={
                     <ProtectedRoute requiredRole={Role.ADMIN}>
-                      <MyDrafts />
-                    </ProtectedRoute>
-                  }
-                />
+                  <MyDrafts />
+                </ProtectedRoute>
+              }
+            />
 
-                <Route
-                  path="/dashboard"
-                  element={
+            <Route
+              path="/dashboard"
+              element={
                     <ProtectedRoute requiredRole={Role.ADMIN}>
-                      <Admin />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </Router>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Router>
           </AuthModalProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+      </AuthProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
   )
 }
 

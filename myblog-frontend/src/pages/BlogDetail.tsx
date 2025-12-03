@@ -32,7 +32,7 @@ const BlogDetail: React.FC = () => {
         setBlog(response);
         setLikeCount(response.likeCount || 0);
         setIsLiked(response.isLiked || false);
-        
+
         api.admin.trackVisit(`/blog/${id}`).catch(err =>
           console.warn('记录博客访问失败:', err)
         );
@@ -97,8 +97,8 @@ const BlogDetail: React.FC = () => {
   if (!blog) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-        <h2 className="text-xl font-bold mb-2">文章不存在</h2>
-        <Button onClick={() => navigate('/')}>返回首页</Button>
+            <h2 className="text-xl font-bold mb-2">文章不存在</h2>
+            <Button onClick={() => navigate('/')}>返回首页</Button>
       </div>
     );
   }
@@ -118,9 +118,9 @@ const BlogDetail: React.FC = () => {
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-8 leading-tight">
-            {blogData.title}
-          </h1>
-          
+              {blogData.title}
+            </h1>
+            
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
@@ -137,7 +137,7 @@ const BlogDetail: React.FC = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button 
+              <Button
                 variant={isLiked ? "default" : "secondary"} 
                 className={`rounded-full w-10 h-10 p-0 flex items-center justify-center ${isLiked ? 'bg-red-500 hover:bg-red-600' : ''}`}
                 onClick={handleLike}
@@ -165,9 +165,9 @@ const BlogDetail: React.FC = () => {
             />
           )}
           
-          {blogData.content ? (
-            <MarkdownRenderer content={blogData.content} />
-          ) : (
+            {blogData.content ? (
+              <MarkdownRenderer content={blogData.content} />
+            ) : (
             <p className="text-slate-500">暂无内容</p>
           )}
         </article>
@@ -192,7 +192,7 @@ const BlogDetail: React.FC = () => {
               <Button className="w-full bg-white text-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-50 border-none">
                 订阅
               </Button>
-            </div>
+              </div>
           </div>
         </aside>
       </div>
@@ -203,7 +203,7 @@ const BlogDetail: React.FC = () => {
           <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-2">
             <MessageCircle className="w-6 h-6" /> 评论 ({blogData.commentCount || 0})
           </h3>
-          <CommentSection blogId={blog.id} />
+            <CommentSection blogId={blog.id} />
         </div>
       </div>
     </div>

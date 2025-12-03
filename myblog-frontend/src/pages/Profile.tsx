@@ -132,8 +132,8 @@ const Profile: React.FC = () => {
                     <p className="text-slate-500">{user.email}</p>
                     <div className="mt-2 flex gap-2">
                       <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
-                        {user.role === Role.ADMIN ? '管理员' : '普通用户'}
-                      </Badge>
+                      {user.role === Role.ADMIN ? '管理员' : '普通用户'}
+                    </Badge>
                     </div>
                   </div>
                 </div>
@@ -160,34 +160,34 @@ const Profile: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">用户名</label>
                     <Input value={user.username} disabled className="bg-slate-50" />
-                  </div>
+                    </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">昵称</label>
-                    <Input 
-                      name="nickname" 
+                        <Input
+                          name="nickname"
                       value={isEditing ? formData.nickname : (user.nickname || '未设置')} 
                       disabled={!isEditing}
-                      onChange={handleInputChange}
+                          onChange={handleInputChange}
                       className={!isEditing ? "bg-slate-50" : ""}
-                    />
-                  </div>
+                        />
+                    </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">邮箱</label>
-                    <Input 
-                      name="email" 
+                        <Input
+                          name="email"
                       value={isEditing ? formData.email : user.email} 
                       disabled={!isEditing}
-                      onChange={handleInputChange}
+                          onChange={handleInputChange}
                       className={!isEditing ? "bg-slate-50" : ""}
-                    />
-                  </div>
+                        />
+                    </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">注册时间</label>
-                    <Input 
+                      <Input
                       value={user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'} 
-                      disabled 
+                        disabled
                       className="bg-slate-50"
-                    />
+                      />
                   </div>
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-sm font-medium text-slate-700">个人简介</label>
@@ -220,7 +220,7 @@ const Profile: React.FC = () => {
                   ) : (
                     <Button onClick={() => setIsEditing(true)}>
                       <Edit2 className="w-4 h-4 mr-2" /> 编辑资料
-                    </Button>
+                      </Button>
                   )}
                 </div>
               </CardContent>

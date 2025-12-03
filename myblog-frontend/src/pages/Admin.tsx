@@ -141,22 +141,22 @@ export const Admin: React.FC = () => {
             <div className="text-slate-500 text-sm">{stat.label}</div>
           </div>
         ))}
-      </div>
+        </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ActivityChart data={stats.weeklyStats} title="最近7天活跃度" showLegend={true} />
         <ActivityChart data={stats.monthlyStats} title="最近30天活跃度" showLegend={true} />
-      </div>
+        </div>
 
       {/* Detailed Stats */}
-      <Card>
-        <CardHeader>
+          <Card>
+            <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" /> 数据概览
           </CardTitle>
-        </CardHeader>
-        <CardContent>
+            </CardHeader>
+            <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-slate-50 rounded-xl">
               <div className="flex items-center justify-center mb-2 text-indigo-600">
@@ -164,11 +164,11 @@ export const Admin: React.FC = () => {
                 <span className="text-3xl font-bold">{stats.todayViews}</span>
               </div>
               <div className="text-sm text-slate-500">今日访问量</div>
-            </div>
+                    </div>
             {/* More detailed stats can be added here */}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
     </div>
   );
 
@@ -180,7 +180,7 @@ export const Admin: React.FC = () => {
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">R</div>
           <span className="text-xl font-bold text-slate-900">RyanAdmin</span>
         </div>
-        
+
         <div className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
             <button 
@@ -216,8 +216,8 @@ export const Admin: React.FC = () => {
             <LogOut className="w-5 h-5" />
             退出登录
           </button>
-        </div>
-      </div>
+                  </div>
+                </div>
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-64 p-8">
@@ -227,15 +227,15 @@ export const Admin: React.FC = () => {
               {menuItems.find(i => i.id === currentView)?.label}
             </h1>
             <p className="text-slate-500 text-sm mt-1">欢迎回来，{user?.nickname || '管理员'}</p>
-          </div>
+                  </div>
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
               返回前台
             </Button>
             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
               {(user?.nickname || 'A').charAt(0).toUpperCase()}
-            </div>
-          </div>
+                </div>
+              </div>
         </header>
 
         <motion.div

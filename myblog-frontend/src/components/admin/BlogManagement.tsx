@@ -383,25 +383,25 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                           </h3>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1">
-                            {getStatusIcon(blog.status || 1)}
-                            {getStatusText(blog.status || 1)}
-                          </Badge>
-                          {blog.isTop === 1 && (
-                            <Badge variant="outline" className="text-xs">
-                              置顶
+                            <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1">
+                              {getStatusIcon(blog.status || 1)}
+                              {getStatusText(blog.status || 1)}
                             </Badge>
-                          )}
+                            {blog.isTop === 1 && (
+                              <Badge variant="outline" className="text-xs">
+                                置顶
+                              </Badge>
+                            )}
                         </div>
                       </div>
 
                       {/* Blog Summary - 固定高度 */}
                       <div className="h-16 mb-4">
-                        {blog.summary && (
+                      {blog.summary && (
                           <p className="text-sm text-muted-foreground line-clamp-3">
-                            {blog.summary}
-                          </p>
-                        )}
+                          {blog.summary}
+                        </p>
+                      )}
                       </div>
 
                       {/* Blog Metadata */}
@@ -417,10 +417,10 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             <span className="text-xs">
-                              {blog.publishTime ?
-                                new Date(blog.publishTime).toLocaleDateString('zh-CN') :
-                                '未发布'
-                              }
+                            {blog.publishTime ?
+                              new Date(blog.publishTime).toLocaleDateString('zh-CN') :
+                              '未发布'
+                            }
                             </span>
                           </div>
                           <div className="flex items-center gap-3 text-xs">
@@ -438,18 +438,18 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
 
                       {/* Blog Categories and Tags - 固定高度 */}
                       <div className="h-8 mb-3 flex items-center flex-wrap gap-1">
-                        {blog.categoryName && (
+                          {blog.categoryName && (
                           <Badge variant="outline" className="text-xs">
-                            📁 {blog.categoryName}
-                          </Badge>
-                        )}
-                        {Array.isArray(blog.tags) &&
+                              📁 {blog.categoryName}
+                            </Badge>
+                          )}
+                          {Array.isArray(blog.tags) &&
                           blog.tags.slice(0, 2).map((tag: any, index) => (
                             <Badge key={index} variant="secondary" className="text-xs">
-                              #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
-                            </Badge>
-                          ))}
-                      </div>
+                                #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
+                              </Badge>
+                            ))}
+                        </div>
 
                       {/* Spacer to push buttons to bottom */}
                       <div className="flex-1"></div>
@@ -457,33 +457,33 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                       {/* Actions - 固定在底部 */}
                       <div className="flex gap-2 mt-auto">
                         <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
-                          <Button
-                            variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
-                            size="sm"
-                            onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
+                        <Button
+                          variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
                             disabled={isLoading}
                             className="w-full"
-                          >
+                        >
                             {isLoading ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               blog.status === BlogStatus.PUBLISHED ? '下线' : '发布'
                             )}
-                          </Button>
+                        </Button>
                         </motion.div>
                         <motion.div whileTap={{ scale: 0.95 }}>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
                             disabled={isLoading}
-                          >
+                        >
                             {isLoading ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                             )}
-                          </Button>
+                        </Button>
                         </motion.div>
                       </div>
                     </CardContent>

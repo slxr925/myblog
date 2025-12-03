@@ -154,9 +154,9 @@ export const UserManagement: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+            <div>
             <h2 className="text-2xl font-bold tracking-tight">用户管理</h2>
-            <p className="text-muted-foreground">管理系统中的所有用户账户</p>
+              <p className="text-muted-foreground">管理系统中的所有用户账户</p>
           </div>
         </div>
 
@@ -285,97 +285,97 @@ export const UserManagement: React.FC = () => {
                 }
                 
                 return (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="group"
-                  >
-                    <Card className="hover:shadow-md transition-all duration-200">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                                {getInitials(user.username || '', user.nickname || '')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-lg truncate">
-                                {user.nickname || user.username}
-                              </h3>
-                              <p className="text-sm text-muted-foreground truncate">
-                                @{user.username}
-                              </p>
-                            </div>
+                <motion.div
+                  key={user.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="group"
+                >
+                  <Card className="hover:shadow-md transition-all duration-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                              {getInitials(user.username || '', user.nickname || '')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-lg truncate">
+                              {user.nickname || user.username}
+                            </h3>
+                            <p className="text-sm text-muted-foreground truncate">
+                              @{user.username}
+                            </p>
                           </div>
-                          <div className="flex flex-col gap-1">
+                        </div>
+                        <div className="flex flex-col gap-1">
                             <Badge variant={getRoleBadgeVariant(normalizedRole)} className="text-xs">
                               {getRoleText(normalizedRole)}
-                            </Badge>
+                          </Badge>
                             <Badge variant={getStatusBadgeVariant(normalizedStatus)} className="text-xs">
                               {getStatusText(normalizedStatus)}
-                            </Badge>
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                        {user.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4" />
+                            <span className="truncate">{user.email}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span>ID: {user.id}</span>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {user.createTime ?
+                              new Date(user.createTime).toLocaleDateString('zh-CN') :
+                              '未知'
+                            }
                           </div>
                         </div>
+                      </div>
 
-                        <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                          {user.email && (
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4" />
-                              <span className="truncate">{user.email}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span>ID: {user.id}</span>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {user.createTime ?
-                                new Date(user.createTime).toLocaleDateString('zh-CN') :
-                                '未知'
-                              }
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
                           <div className="flex-1 relative group/btn">
-                            <Button
+                        <Button
                               variant={normalizedStatus === UserStatus.NORMAL ? "destructive" : "default"}
-                              size="sm"
+                          size="sm"
                               onClick={() => handleToggleUserStatus(user.id, normalizedStatus)}
                               className="w-full flex items-center gap-1"
                               disabled={isDisabled}
-                            >
+                        >
                               {isStatusLoading ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                   处理中...
                                 </>
                               ) : normalizedStatus === UserStatus.NORMAL ? (
-                                <>
-                                  <Ban className="w-4 h-4" />
-                                  禁用
-                                </>
-                              ) : (
-                                <>
-                                  <Shield className="w-4 h-4" />
-                                  启用
-                                </>
-                              )}
-                            </Button>
+                            <>
+                              <Ban className="w-4 h-4" />
+                              禁用
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="w-4 h-4" />
+                              启用
+                            </>
+                          )}
+                        </Button>
                             {disabledReason && (
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                                 {disabledReason}
                               </div>
                             )}
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
                 );
               })}
             </div>
