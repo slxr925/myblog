@@ -1,25 +1,35 @@
-HELP.md
+# ==================== Java/Maven ====================
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
-### STS ###
+# ==================== IDE ====================
+### IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+### Eclipse
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
+bin/
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+### NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -29,13 +39,158 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+### VS Code
 .vscode/
-*.sh
-*.md
-*.json
+*.code-workspace
+
+# ==================== Node.js/前端 ====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+dist/
+dist-ssr/
+*.local
+
+# ==================== 本地配置文件（敏感信息，禁止上传）====================
+# 后端本地配置
+**/application-local.yml
+**/application-local.yaml
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+.env.prod
+.env.production
+
+# ==================== 数据库和缓存 ====================
 *.rdb
-myblog-backend/tempdoc
-docker-compose.dev.yml
-Dockerfile.dev
-.env.example
+*.aof
+dump.rdb
+*.log
+*.sql.gz
+
+# ==================== 临时文件和日志 ====================
+logs/
+*.log
+log/
+temp/
+tmp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ==================== 数据目录 ====================
+data/
+uploads/
+backups/
+**/uploads/
+**/data/
+**/backups/
+
+# ==================== 构建和打包产物 ====================
+*.jar
+*.war
+*.ear
+!maven-wrapper.jar
+myblog-backend/target/
+myblog-frontend/dist/
+myblog-frontend/build/
+
+# ==================== 测试和覆盖率报告 ====================
+coverage/
+*.lcov
+.nyc_output/
+test-results/
+junit-reports/
+
+# ==================== 文档临时文件 ====================
+myblog-backend/tempdoc/
+*.pdf.tmp
+~$*.docx
+
+# ==================== Docker相关（开发环境） ====================
+# 注意：docker-compose.prod.yml 和 Dockerfile 需要提交
+# 只忽略本地开发的override文件
+docker-compose.override.yml
+.docker/
+
+# ==================== 云平台相关 ====================
+# 微信云托管
+.cloudbase/
+cloudbase-init.json
+
+# 腾讯云
+.tcb_cache/
+.tcbrc
+
+# ==================== 其他工具 ====================
+# Playwright
+.playwright/
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# ESLint
+.eslintcache
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ==================== 特殊文件（需要提交的，不要忽略）====================
+# 以下文件类型默认不忽略，确保重要文件能提交
+!*.md
+!*.sh
+!*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!pom.xml
+!*.yml
+!*.yaml
+!Dockerfile
+!docker-compose*.yml
+!nginx.conf
+!.gitignore
+!.gitattributes
+!.dockerignore
+
+# 但是排除本地配置
+**/application-local.yml
+**/application-local.yaml
+
+# ==================== 自定义排除 ====================
+# 如果有其他不需要提交的文件，在下面添加
+# 例如：
+# my-secret-file.txt

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw spring-boot:run:*)",
+      "Bash(curl:*)",
+      "Bash(brew services:*)",
+      "Bash(redis-server:*)",
+      "Bash(brew reinstall:*)",
+      "Bash(redis-cli:*)",
+      "Bash(export JAVA_HOME=/opt/homebrew/Cellar/openjdk@21/21.0.7:*)",
+      "Bash(elasticsearch:*)",
+      "Bash(export ES_JAVA_HOME=/opt/homebrew/Cellar/openjdk@21/21.0.7:*)",
+      "Bash(./mvnw:*)",
+      "Bash(brew search:*)",
+      "Bash(brew info:*)",
+      "Bash(lsof:*)",
+      "Bash(pkill:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

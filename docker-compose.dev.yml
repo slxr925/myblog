@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # 开发环境数据库
+  mysql:
+    extends:
+      file: docker-compose.yml
+      service: mysql
+    ports:
+      - "3307:3306"  # 不同端口避免冲突
+
+  # 开发环境Redis
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+    ports:
+      - "6380:6379"  # 不同端口避免冲突
+
+  # 开发环境Elasticsearch
+  elasticsearch:
+    extends:
+      file: docker-compose.yml
+      service: elasticsearch
+    ports:
+      - "9201:9200"  # 不同端口避免冲突
+      - "9301:9300"
+
+  # 开发环境后端（热重载支持）
+  backend-dev:
+    build:
+      context: ./myblog-backend
+      dockerfile: Dockerfile.dev
+    container_name: myblog-backend-dev
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: myblog
+      MYSQL_USERNAME: myblog_user
+      MYSQL_PASSWORD: myblog_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      JWT_SECRET: dev_jwt_secret_key_for_development_only_minimum_256_bits
+      JAVA_OPTS: "-Xms256m -Xmx512m -Dspring.devtools.restart.enabled=true"
+    ports:
+      - "8082:8081"  # 不同端口避免冲突
+    depends_on:
+      - mysql
+      - redis
+      - elasticsearch
+    volumes:
+      - ./myblog-backend:/app
+      - /app/target  # 排除target目录
+      - backend_dev_logs:/app/logs
+      - backend_dev_uploads:/app/uploads
+    networks:
+      - myblog-network
+
+  # 开发环境前端（热重载）
+  frontend-dev:
+    image: node:18-alpine
+    container_name: myblog-frontend-dev
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:8082
+    ports:
+      - "5173:5173"  # Vite默认端口
+    volumes:
+      - ./myblog-frontend:/app
+      - /app/node_modules  # 排除node_modules
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - myblog-network
+
+volumes:
+  backend_dev_logs:
+  backend_dev_uploads:
+
+networks:
+  myblog-network:
+    driver: bridge

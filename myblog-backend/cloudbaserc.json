@@ -1,0 +1,120 @@
+{
+  "envId": "{{TCB_ENV_ID}}",
+  "functionRoot": "./",
+  "functions": [],
+  "framework": {
+    "name": "docker",
+    "plugins": []
+  },
+  "region": "ap-shanghai",
+  "frameworkName": "myblog-backend",
+  "runtime": "Dockerfile",
+  "version": "2.0",
+  "service": {
+    "name": "myblog-backend",
+    "description": "博客后端服务 - Spring Boot API",
+    "cpu": 1.5,
+    "mem": 3.0,
+    "minNum": 1,
+    "maxNum": 5,
+    "policyType": "cpu",
+    "policyThreshold": 70,
+    "envVariables": [
+      {
+        "key": "SPRING_PROFILES_ACTIVE",
+        "value": "prod"
+      },
+      {
+        "key": "MYSQL_HOST",
+        "value": "{{MYSQL_HOST}}"
+      },
+      {
+        "key": "MYSQL_PORT",
+        "value": "{{MYSQL_PORT}}"
+      },
+      {
+        "key": "MYSQL_DATABASE",
+        "value": "{{MYSQL_DATABASE}}"
+      },
+      {
+        "key": "MYSQL_USERNAME",
+        "value": "{{MYSQL_USERNAME}}"
+      },
+      {
+        "key": "MYSQL_PASSWORD",
+        "value": "{{MYSQL_PASSWORD}}"
+      },
+      {
+        "key": "REDIS_HOST",
+        "value": "{{REDIS_HOST}}"
+      },
+      {
+        "key": "REDIS_PORT",
+        "value": "{{REDIS_PORT}}"
+      },
+      {
+        "key": "REDIS_PASSWORD",
+        "value": "{{REDIS_PASSWORD}}"
+      },
+      {
+        "key": "ELASTICSEARCH_HOST",
+        "value": "{{ELASTICSEARCH_HOST}}"
+      },
+      {
+        "key": "ELASTICSEARCH_PORT",
+        "value": "{{ELASTICSEARCH_PORT}}"
+      },
+      {
+        "key": "ELASTICSEARCH_USERNAME",
+        "value": "{{ELASTICSEARCH_USERNAME}}"
+      },
+      {
+        "key": "ELASTICSEARCH_PASSWORD",
+        "value": "{{ELASTICSEARCH_PASSWORD}}"
+      },
+      {
+        "key": "JWT_SECRET",
+        "value": "{{JWT_SECRET}}"
+      },
+      {
+        "key": "WECHAT_APP_ID",
+        "value": "{{WECHAT_APP_ID}}"
+      },
+      {
+        "key": "WECHAT_APP_SECRET",
+        "value": "{{WECHAT_APP_SECRET}}"
+      },
+      {
+        "key": "COS_SECRET_ID",
+        "value": "{{COS_SECRET_ID}}"
+      },
+      {
+        "key": "COS_SECRET_KEY",
+        "value": "{{COS_SECRET_KEY}}"
+      },
+      {
+        "key": "COS_BUCKET",
+        "value": "{{COS_BUCKET}}"
+      },
+      {
+        "key": "COS_REGION",
+        "value": "{{COS_REGION}}"
+      }
+    ],
+    "customLogs": "/app/logs/*.log",
+    "initialDelaySeconds": 120,
+    "periodSeconds": 30,
+    "timeoutSeconds": 15
+  },
+  "triggers": [
+    {
+      "name": "myblog-backend-http",
+      "type": "http",
+      "config": {
+        "url": "/",
+        "method": "ANY",
+        "authRequired": false
+      }
+    }
+  ]
+}

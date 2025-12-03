@@ -1,0 +1,48 @@
+{
+  "envId": "{{TCB_ENV_ID}}",
+  "functionRoot": "./",
+  "functions": [],
+  "framework": {
+    "name": "docker",
+    "plugins": []
+  },
+  "region": "ap-shanghai",
+  "frameworkName": "myblog-frontend",
+  "runtime": "Dockerfile",
+  "version": "2.0",
+  "service": {
+    "name": "myblog-frontend",
+    "description": "博客前端服务 - React + Nginx",
+    "cpu": 0.5,
+    "mem": 1.0,
+    "minNum": 1,
+    "maxNum": 10,
+    "policyType": "cpu",
+    "policyThreshold": 60,
+    "envVariables": [
+      {
+        "key": "NODE_ENV",
+        "value": "production"
+      },
+      {
+        "key": "API_BASE_URL",
+        "value": "{{BACKEND_SERVICE_URL}}"
+      }
+    ],
+    "customLogs": "/app/logs/*.log",
+    "initialDelaySeconds": 10,
+    "periodSeconds": 30,
+    "timeoutSeconds": 3
+  },
+  "triggers": [
+    {
+      "name": "myblog-frontend-http",
+      "type": "http",
+      "config": {
+        "url": "/",
+        "method": "ANY",
+        "authRequired": false
+      }
+    }
+  ]
+}

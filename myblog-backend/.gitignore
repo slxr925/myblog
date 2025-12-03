@@ -1,0 +1,97 @@
+# 本地配置文件 - 包含敏感信息（禁止提交）
+application-local.yml
+application-dev.yml
+
+# 生产配置（使用环境变量，可以提交）
+# application-prod.yml 应该提交，因为它使用 ${ENV_VAR} 引用环境变量
+
+# 本地文档和说明文件（可以保留docs/config/README.md作为模板）
+docs/config/*.local
+!docs/config/README.md
+
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.production
+
+# 日志文件
+logs/
+*.log
+*.log.*
+
+# 上传文件
+uploads/
+/app/uploads/
+
+# 编译输出
+target/
+build/
+out/
+
+# IDE配置文件
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS生成文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# Gradle
+.gradle/
+gradle-app.setting
+gradlew
+gradlew.bat
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 证书和密钥文件
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 缓存文件
+*.cache
+.cache/
+
+# 测试报告
+test-results/
+coverage/
+
+# Node.js (如果前端代码也在项目中)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Docker
+.dockerignore
+
+# 其他敏感文件
+config/secrets.yml
+config/database.yml
+src/main/resources/config-local.properties

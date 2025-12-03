@@ -2,513 +2,281 @@
 
 <div align="center">
 
-![MyBlog Logo](https://img.shields.io/badge/MyBlog-2.0-blue?style=for-the-badge)
+![MyBlog](https://img.shields.io/badge/MyBlog-v2.0-blue?style=for-the-badge)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-green?style=for-the-badge&logo=spring-boot)
-![React](https://img.shields.io/badge/React-19.1.1-blue?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue?style=for-the-badge&logo=typescript)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker)
 
-[![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-[![Java Version](https://img.shields.io/badge/Java-21+-orange?style=for-the-badge&logo=java)](https://openjdk.java.net/)
-[![Node Version](https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+**功能完整、开箱即用的现代化博客系统**
 
-**一个功能完整、技术先进的现代化全栈博客系统**
-
-[功能特性](#-功能特性) • [技术栈](#-技术栈) • [快速开始](#-快速开始) • [项目结构](#-项目结构) • [贡献指南](#-贡献指南)
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [服务器部署](#-服务器部署) • [技术栈](#-技术栈)
 
 </div>
 
+---
+
 ## 📖 项目简介
 
-MyBlog 是一个采用前后端分离架构的现代化博客系统，集成了用户管理、内容发布、评论互动、数据分析、全文搜索等完整功能。项目使用最新的技术栈，提供优秀的用户体验和开发者体验。
+MyBlog 是一个基于 Spring Boot + React 构建的现代化博客系统，采用前后端分离架构。提供完整的博客管理、用户系统、评论互动、全文搜索等功能，支持 Docker 一键部署。
 
-### 🎯 设计理念
+### ✨ 核心亮点
 
-- **现代化架构**: 前后端分离，微服务设计思想
-- **用户体验优先**: 响应式设计，流畅的交互体验
-- **开发者友好**: 完整的API文档，清晰的代码结构
-- **性能优化**: 多层缓存，数据库优化，搜索引擎集成
-- **安全可靠**: JWT认证，权限控制，安全防护机制
+- 🎨 **现代化设计** - 响应式布局，支持暗黑模式
+- 🚀 **高性能** - Redis缓存 + Elasticsearch全文搜索
+- 🔐 **安全可靠** - JWT认证 + Spring Security
+- 🐳 **易于部署** - Docker容器化，一键部署
+- 📱 **移动友好** - 完美适配各种设备
 
-## ✨ 功能特性
+## 🎯 功能特性
 
-### 👤 用户系统
-- ✅ **注册登录**: 邮箱验证注册，JWT安全认证
-- ✅ **个人资料**: 头像上传，个人信息管理
-- ✅ **权限控制**: 普通用户与管理员权限分离
-- ✅ **密码安全**: 强度验证，安全修改流程
+### 用户功能
+- ✅ 用户注册、登录、个人资料管理
+- ✅ Markdown编辑器，支持实时预览
+- ✅ 文章发布、草稿保存、分类标签
+- ✅ 评论互动、点赞功能
+- ✅ 全文搜索、高级筛选
+- ✅ 个人文章管理面板
 
-### 📝 内容管理
-- ✅ **文章编辑**: Markdown编辑器，实时预览
-- ✅ **富文本支持**: 代码高亮，图片上传
-- ✅ **分类标签**: 多级分类，彩色标签系统
-- ✅ **文章特色**: 置顶，精选，草稿功能
-- ✅ **浏览统计**: 实时浏览量，用户行为跟踪
-
-### 💬 互动功能
-- ✅ **评论系统**: 多级嵌套评论，富文本支持
-- ✅ **点赞互动**: 文章点赞，评论点赞
-- ✅ **评论审核**: 管理员审核，垃圾评论过滤
-- ✅ **通知系统**: 评论回复通知
-
-### 🔍 搜索功能
-- ✅ **全文搜索**: Elasticsearch全文检索
-- ✅ **搜索高亮**: 关键词高亮显示
-- ✅ **智能建议**: 搜索关键词自动补全
-- ✅ **高级搜索**: 分类、标签、时间范围过滤
-- ✅ **排序算法**: BM25算法，多因子综合排序
-
-### 📊 数据分析
-- ✅ **统计面板**: 用户数，文章数，评论数，点赞数
-- ✅ **趋势图表**: 访问趋势，用户活跃度分析
-- ✅ **管理中心**: 用户管理，内容审核，系统设置
-
-### 🎨 界面特性
-- ✅ **响应式设计**: 移动端友好界面
-- ✅ **现代化UI**: Tailwind CSS + Radix UI组件
-- ✅ **动画效果**: Framer Motion流畅动画
-- ✅ **主题支持**: 准备支持明暗主题切换
-
-## 🛠️ 技术栈
-
-### 后端技术栈
-
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| **Java** | 21 | 核心编程语言 |
-| **Spring Boot** | 3.5.5 | 应用框架 |
-| **Spring Security** | 6.x | 安全框架 |
-| **MyBatis Plus** | 3.5.9 | ORM框架 |
-| **MySQL** | 8.4+ | 主数据库 |
-| **Redis** | 7.0+ | 缓存数据库 |
-| **Elasticsearch** | 8.x | 搜索引擎 |
-| **JWT** | 0.12+ | 认证机制 |
-| **Knife4j** | 4.x | API文档 |
-
-### 前端技术栈
-
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| **React** | 19.1.1 | 前端框架 |
-| **TypeScript** | 5.5.3 | 类型系统 |
-| **Vite** | 7.1.7 | 构建工具 |
-| **Tailwind CSS** | 4.1.13 | CSS框架 |
-| **Radix UI** | Latest | 组件库 |
-| **Framer Motion** | Latest | 动画库 |
-| **React Router** | 7.9.3 | 路由管理 |
-| **Axios** | 1.12.2 | HTTP客户端 |
+### 管理功能
+- ✅ 用户管理（查看、编辑、禁用）
+- ✅ 文章管理（审核、编辑、删除）
+- ✅ 评论管理（审核、删除）
+- ✅ 分类标签管理
+- ✅ 数据统计分析
 
 ## 🚀 快速开始
 
-### 环境要求
+### 方式一：Docker 一键启动（推荐）
 
-- **Node.js**: 18.0+
-- **Java**: 21+
-- **Maven**: 3.6+
-- **MySQL**: 8.0+
-- **Redis**: 7.0+
-- **Docker**: 20.0+ (用于容器化部署)
-
-### 本地开发
-
-#### 方式一：传统开发模式
-
-##### 1. 克隆项目
 ```bash
-git clone https://github.com/yourname/myblog.git
+# 1. 克隆项目
+git clone <your-repo-url>
 cd myblog
+
+# 2. 启动所有服务
+docker-compose up -d
+
+# 3. 访问应用
+open http://localhost:3000
 ```
 
-##### 2. 数据库配置
-```sql
--- 创建数据库
-CREATE DATABASE myblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+就这么简单！所有服务（MySQL、Redis、Elasticsearch、后端、前端）都会自动启动。
 
--- 创建用户（可选）
-CREATE USER 'myblog'@'localhost' IDENTIFIED BY 'your_password';
-GRANT ALL PRIVILEGES ON myblog.* TO 'myblog'@'localhost';
-FLUSH PRIVILEGES;
+**默认账号**：
+- 用户名：`admin`
+- 密码：`admin123`
+
+### 方式二：本地开发
+
+#### 环境要求
+- Node.js 18+
+- Java 21+
+- MySQL 8.0+
+- Redis 7.0+
+
+#### 启动步骤
+
+**1. 数据库初始化**
+```bash
+mysql -u root -p < myblog-backend/database/init.sql
 ```
 
-##### 3. 后端启动
+**2. 启动后端**
 ```bash
 cd myblog-backend
-
-# 配置数据库连接（编辑 application-local.yml）
-vim src/main/resources/application-local.yml
-
-# 启动后端服务
 ./mvnw spring-boot:run
 ```
 
-##### 4. 前端启动
+**3. 启动前端**
 ```bash
 cd myblog-frontend
-
-# 安装依赖
 npm install
-
-# 启动前端服务
 npm run dev
 ```
 
-##### 5. 访问应用
+**4. 访问应用**
+- 前端：http://localhost:5173
+- 后端：http://localhost:8081
+- API文档：http://localhost:8081/doc.html
 
-- **前端地址**: http://localhost:5173
-- **后端API**: http://localhost:8081/api
-- **API文档**: http://localhost:8081/doc.html
-- **健康检查**: http://localhost:8081/actuator/health
+## 🌐 服务器部署
 
-#### 方式二：Docker容器化开发
+### 一键部署（3步搞定）
 
-##### 1. 使用Docker Compose一键启动
 ```bash
-# 生产环境（包含所有服务）
-docker-compose up -d
+# 1. 上传项目到服务器
+scp -r myblog root@your-server:/app/
 
-# 开发环境（支持热重载）
-docker-compose -f docker-compose.dev.yml up -d
+# 2. SSH登录并配置环境
+ssh root@your-server
+cd /app/myblog/deploy
+./create-env.sh
+
+# 3. 一键部署
+sudo ./quick-deploy.sh
 ```
 
-##### 2. 查看服务状态
+部署完成！访问 `http://your-server-ip` 查看效果。
+
+### 部署说明
+
+脚本会自动完成：
+- ✅ 安装 Docker 和 Docker Compose
+- ✅ 初始化数据库
+- ✅ 构建并启动容器
+- ✅ 配置 Nginx 反向代理
+
+### 详细文档
+
+需要了解更多？查看完整部署指南：
+
+- 📖 [完整部署文档](DEPLOYMENT.md) - 详细的部署和运维指南
+- ⚡ [5分钟快速开始](deploy/QUICK_START.md) - 最快速的部署方式
+- 📋 [部署检查清单](deploy/CHECKLIST.md) - 确保部署成功
+
+### 常用运维命令
+
 ```bash
-docker-compose ps
+cd /app/myblog/deploy
 
 # 查看日志
-docker-compose logs -f frontend
-docker-compose logs -f backend
+./logs.sh
+
+# 重启服务
+docker-compose -f ../docker-compose.prod.yml restart
+
+# 停止服务
+./stop.sh
+
+# 数据备份
+./backup.sh
 ```
 
-##### 3. 访问应用
+## 🛠️ 技术栈
 
-- **前端地址**: http://localhost:3000 (生产) / http://localhost:5173 (开发)
-- **后端API**: http://localhost:8081 (生产) / http://localhost:8082 (开发)
-- **MySQL**: localhost:3306 / localhost:3307 (开发)
-- **Redis**: localhost:6379 / localhost:6380 (开发)
-- **Elasticsearch**: localhost:9200 / localhost:9201 (开发)
+### 后端
+- **Spring Boot 3.5** - Java应用框架
+- **Spring Security** - 安全认证
+- **MyBatis Plus** - 数据库ORM
+- **MySQL** - 关系型数据库
+- **Redis** - 缓存系统
+- **Elasticsearch** - 全文搜索引擎
 
-### 🌥️ 微信云托管部署
+### 前端
+- **React 19** - UI框架
+- **TypeScript** - 类型系统
+- **Vite** - 构建工具
+- **Tailwind CSS** - CSS框架
+- **Radix UI** - 组件库
 
-#### 准备工作
+### 部署
+- **Docker** - 容器化
+- **Docker Compose** - 服务编排
+- **Nginx** - 反向代理
 
-1. **注册微信云托管账号**
-   - 访问 [微信云托管控制台](https://cloud.weixin.qq.com/)
-   - 创建新环境和数据库实例
+## 📸 界面预览
 
-2. **配置数据库服务**
-   - 创建MySQL数据库实例
-   - 创建Redis缓存实例
-   - 配置Elasticsearch（可选，或使用腾讯云ES）
+### 首页
+现代化的博客首页，响应式设计，支持暗黑模式。
 
-3. **配置对象存储**
-   - 创建腾讯云COS存储桶
-   - 获取访问密钥
+### 文章详情
+Markdown渲染，代码高亮，目录导航，评论互动。
 
-#### 部署步骤
+### 管理后台
+数据统计、用户管理、内容管理一应俱全。
 
-##### 1. 配置环境变量
-```bash
-# 复制环境变量模板
-cp .env.example .env.production
-
-# 编辑配置文件
-vim .env.production
-```
-
-需要配置的主要变量：
-```bash
-TCB_ENV_ID=your-env-id                    # 微信云托管环境ID
-MYSQL_HOST=mysql.tencentcloudapi.com     # MySQL地址
-MYSQL_PASSWORD=your_password             # 数据库密码
-REDIS_HOST=redis.tencentcloudapi.com     # Redis地址
-JWT_SECRET=your_256bit_secret            # JWT密钥
-WECHAT_APP_ID=your_app_id                # 微信AppID
-COS_SECRET_ID=your_cos_id                # 腾讯云COS密钥
-```
-
-##### 2. 构建Docker镜像
-```bash
-# 构建所有镜像
-./build-images.sh build
-
-# 或分别构建
-./build-images.sh frontend
-./build-images.sh backend
-```
-
-##### 3. 部署到微信云托管
-```bash
-# 部署所有服务
-./deploy-wechat.sh all
-
-# 或分别部署
-./deploy-wechat.sh frontend
-./deploy-wechat.sh backend
-```
-
-##### 4. 配置自定义域名
-在微信云托管控制台中：
-1. 为前端服务配置自定义域名（如：blog.yourdomain.com）
-2. 为后端API配置域名（如：api.yourdomain.com）
-3. 上传SSL证书启用HTTPS
-
-#### 微信生态集成
-
-##### 微信小程序集成
-1. 在微信公众平台配置业务域名
-2. 在`.env.production`中配置微信AppID和密钥
-3. 实现微信登录API
-
-##### 微信公众号集成
-1. 配置JS-SDK域名白名单
-2. 实现微信授权登录
-3. 配置模板消息推送
-
-#### 部署验证
-
-```bash
-# 检查服务状态
-curl https://your-domain.com/health          # 前端健康检查
-curl https://api.your-domain.com/actuator/health  # 后端健康检查
-
-# 测试API接口
-curl https://api.your-domain.com/api/blogs   # 博客列表API
-```
-
-## 📁 项目结构
+## 🗂️ 项目结构
 
 ```
 myblog/
-├── myblog-backend/                 # 🎯 Spring Boot后端
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/ryan/myblog/
-│   │   │   │   ├── controller/     # REST API控制器
-│   │   │   │   ├── service/        # 业务逻辑层
-│   │   │   │   ├── model/          # 数据模型（entity/dto/vo）
-│   │   │   │   ├── config/         # 配置类
-│   │   │   │   ├── utils/          # 工具类
-│   │   │   │   └── MyBlogApplication.java
-│   │   │   └── resources/
-│   │   │       ├── application.yml           # 主配置文件
-│   │   │       ├── application-local.yml    # 本地开发配置
-│   │   │       └── mapper/                # MyBatis映射文件
-│   ├── Dockerfile                       # 生产环境容器配置
-│   ├── Dockerfile.dev                   # 开发环境容器配置
-│   ├── cloudbaserc.json                 # 微信云托管配置
-│   ├── pom.xml                          # Maven依赖配置
-│   └── mvnw                             # Maven Wrapper
-├── myblog-frontend/                # ⚛️ React前端
-│   ├── src/
-│   │   ├── components/              # 可复用组件
-│   │   │   ├── common/          # 通用组件
-│   │   │   ├── blog/            # 博客相关组件
-│   │   │   ├── admin/           # 管理后台组件
-│   │   │   ├── auth/            # 认证组件
-│   │   │   └── ui/              # UI基础组件
-│   │   ├── pages/               # 页面组件
-│   │   │   ├── Dashboard.tsx    # 仪表板
-│   │   │   ├── BlogDetail.tsx   # 博客详情
-│   │   │   ├── Search.tsx        # 搜索页面
-│   │   │   └── Admin.tsx        # 管理后台
-│   │   ├── contexts/           # React Context
-│   │   ├── utils/              # 工具函数
-│   │   ├── types/              # TypeScript类型
-│   │   ├── styles/             # 样式文件
-│   │   ├── App.tsx             # 应用根组件
-│   │   └── main.tsx            # 应用入口
-│   ├── public/                 # 静态资源
-│   ├── Dockerfile              # 容器配置（Nginx + React）
-│   ├── nginx.conf              # Nginx配置文件
-│   ├── cloudbaserc.json        # 微信云托管配置
-│   ├── package.json            # 依赖配置
-│   ├── vite.config.ts          # Vite配置
-│   └── tailwind.config.js     # Tailwind配置
-├── docker-compose.yml          # Docker容器编排（生产环境）
-├── docker-compose.dev.yml      # Docker容器编排（开发环境）
-├── deploy-wechat.sh            # 微信云托管部署脚本
-├── build-images.sh             # Docker镜像构建脚本
-├── .env.example                # 环境变量模板
-├── .env.production             # 生产环境变量配置
-├── .dockerignore               # Docker构建忽略文件
-├── DEPLOYMENT.md               # 详细部署指南
-├── DEPLOYMENT_CHECKLIST.md     # 部署检查清单
-└── README.md                   # 项目说明文档
+├── myblog-backend/          # Spring Boot 后端
+│   ├── src/main/java/       # Java源代码
+│   ├── src/main/resources/  # 配置文件
+│   └── database/            # 数据库脚本
+│
+├── myblog-frontend/         # React 前端
+│   ├── src/                 # 源代码
+│   ├── public/              # 静态资源
+│   └── Dockerfile           # 容器配置
+│
+├── deploy/                  # 部署脚本
+│   ├── quick-deploy.sh      # 一键部署
+│   ├── init-database.sh     # 数据库初始化
+│   └── *.md                 # 部署文档
+│
+├── nginx/                   # Nginx配置
+├── docker-compose.yml       # Docker编排（本地）
+└── docker-compose.prod.yml  # Docker编排（生产）
 ```
 
-## 🔧 配置说明
+## ❓ 常见问题
 
-### 后端配置示例
+### 1. 如何修改管理员密码？
+登录后访问个人中心，在"账户安全"中修改密码。
 
-```yaml
-# application-local.yml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/myblog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: myblog
-    password: your_password
-    driver-class-name: com.mysql.cj.jdbc.Driver
+### 2. 如何上传图片？
+在Markdown编辑器中点击"上传图片"按钮，或使用拖拽上传。
 
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 3000ms
-
-elasticsearch:
-  enabled: true
-  uris: http://localhost:9200
-```
-
-### 前端配置示例
-
-```typescript
-// vite.config.ts
-export default defineConfig({
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  }
-})
-```
-
-## 🔧 开发指南
-
-### 数据库管理
-- **自动建表**: 首次启动时根据实体类自动创建表结构
-- **数据迁移**: 支持数据库版本管理和升级脚本
-
-### API开发
-- **文档生成**: 启动后访问 `/doc.html` 查看API文档
-- **在线测试**: Knife4j提供界面直接测试API
-
-### 缓存策略
-- **会话存储**: 用户登录状态存储在Redis中
-- **热点数据**: 频繁访问的文章、用户信息缓存
-- **查询缓存**: 复杂查询结果缓存，提升响应速度
-
-## 🚨 故障排除
-
-### 常见问题
-
-#### 1. 数据库连接失败
+### 3. 如何备份数据？
 ```bash
-# 检查MySQL服务状态
-brew services list | grep mysql  # macOS
-sudo systemctl status mysql      # Linux
-
-# 测试连接
-mysql -u myblog -p -e "SELECT 1"
+cd /app/myblog/deploy
+./backup.sh
 ```
+备份文件位于 `/app/myblog/backups/`
 
-#### 2. Redis连接问题
+### 4. 忘记密码怎么办？
+目前需要直接修改数据库。后续版本会增加邮箱找回功能。
+
+### 5. 如何自定义配置？
+- 本地开发：修改 `application-local.yml`
+- 生产环境：修改 `.env.prod` 环境变量
+
+## 🔄 更新应用
+
 ```bash
-# 检查Redis服务
-redis-cli ping  # 应返回PONG
+# 拉取最新代码
+cd /app/myblog
+git pull
 
-# 检查端口占用
-lsof -i :6379
+# 重新部署
+cd deploy
+./deploy.sh
 ```
 
-#### 3. 前端启动问题
-```bash
-# 清理缓存和依赖
-rm -rf node_modules package-lock.json
-npm cache clean --force
-npm install
-```
+## 📝 开发计划
 
-#### 4. 端口冲突
-```bash
-# 查找占用端口的进程
-lsof -i :8081  # 后端端口
-lsof -i :5173  # 前端端口
+### 即将到来
+- [ ] 邮箱通知功能
+- [ ] 文章协作编辑
+- [ ] 移动端PWA支持
+- [ ] 社交媒体分享
+- [ ] 多语言支持
 
-# 终止进程
-kill -9 <PID>
-```
+## 🤝 贡献
 
-### 性能优化
-
-- **后端优化**: 调整JVM参数，优化数据库连接池
-- **前端优化**: 启用代码分割，图片懒加载
-- **缓存优化**: 合理设置缓存过期时间
-
-## 📊 技术亮点
-
-### 🔍 搜索技术
-- **BM25算法**: 优化搜索相关性
-- **多字段权重**: 标题、内容、摘要权重配置
-- **中文支持**: 中文分词和检测
-- **重试机制**: Spring Retry确保搜索服务稳定性
-
-### 🚀 性能优化
-- **多层缓存**: Redis热点数据缓存
-- **数据库优化**: MyBatis Plus查询优化
-- **前端优化**: Vite构建优化，组件懒加载
-
-### 🔒 安全机制
-- **JWT认证**: 无状态token认证
-- **文件安全**: 路径遍历防护
-- **SQL注入防护**: MyBatis参数化查询
-- **XSS防护**: 前端输入验证和后端过滤
-
-## 🤝 贡献指南
-
-我们欢迎所有形式的贡献！
-
-### 贡献方式
-
-1. **报告问题**: 在 [Issues](https://github.com/yourname/myblog/issues) 中报告bug
-2. **功能建议**: 提出新功能建议和改进意见
-3. **代码贡献**: 提交Pull Request
-4. **文档改进**: 完善项目文档和说明
-
-### 开发流程
+欢迎贡献代码、报告问题或提出建议！
 
 1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+2. 创建分支 (`git checkout -b feature/AmazingFeature`)
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
+4. 推送分支 (`git push origin feature/AmazingFeature`)
 5. 创建 Pull Request
-
-### 代码规范
-
-- **后端**: 遵循阿里巴巴Java开发手册
-- **前端**: 使用ESLint和Prettier进行代码格式化
-- **提交信息**: 使用 Conventional Commits 规范
 
 ## 📄 许可证
 
 本项目采用 [MIT License](LICENSE) 开源协议。
 
-## 🙏 致谢
+## 💬 联系方式
 
-感谢以下开源项目和贡献者：
-
-- [Spring Boot](https://spring.io/projects/spring-boot) - 后端框架
-- [React](https://reactjs.org/) - 前端框架
-- [Vite](https://vitejs.dev/) - 构建工具
-- [Tailwind CSS](https://tailwindcss.com/) - CSS框架
-- [Elasticsearch](https://www.elastic.co/) - 搜索引擎
-- [MyBatis Plus](https://baomidou.com/) - 数据库增强工具
-
-## 📞 联系我们
-
-- **项目地址**: https://github.com/yourname/myblog
-- **问题反馈**: https://github.com/yourname/myblog/issues
-- **邮箱**: your.email@example.com
+- 问题反馈：[GitHub Issues](https://github.com/yourname/myblog/issues)
+- 邮箱：your.email@example.com
 
 ---
 
 <div align="center">
 
-**如果这个项目对你有帮助，请给我们一个 ⭐️**
+**如果这个项目对你有帮助，请给一个 ⭐️**
 
-Made with ❤️ by MyBlog Team
+Made with ❤️ by Ryan Xu
 
 </div>
