@@ -23,8 +23,18 @@ import type {
 } from '../types/api';
 
 // 创建axios实例
+// 根据当前域名自动选择API地址
+const getBaseURL = () => {
+  // 如果在生产服务器上，使用服务器IP
+  if (window.location.hostname === '49.235.139.118') {
+    return 'http://49.235.139.118:8081/api';
+  }
+  // 本地开发使用localhost
+  return 'http://localhost:8081/api';
+};
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: getBaseURL(),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -306,6 +316,19 @@ export const api = {
     // 获取所有公开文章
     getAllPublic: async (): Promise<BlogListVO[]> => {
       return apiClient.get('/blog/public/all') as Promise<BlogListVO[]>;
+    },
+
+    // MySQL搜索博客（ES降级方案）
+    searchBlogsByMySQL: async (keyword: string, limit: number = 50): Promise<BlogListVO[]> => {
+      try {
+        const response = await apiClient.get('/blog/search', {
+          params: { keyword, limit }
+        });
+        return normalizeArrayResponse<BlogListVO>(response);
+      } catch (error) {
+        console.error('MySQL搜索失败:', error);
+        return [];
+      }
     },
 
   },

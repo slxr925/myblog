@@ -45,7 +45,19 @@ const SearchResultsPage: React.FC = () => {
         let response;
 
         if (searchTerm.trim()) {
-          response = await api.search.searchBlogs(searchTerm, 50);
+          // 优先使用ES搜索，失败时fallback到MySQL搜索
+          try {
+            response = await api.search.searchBlogs(searchTerm, 50);
+            // 如果ES返回空结果（可能被禁用），尝试MySQL搜索
+            if (!response || (Array.isArray(response) && response.length === 0) || 
+                (response.content && Array.isArray(response.content) && response.content.length === 0)) {
+              console.log('ES搜索无结果，fallback到MySQL搜索');
+              response = await api.blog.searchBlogsByMySQL(searchTerm, 50);
+            }
+          } catch (error) {
+            console.warn('ES搜索失败，使用MySQL搜索:', error);
+            response = await api.blog.searchBlogsByMySQL(searchTerm, 50);
+          }
         } else {
           response = await api.blog.getLatest(50);
         }

@@ -1,11 +1,8 @@
 # 生产环境配置
 spring:
-  profiles:
-    active: prod
-  
   # 数据库配置 - 使用宿主机 MySQL (端口13306)
   datasource:
-    url: jdbc:mysql://host.docker.internal:13306/myblog?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:172.17.0.1}:${MYSQL_PORT:13306}/${MYSQL_DATABASE:myblog}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
     hikari:
@@ -16,10 +13,11 @@ spring:
       max-lifetime: 1800000
   
   # Redis配置 - 使用宿主机 Redis (端口26739)
+  # 注意：172.17.0.1 是Docker默认网关IP，用于容器访问宿主机服务
   data:
     redis:
-      host: host.docker.internal
-      port: 26739
+      host: ${REDIS_HOST:172.17.0.1}
+      port: ${REDIS_PORT:26739}
       password: ${REDIS_PASSWORD:}
       database: 0
       timeout: 3000ms
@@ -44,7 +42,7 @@ spring:
 app:
   elasticsearch:
     enabled: ${ELASTICSEARCH_ENABLED:true}
-    uris: http://host.docker.internal:9200
+    uris: http://${ELASTICSEARCH_HOST:172.17.0.1}:${ELASTICSEARCH_PORT:9200}
     username: ${ELASTICSEARCH_USERNAME:}
     password: ${ELASTICSEARCH_PASSWORD:}
     connection-timeout: 10s

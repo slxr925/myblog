@@ -15,20 +15,26 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # 配置
-BACKUP_DIR="/app/myblog/backups"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BACKUP_DIR="${PROJECT_ROOT}/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 MYSQL_HOST="127.0.0.1"
 MYSQL_PORT="13306"
 MYSQL_DATABASE="myblog"
+MYSQL_USERNAME="root"
+MYSQL_PASSWORD="Kpiass123."
 
 # 加载环境变量
-if [ -f "../.env.prod" ]; then
-    source ../.env.prod
+if [ -f "${PROJECT_ROOT}/.env.prod" ]; then
+    echo "加载配置文件..."
+    source "${PROJECT_ROOT}/.env.prod"
+    MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+    MYSQL_PORT="${MYSQL_PORT:-13306}"
+    MYSQL_DATABASE="${MYSQL_DATABASE:-myblog}"
+    MYSQL_USERNAME="${MYSQL_USERNAME:-root}"
+    MYSQL_PASSWORD="${MYSQL_PASSWORD}"
 else
-    echo -e "${YELLOW}未找到 .env.prod，请手动输入数据库信息${NC}"
-    read -p "MySQL用户名: " MYSQL_USERNAME
-    read -sp "MySQL密码: " MYSQL_PASSWORD
-    echo ""
+    echo -e "${YELLOW}未找到 .env.prod，使用默认配置${NC}"
 fi
 
 # 创建备份目录
@@ -51,13 +57,23 @@ echo -e "${GREEN}数据库备份完成: ${BACKUP_FILE}.gz${NC}"
 
 # 2. 备份上传文件
 echo "正在备份上传文件..."
-UPLOAD_DIR="/app/myblog/data/backend/uploads"
-if [ -d "${UPLOAD_DIR}" ]; then
+UPLOAD_DIR="${PROJECT_ROOT}/data/backend/uploads"
+if [ -d "${UPLOAD_DIR}" ] && [ -n "$(ls -A ${UPLOAD_DIR} 2>/dev/null)" ]; then
     UPLOAD_BACKUP="${BACKUP_DIR}/myblog_uploads_${DATE}.tar.gz"
     tar -czf "${UPLOAD_BACKUP}" -C "$(dirname ${UPLOAD_DIR})" "$(basename ${UPLOAD_DIR})"
     echo -e "${GREEN}文件备份完成: ${UPLOAD_BACKUP}${NC}"
 else
-    echo -e "${YELLOW}上传目录不存在，跳过文件备份${NC}"
+    echo -e "${YELLOW}上传目录不存在或为空，跳过文件备份${NC}"
+fi
+
+# 3. 备份当前运行的jar和dist（可选）
+echo "正在备份应用文件..."
+if [ -d "${PROJECT_ROOT}/myblog-backend/target" ]; then
+    JAR_FILE=$(find ${PROJECT_ROOT}/myblog-backend/target -name "*.jar" -not -name "*-sources.jar" | head -n 1)
+    if [ -f "$JAR_FILE" ]; then
+        cp "$JAR_FILE" "${BACKUP_DIR}/myblog-backend-${DATE}.jar"
+        echo -e "${GREEN}后端jar备份完成${NC}"
+    fi
 fi
 
 # 3. 清理旧备份（保留最近7天）

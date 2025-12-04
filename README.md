@@ -101,55 +101,100 @@ npm run dev
 
 ## 🌐 服务器部署
 
-### 一键部署（3步搞定）
+### 部署方式
+
+MyBlog 支持两种部署方式：
+
+#### 方式一：Docker 部署（推荐）⭐
+
+**适用场景**：生产环境，已有Docker环境
+
+**特点**：
+- ✅ 本地构建，服务器运行
+- ✅ 资源占用小，部署快速
+- ✅ 支持一键迭代更新
+
+**部署步骤**：
 
 ```bash
-# 1. 上传项目到服务器
-scp -r myblog root@your-server:/app/
+# === 本地操作 ===
+# 1. 构建项目
+cd /path/to/myblog
+./build-local.sh
 
-# 2. SSH登录并配置环境
+# 2. 上传到服务器（通过宝塔面板或scp）
+# - myblog-backend/target/*.jar → /app/myblog/myblog-backend/target/
+# - myblog-frontend/dist/ → /app/myblog/myblog-frontend/dist/
+# - deploy/, docker-compose.prod.yml, .env.prod 等文件
+
+# === 服务器操作 ===
+# 3. 配置环境变量
 ssh root@your-server
-cd /app/myblog/deploy
-./create-env.sh
+vim /app/myblog/.env.prod  # 配置MySQL、Redis等
 
-# 3. 一键部署
-sudo ./quick-deploy.sh
+# 4. 初始化数据库
+cd /app/myblog/deploy
+./init-database.sh
+
+# 5. 部署应用
+./quick-deploy.sh
 ```
 
-部署完成！访问 `http://your-server-ip` 查看效果。
+部署完成！访问 `http://your-server-ip:3000` 查看效果。
 
-### 部署说明
+---
 
-脚本会自动完成：
-- ✅ 安装 Docker 和 Docker Compose
-- ✅ 初始化数据库
-- ✅ 构建并启动容器
-- ✅ 配置 Nginx 反向代理
+#### 方式二：一键迭代部署（推荐日常使用）⭐⭐⭐
+
+**适用场景**：配置SSH密钥后的日常开发迭代
+
+**特点**：
+- 🚀 一条命令完成构建+上传+部署
+- ⏱️ 3-5分钟完成更新
+- 🔄 适合频繁迭代
+
+**使用方法**：
+
+```bash
+# 1. 配置SSH密钥（只需一次，5分钟）
+# 查看: deploy/SSH-SETUP.md
+
+# 2. 以后每次更新只需一条命令
+cd /path/to/myblog
+./deploy-update.sh
+```
+
+---
 
 ### 详细文档
 
-需要了解更多？查看完整部署指南：
-
-- 📖 [完整部署文档](DEPLOYMENT.md) - 详细的部署和运维指南
-- ⚡ [5分钟快速开始](deploy/QUICK_START.md) - 最快速的部署方式
-- 📋 [部署检查清单](deploy/CHECKLIST.md) - 确保部署成功
+| 文档 | 说明 | 适用场景 |
+|------|------|---------|
+| 📖 [deploy/README.md](deploy/README.md) | **完整部署指南** | 首次部署必读 ⭐ |
+| 🔄 [版本迭代流程](deploy/README.md#-版本迭代流程) | 代码更新后如何部署 | 日常最常用 ⭐⭐⭐ |
+| 🔑 [deploy/SSH-SETUP.md](deploy/SSH-SETUP.md) | SSH密钥配置 | 实现一键部署 |
+| ⚙️ [配置管理](deploy/README.md#-核心配置) | 环境变量和配置 | 修改配置时查看 |
 
 ### 常用运维命令
 
 ```bash
-cd /app/myblog/deploy
+cd /app/myblog
+
+# 查看服务状态
+docker-compose -f docker-compose.prod.yml ps
 
 # 查看日志
-./logs.sh
+docker logs -f myblog-backend
+docker logs -f myblog-frontend
 
 # 重启服务
-docker-compose -f ../docker-compose.prod.yml restart
+docker-compose -f docker-compose.prod.yml restart
 
 # 停止服务
-./stop.sh
+cd deploy && ./stop.sh
 
 # 数据备份
-./backup.sh
+cd deploy && ./backup.sh
 ```
 
 ## 🛠️ 技术栈

@@ -1,18 +1,24 @@
-version: '3.8'
-
 services:
   # 后端服务
   backend:
     build:
       context: ./myblog-backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: myblog-backend
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      MYSQL_USERNAME: ${MYSQL_USERNAME:-myblog_user}
+      MYSQL_HOST: ${MYSQL_HOST:-172.17.0.1}
+      MYSQL_PORT: ${MYSQL_PORT:-13306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-myblog}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST:-172.17.0.1}
+      REDIS_PORT: ${REDIS_PORT:-26739}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      ELASTICSEARCH_ENABLED: ${ELASTICSEARCH_ENABLED:-false}
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-172.17.0.1}
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT:-9200}
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET}
@@ -27,7 +33,7 @@ services:
     networks:
       - myblog-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -45,9 +51,7 @@ services:
   frontend:
     build:
       context: ./myblog-frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: http://49.235.139.118:8081
+      dockerfile: Dockerfile.prod
     container_name: myblog-frontend
     restart: unless-stopped
     ports:
