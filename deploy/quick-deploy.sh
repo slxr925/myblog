@@ -53,7 +53,7 @@ source .env.prod
 
 # 确保 docker-compose 可以读取环境变量
 # docker-compose 默认读取 .env 文件，而非 .env.prod
-cp ../.env.prod ../.env
+cp .env.prod .env
 echo -e "${GREEN}✓ 环境配置已同步到 .env${NC}"
 
 if [ -z "$MYSQL_PASSWORD" ] || [ -z "$JWT_SECRET" ]; then
