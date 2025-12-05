@@ -194,3 +194,4 @@ $RECYCLE.BIN/
 # 如果有其他不需要提交的文件，在下面添加
 # 例如：
 # my-secret-file.txt
+build-info.txt
