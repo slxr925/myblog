@@ -1,3 +1,12 @@
+# Redis数据文件
+dump.rdb
+
+# 根目录临时文件
+/test-*.txt
+/package.json
+/package-lock.json
+/node_modules/
+
 # ==================== Java/Maven ====================
 target/
 !**/src/main/**/target/
