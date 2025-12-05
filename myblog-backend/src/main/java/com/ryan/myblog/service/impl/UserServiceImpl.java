@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryan.myblog.common.PageRequest;
+import com.ryan.myblog.config.JwtProperties;
+import com.ryan.myblog.model.dto.TokenResponse;
 import com.ryan.myblog.model.dto.UserLoginDTO;
 import com.ryan.myblog.model.dto.UserRegisterDTO;
 import com.ryan.myblog.model.entity.User;
@@ -15,11 +17,13 @@ import com.ryan.myblog.utils.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户服务实现类
@@ -33,6 +37,14 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final SessionService sessionService;
+    private final JwtProperties jwtProperties;
+    private final RedisTemplate<String, Object> redisTemplate;
+    
+    // 登录失败限制配置
+    private static final int MAX_LOGIN_ATTEMPTS = 5; // 最大失败次数
+    private static final long LOCK_DURATION_MINUTES = 10; // 锁定时长（分钟）
+    private static final String LOGIN_FAIL_KEY_PREFIX = "login:fail:";
+    private static final String LOGIN_LOCK_KEY_PREFIX = "login:locked:";
     
     @Override
     @Transactional
@@ -117,6 +129,131 @@ public class UserServiceImpl implements UserService {
         
         log.info("用户登录成功：{}，token长度：{}", userLoginDTO.getUsername(), token.length());
         return token;
+    }
+    
+    @Override
+    public TokenResponse loginWithTokens(UserLoginDTO userLoginDTO, String clientIp) {
+        log.info("用户登录请求（双Token）：{}，IP：{}", userLoginDTO.getUsername(), clientIp);
+        
+        String username = userLoginDTO.getUsername();
+        
+        // 1. 检查IP是否被锁定
+        String ipLockKey = LOGIN_LOCK_KEY_PREFIX + "ip:" + clientIp;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(ipLockKey))) {
+            Long ttl = redisTemplate.getExpire(ipLockKey, TimeUnit.MINUTES);
+            log.warn("IP已被锁定：{}，剩余时间：{}分钟", clientIp, ttl);
+            throw new RuntimeException("登录失败次数过多，请" + ttl + "分钟后再试");
+        }
+        
+        // 2. 检查用户是否被锁定
+        String userLockKey = LOGIN_LOCK_KEY_PREFIX + "user:" + username;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(userLockKey))) {
+            Long ttl = redisTemplate.getExpire(userLockKey, TimeUnit.MINUTES);
+            log.warn("用户已被锁定：{}，剩余时间：{}分钟", username, ttl);
+            throw new RuntimeException("该账号已被锁定，请" + ttl + "分钟后再试");
+        }
+        
+        // 3. 查询用户
+        User user = userMapper.selectByUsername(username);
+        if (user == null) {
+            log.warn("用户不存在：{}", username);
+            handleLoginFailure(username, clientIp);
+            throw new RuntimeException("用户名或密码错误");
+        }
+        
+        // 4. 验证密码
+        if (!passwordEncoder.matches(userLoginDTO.getPassword(), user.getPassword())) {
+            log.warn("密码错误：{}", username);
+            handleLoginFailure(username, clientIp);
+            throw new RuntimeException("用户名或密码错误");
+        }
+        
+        // 5. 检查用户状态
+        if (user.getStatus() == 1) {
+            log.warn("用户已被禁用：{}", username);
+            throw new RuntimeException("用户已被禁用");
+        }
+        
+        // 6. 登录成功，清除失败记录
+        clearLoginFailures(username, clientIp);
+        
+        // 7. 生成Access Token（管理员token绑定IP）
+        String accessToken = jwtUtils.generateAccessToken(
+            user.getId(), 
+            user.getUsername(), 
+            user.getRole(), 
+            clientIp
+        );
+        
+        // 8. 生成Refresh Token
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId());
+        
+        // 9. 保存用户会话到Redis
+        sessionService.saveSession(accessToken, user.getId());
+        
+        log.info("用户登录成功：{}，角色：{}，accessToken长度：{}，refreshToken长度：{}", 
+                username, user.getRole(), accessToken.length(), refreshToken.length());
+        
+        return new TokenResponse(accessToken, refreshToken, jwtProperties.getAccessTokenExpiration());
+    }
+    
+    /**
+     * 处理登录失败
+     * 记录失败次数，超过阈值则锁定
+     */
+    private void handleLoginFailure(String username, String clientIp) {
+        // 记录IP失败次数
+        String ipFailKey = LOGIN_FAIL_KEY_PREFIX + "ip:" + clientIp;
+        Integer ipFailCount = incrementFailCount(ipFailKey);
+        
+        // 记录用户失败次数
+        String userFailKey = LOGIN_FAIL_KEY_PREFIX + "user:" + username;
+        Integer userFailCount = incrementFailCount(userFailKey);
+        
+        log.info("登录失败 - 用户：{}，IP：{}，IP失败次数：{}，用户失败次数：{}", 
+                username, clientIp, ipFailCount, userFailCount);
+        
+        // 检查是否需要锁定
+        if (ipFailCount >= MAX_LOGIN_ATTEMPTS) {
+            lockAccount(LOGIN_LOCK_KEY_PREFIX + "ip:" + clientIp);
+            log.warn("IP已被锁定：{}，锁定时长：{}分钟", clientIp, LOCK_DURATION_MINUTES);
+        }
+        
+        if (userFailCount >= MAX_LOGIN_ATTEMPTS) {
+            lockAccount(LOGIN_LOCK_KEY_PREFIX + "user:" + username);
+            log.warn("用户已被锁定：{}，锁定时长：{}分钟", username, LOCK_DURATION_MINUTES);
+        }
+    }
+    
+    /**
+     * 递增失败计数
+     * @return 当前失败次数
+     */
+    private Integer incrementFailCount(String key) {
+        Long count = redisTemplate.opsForValue().increment(key);
+        // 设置失败记录过期时间为锁定时长
+        redisTemplate.expire(key, LOCK_DURATION_MINUTES, TimeUnit.MINUTES);
+        return count != null ? count.intValue() : 1;
+    }
+    
+    /**
+     * 锁定账号
+     */
+    private void lockAccount(String lockKey) {
+        redisTemplate.opsForValue().set(lockKey, "locked", LOCK_DURATION_MINUTES, TimeUnit.MINUTES);
+    }
+    
+    /**
+     * 清除登录失败记录
+     */
+    private void clearLoginFailures(String username, String clientIp) {
+        String ipFailKey = LOGIN_FAIL_KEY_PREFIX + "ip:" + clientIp;
+        String userFailKey = LOGIN_FAIL_KEY_PREFIX + "user:" + username;
+        
+        redisTemplate.delete(ipFailKey);
+        redisTemplate.delete(userFailKey);
+        
+        log.debug("清除登录失败记录 - 用户：{}，IP：{}", username, clientIp);
     }
     
     @Override

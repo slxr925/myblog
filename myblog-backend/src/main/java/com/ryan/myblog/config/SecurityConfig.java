@@ -1,8 +1,13 @@
 package com.ryan.myblog.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ryan.myblog.common.Result;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -12,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.io.IOException;
 
 /**
  * Spring Security配置
@@ -41,10 +48,23 @@ public class SecurityConfig {
             .cors(cors -> cors.configure(http))
             // 设置会话管理为无状态
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // 配置异常处理
+            .exceptionHandling(exception -> exception
+                // 未认证处理（401）
+                .authenticationEntryPoint((request, response, authException) -> {
+                    writeJsonResponse(response, HttpStatus.UNAUTHORIZED.value(), "未授权，请先登录");
+                })
+                // 无权限处理（403）
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    writeJsonResponse(response, HttpStatus.FORBIDDEN.value(), "权限不足，无法访问");
+                })
+            )
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
                 // 允许所有OPTIONS请求（CORS预检）
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // 允许健康检查和监控端点（用于Docker健康检查）
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 // 允许访问主页和静态资源
                 .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                 // 允许访问静态资源
@@ -94,5 +114,18 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
+    }
+    
+    /**
+     * 写入JSON响应
+     */
+    private void writeJsonResponse(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        
+        Result<Void> result = Result.error(status, message);
+        ObjectMapper objectMapper = new ObjectMapper();
+        response.getWriter().write(objectMapper.writeValueAsString(result));
     }
 }

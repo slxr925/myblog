@@ -1,12 +1,15 @@
 package com.ryan.myblog.controller;
 
+import com.ryan.myblog.annotation.RateLimit;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.model.dto.ChangePasswordDTO;
+import com.ryan.myblog.model.dto.TokenResponse;
 import com.ryan.myblog.model.dto.UserLoginDTO;
 import com.ryan.myblog.model.dto.UserRegisterDTO;
 import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
+import com.ryan.myblog.utils.IpUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,8 +34,10 @@ public class UserController {
     
     /**
      * 用户注册
+     * 限流：每小时3次（防止恶意注册）
      */
     @PostMapping("/register")
+    @RateLimit(key = "ip", limit = 3, window = 3600, message = "注册过于频繁，请1小时后再试")
     public Result<Void> register(@Validated @RequestBody UserRegisterDTO userRegisterDTO) {
         userService.register(userRegisterDTO);
         log.info("用户注册成功：{}", userRegisterDTO.getUsername());
@@ -41,13 +46,24 @@ public class UserController {
     
     /**
      * 用户登录
+     * 返回access token和refresh token
+     * 限流：5分钟5次（防止暴力破解）
      */
     @PostMapping("/login")
-    public Result<String> login(@Validated @RequestBody UserLoginDTO userLoginDTO) {
+    @RateLimit(key = "ip", limit = 5, window = 300, message = "登录尝试次数过多，请5分钟后再试")
+    public Result<TokenResponse> login(
+            @Validated @RequestBody UserLoginDTO userLoginDTO,
+            HttpServletRequest request) {
         log.info("用户登录请求：{}", userLoginDTO.getUsername());
-        String token = userService.login(userLoginDTO);
-        log.info("用户登录成功，返回token，长度：{}", token.length());
-        return Result.success(token);
+        
+        // 获取客户端IP
+        String clientIp = IpUtils.getClientIp(request);
+        
+        // 使用双Token机制登录
+        TokenResponse tokenResponse = userService.loginWithTokens(userLoginDTO, clientIp);
+        
+        log.info("用户登录成功，返回tokens");
+        return Result.success(tokenResponse);
     }
     
     /**

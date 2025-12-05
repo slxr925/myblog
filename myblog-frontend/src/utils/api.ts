@@ -23,14 +23,14 @@ import type {
 } from '../types/api';
 
 // 创建axios实例
-// 根据当前域名自动选择API地址
+// 根据环境自动选择API地址
 const getBaseURL = () => {
-  // 如果在生产服务器上，使用服务器IP
-  if (window.location.hostname === '49.235.139.118') {
-    return 'http://49.235.139.118:8081/api';
+  // 开发环境直接访问后端
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8081/api';
   }
-  // 本地开发使用localhost
-  return 'http://localhost:8081/api';
+  // 生产环境使用相对路径，通过Nginx反向代理
+  return '/api';
 };
 
 const apiClient = axios.create({

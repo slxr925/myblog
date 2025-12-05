@@ -4,6 +4,7 @@ import com.ryan.myblog.common.Role;
 import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
+import com.ryan.myblog.utils.IpUtils;
 import com.ryan.myblog.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -56,13 +57,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         if (StringUtils.isNotBlank(token) && jwtUtils.validateToken(token)) {
             try {
+                // 获取当前请求的IP地址
+                String currentIp = IpUtils.getClientIp(request);
+                
                 // 从token中获取用户信息
                 Long userId = jwtUtils.getUserIdFromToken(token);
                 String username = jwtUtils.getUsernameFromToken(token);
+                Integer tokenRole = jwtUtils.getRoleFromToken(token);
+                String tokenIp = jwtUtils.getIpFromToken(token);
                 
                 // 获取用户详细信息
                 User user = getUserService().getUserById(userId);
                 if (user != null && user.getStatus() == 0) {
+                    
+                    // 管理员token需要验证IP
+                    if (user.getRole() == Role.ADMIN.getCode() && tokenIp != null) {
+                        if (!IpUtils.ipMatches(tokenIp, currentIp)) {
+                            log.warn("管理员Token IP验证失败 - 用户: {}, Token IP: {}, 当前IP: {}", 
+                                    username, tokenIp, currentIp);
+                            // IP不匹配，拒绝认证
+                            filterChain.doFilter(request, response);
+                            return;
+                        }
+                        log.debug("管理员Token IP验证通过 - 用户: {}, IP: {}", username, currentIp);
+                    }
+                    
                     // 构建权限列表
                     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                     

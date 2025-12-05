@@ -1,6 +1,7 @@
 package com.ryan.myblog.config;
 
 import com.ryan.myblog.common.Result;
+import com.ryan.myblog.exception.RateLimitException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +14,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    
+    /**
+     * 处理限流异常
+     * 返回 429 Too Many Requests
+     */
+    @ExceptionHandler(RateLimitException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public Result<Void> handleRateLimitException(RateLimitException e) {
+        log.warn("请求限流: {}", e.getMessage());
+        return Result.error(429, e.getMessage());
+    }
     
     /**
      * 处理运行时异常

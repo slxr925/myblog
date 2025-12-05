@@ -30,9 +30,21 @@ public class JwtProperties {
 
     /**
      * JWT过期时间（秒）
-     * 默认7天
+     * 默认7天（用于向后兼容）
      */
     private Long expiration = 604800L;
+    
+    /**
+     * Access Token过期时间（秒）
+     * 默认30分钟
+     */
+    private Long accessTokenExpiration = 1800L;
+    
+    /**
+     * Refresh Token过期时间（秒）
+     * 默认7天
+     */
+    private Long refreshTokenExpiration = 604800L;
 
     /**
      * 最小密钥长度
@@ -96,8 +108,8 @@ public class JwtProperties {
             log.warn("JWT密钥复杂度建议：包含大小写字母、数字和特殊字符");
         }
 
-        log.info("JWT配置初始化完成 - 过期时间：{}秒，环境：{}，密钥长度：{}位",
-                 expiration, activeProfile, secret.length());
+        log.info("JWT配置初始化完成 - Access Token过期时间：{}秒，Refresh Token过期时间：{}秒，环境：{}，密钥长度：{}位",
+                 accessTokenExpiration, refreshTokenExpiration, activeProfile, secret.length());
     }
 
     /**

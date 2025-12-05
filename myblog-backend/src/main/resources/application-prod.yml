@@ -97,4 +97,6 @@ management:
         include: health,info,metrics
   health:
     elasticsearch:
+      enabled: false  # 禁用Elasticsearch健康检查
+    defaults:
       enabled: true

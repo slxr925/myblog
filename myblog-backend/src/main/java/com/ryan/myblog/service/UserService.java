@@ -2,6 +2,7 @@ package com.ryan.myblog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ryan.myblog.common.PageRequest;
+import com.ryan.myblog.model.dto.TokenResponse;
 import com.ryan.myblog.model.dto.UserLoginDTO;
 import com.ryan.myblog.model.dto.UserRegisterDTO;
 import com.ryan.myblog.model.entity.User;
@@ -17,9 +18,17 @@ public interface UserService {
     void register(UserRegisterDTO userRegisterDTO);
 
     /**
-     * 用户登录
+     * 用户登录（向后兼容）
      */
     String login(UserLoginDTO userLoginDTO);
+    
+    /**
+     * 用户登录（双Token机制）
+     * @param userLoginDTO 登录信息
+     * @param clientIp 客户端IP地址
+     * @return TokenResponse 包含access token和refresh token
+     */
+    TokenResponse loginWithTokens(UserLoginDTO userLoginDTO, String clientIp);
 
     /**
      * 根据用户名查询用户
