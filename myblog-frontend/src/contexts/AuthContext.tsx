@@ -119,12 +119,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       dispatch({ type: 'LOGIN_START' });
       
-            const response = await api.user.login(loginData);
-            
-      const token = response; // 响应拦截器已提取data部分，response直接是token字符串
+      const response = await api.user.login(loginData);
       
-      // 先保存token到localStorage，这样后续请求会自动添加Authorization头
+      // 后端返回TokenResponse对象：{accessToken, refreshToken, expiresIn}
+      const tokenResponse = response as any;
+      const token = tokenResponse.accessToken || response; // 兼容旧版本（直接返回token字符串）
+      
+      // 保存accessToken和refreshToken到localStorage
       localStorage.setItem('token', token);
+      if (tokenResponse.refreshToken) {
+        localStorage.setItem('refreshToken', tokenResponse.refreshToken);
+      }
       
       // 获取用户信息
       try {
@@ -139,6 +144,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           payload: { user, token },
         });
         
+        console.log('登录成功，用户信息:', user);
+        
       } catch (userError) {
         console.error('AuthContext: 获取用户信息失败', userError);
         // 如果获取用户信息失败，仍然认为登录成功，但使用默认用户信息
@@ -149,10 +156,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           status: 0,
           role: Role.USER
         };
+        
+        // 保存默认用户信息
+        api.auth.saveAuth(token, defaultUser);
+        
         dispatch({
           type: 'LOGIN_SUCCESS',
           payload: { user: defaultUser, token },
         });
+        
+        console.log('登录成功（使用默认用户信息）:', defaultUser);
       }
     } catch (error: any) {
       console.error('AuthContext: 登录失败', error);
