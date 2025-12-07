@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql:*)",
+      "Bash(lsof:*)",
+      "Bash(./mvnw spring-boot:run:*)",
+      "Bash(curl:*)",
+      "Bash(redis-cli:*)",
+      "Bash(brew services start:*)",
+      "Bash(ssh:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(pkill:*)",
+      "Bash(xargs kill:*)",
+      "Bash(./deploy/deploy-update.sh:*)",
+      "Bash(chmod:*)",
+      "Bash(./deploy/build-local.sh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

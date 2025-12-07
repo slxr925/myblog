@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS audit_log (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审计日志表';
 
+
+
