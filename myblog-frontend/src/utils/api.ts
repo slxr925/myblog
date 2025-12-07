@@ -76,11 +76,17 @@ apiClient.interceptors.response.use(
   (error) => {
     console.error('API响应错误:', error.config?.url, error.response?.status, error.message);
     if (error.response?.status === 401) {
-      // 未授权，清除本地存储的认证信息
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      // 跳转到首页，让用户重新登录
-      window.location.href = '/';
+      // 检查是否是敏感操作
+      const sensitivePaths = ['/api/admin/dashboard', '/api/user/info', '/api/user/change-password'];
+      const isSensitiveOperation = sensitivePaths.some(path => error.config?.url?.includes(path));
+
+      // 如果是敏感操作或已有token但失效了，则清除认证信息并跳转
+      if (isSensitiveOperation || (localStorage.getItem('token') && !error.config?.url?.includes('/api/admin/track-visit'))) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // 跳转到首页，让用户重新登录
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }

@@ -41,13 +41,13 @@ echo ""
 # 步骤2: 本地构建
 # ============================================
 echo -e "${BLUE}=== 步骤 2/5: 本地构建 ===${NC}"
-if [ ! -f "./build-local.sh" ]; then
+if [ ! -f "./deploy/build-local.sh" ]; then
     echo -e "${RED}✗ 找不到 build-local.sh${NC}"
     exit 1
 fi
 
-chmod +x ./build-local.sh
-if ./build-local.sh; then
+chmod +x ./deploy/build-local.sh
+if ./deploy/build-local.sh; then
     echo -e "${GREEN}✓ 本地构建成功${NC}"
 else
     echo -e "${RED}✗ 本地构建失败${NC}"

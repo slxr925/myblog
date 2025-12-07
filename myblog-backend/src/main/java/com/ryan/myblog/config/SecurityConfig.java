@@ -90,6 +90,8 @@ public class SecurityConfig {
                 .requestMatchers("/doc.html", "/webjars/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll()
                 // 允许访问缓存测试接口（仅用于开发测试）
                 .requestMatchers("/api/cache/**").permitAll()
+                // 记录页面访问日志（允许匿名访问）
+                .requestMatchers("/api/admin/track-visit").permitAll()
                 // 管理员专用接口
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // 博客管理接口需要管理员权限
@@ -100,8 +102,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/tag/save", "/api/tag/update", "/api/tag/delete/**").hasRole("ADMIN")
                 // 文件上传需要登录（管理员和普通用户都可以）
                 .requestMatchers("/api/file/upload").hasRole("ADMIN")
-                // 评论和点赞需要登录（管理员和普通用户都可以）
-                .requestMatchers("/api/comment/**").authenticated()
+                // 查看评论不需要登录，但发表评论和点赞需要登录
+                .requestMatchers(HttpMethod.GET, "/api/comment/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/comment/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/comment/**").authenticated()
                 .requestMatchers("/api/like/**").authenticated()
                 // 用户信息接口需要认证（包括GET和PUT）
                 .requestMatchers("/api/user/info").authenticated()

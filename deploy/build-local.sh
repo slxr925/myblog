@@ -17,7 +17,7 @@ echo "MyBlog 本地构建脚本"
 echo "==================================="
 
 # 项目根目录
-PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 # 生成版本信息
