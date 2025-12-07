@@ -91,6 +91,54 @@ if [ -d "../myblog-backend/database/migrations" ]; then
     echo -e "${GREEN}数据库迁移完成!${NC}"
 fi
 
+# 执行性能优化索引脚本
+echo "正在创建性能优化索引..."
+if [ -f "../myblog-backend/src/main/resources/sql/performance_indexes.sql" ]; then
+    echo "  执行: performance_indexes.sql"
+    mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < ../myblog-backend/src/main/resources/sql/performance_indexes.sql
+    echo -e "${GREEN}性能索引创建完成!${NC}"
+else
+    echo -e "${YELLOW}警告: 找不到性能索引脚本 myblog-backend/src/main/resources/sql/performance_indexes.sql${NC}"
+    echo -e "${YELLOW}将手动创建关键索引...${NC}"
+
+    # 手动创建关键索引
+    mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" <<EOF
+-- 博客表关键索引
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_category_id (category_id);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_author_id (author_id);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_status (status);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_create_time (create_time);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_view_count (view_count);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_like_count (like_count);
+
+-- 复合索引
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_list_query (status, deleted, is_top, create_time DESC);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_hot_query (status, deleted, view_count DESC, like_count DESC, publish_time DESC);
+ALTER TABLE tb_blog ADD INDEX IF NOT EXISTS idx_tb_blog_latest_query (status, deleted, publish_time DESC);
+
+-- 博客标签关联表索引
+ALTER TABLE tb_blog_tag ADD INDEX IF NOT EXISTS idx_tb_blog_tag_blog_id (blog_id);
+ALTER TABLE tb_blog_tag ADD INDEX IF NOT EXISTS idx_tb_blog_tag_tag_id (tag_id);
+ALTER TABLE tb_blog_tag ADD INDEX IF NOT EXISTS idx_tb_blog_tag_blog_tag (blog_id, tag_id);
+
+-- 用户点赞表索引
+ALTER TABLE tb_user_like ADD INDEX IF NOT EXISTS idx_tb_user_like_user_id (user_id);
+ALTER TABLE tb_user_like ADD INDEX IF NOT EXISTS idx_tb_user_like_target (target_type, target_id);
+ALTER TABLE tb_user_like ADD INDEX IF NOT EXISTS idx_tb_user_like_target_status (target_type, target_id, status);
+
+-- 用户表索引
+ALTER TABLE tb_user ADD UNIQUE INDEX IF NOT EXISTS idx_tb_user_username (username);
+ALTER TABLE tb_user ADD UNIQUE INDEX IF NOT EXISTS idx_tb_user_email (email);
+ALTER TABLE tb_user ADD INDEX IF NOT EXISTS idx_tb_user_nickname (nickname);
+
+-- 分类和标签表索引
+ALTER TABLE tb_category ADD UNIQUE INDEX IF NOT EXISTS idx_category_name (name);
+ALTER TABLE tb_tag ADD UNIQUE INDEX IF NOT EXISTS idx_tag_name (name);
+EOF
+
+    echo -e "${GREEN}关键索引创建完成!${NC}"
+fi
+
 # 验证表创建
 echo "正在验证表结构..."
 TABLE_COUNT=$(mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "SHOW TABLES;" | wc -l)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Heart, Share2, MessageCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -45,7 +45,8 @@ const BlogDetail: React.FC = () => {
     fetchBlogDetail();
   }, [id]);
 
-  const handleLike = async () => {
+  // 使用useCallback优化函数，避免每次渲染都创建新函数
+  const handleLike = useCallback(async () => {
     if (!user) {
       openAuthModal();
       return;
@@ -70,9 +71,9 @@ const BlogDetail: React.FC = () => {
     } finally {
       setIsLiking(false);
     }
-  };
+  }, [user, blog, isLiking, openAuthModal]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (navigator.share) {
       try {
         await navigator.share({
@@ -84,7 +85,7 @@ const BlogDetail: React.FC = () => {
     } else {
       navigator.clipboard.writeText(window.location.href);
     }
-  };
+  }, [blogData.title, blogData.summary]);
 
   if (loading) {
     return (
@@ -210,4 +211,5 @@ const BlogDetail: React.FC = () => {
   );
 };
 
-export default BlogDetail;
+// 使用React.memo优化组件，避免不必要的重渲染
+export default React.memo(BlogDetail);

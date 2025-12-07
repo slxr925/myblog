@@ -19,6 +19,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * 博客控制器
@@ -31,6 +35,9 @@ public class BlogController {
 
     private final BlogService blogService;
     private final SecurityUtils securityUtils;
+
+    // 创建一个线程池用于并行执行任务
+    private final Executor executor = Executors.newFixedThreadPool(4);
     
     /**
      * 分页查询博客列表
@@ -90,6 +97,7 @@ public class BlogController {
 
     /**
      * 查询增强版博客详情（包含推荐内容）
+     * 使用并行调用优化性能
      */
     @GetMapping("/{id}/enhanced")
     public Result<BlogDetailEnhancedVO> getBlogDetailEnhanced(@PathVariable Long id) {
@@ -100,27 +108,72 @@ public class BlogController {
             return Result.error("博客不存在");
         }
 
-        // 增加阅读量
-        blogService.incrementViewCount(id);
+        // 增加阅读量（异步执行，不阻塞）
+        CompletableFuture.runAsync(() -> {
+            try {
+                blogService.incrementViewCount(id);
+            } catch (Exception e) {
+                log.warn("增加阅读量失败: {}", e.getMessage());
+            }
+        }, executor);
 
         // 构建增强版详情
         BlogDetailEnhancedVO enhancedVO = new BlogDetailEnhancedVO();
         enhancedVO.setBlog(blog);
 
-        // 获取相关推荐
-        enhancedVO.setRelatedBlogs(blogService.getRelatedBlogs(id, 5));
+        // 并行获取相关数据
+        try {
+            // 并行执行多个查询
+            CompletableFuture<List<BlogDetailVO>> relatedBlogsFuture = CompletableFuture.supplyAsync(
+                () -> blogService.getRelatedBlogs(id, 5), executor);
 
-        // 获取上下篇导航
-        enhancedVO.setPreviousBlog(blogService.getPreviousBlog(id, blog.getCategoryId()));
-        enhancedVO.setNextBlog(blogService.getNextBlog(id, blog.getCategoryId()));
+            CompletableFuture<BlogDetailVO> previousBlogFuture = CompletableFuture.supplyAsync(
+                () -> blogService.getPreviousBlog(id, blog.getCategoryId()), executor);
 
-        // 获取热门和最新博客
-        enhancedVO.setHotBlogs(blogService.getHotBlogs(5));
-        enhancedVO.setLatestBlogs(blogService.getLatestBlogs(5));
+            CompletableFuture<BlogDetailVO> nextBlogFuture = CompletableFuture.supplyAsync(
+                () -> blogService.getNextBlog(id, blog.getCategoryId()), executor);
 
-        // 获取同分类推荐
-        if (blog.getCategoryId() != null) {
-            enhancedVO.setCategoryBlogs(blogService.getBlogsByCategory(blog.getCategoryId(), 5));
+            CompletableFuture<List<BlogDetailVO>> hotBlogsFuture = CompletableFuture.supplyAsync(
+                () -> blogService.getHotBlogs(5), executor);
+
+            CompletableFuture<List<BlogDetailVO>> latestBlogsFuture = CompletableFuture.supplyAsync(
+                () -> blogService.getLatestBlogs(5), executor);
+
+            CompletableFuture<List<BlogDetailVO>> categoryBlogsFuture = blog.getCategoryId() != null ?
+                CompletableFuture.supplyAsync(() -> blogService.getBlogsByCategory(blog.getCategoryId(), 5), executor) :
+                CompletableFuture.completedFuture(null);
+
+            // 等待所有任务完成，设置超时时间为5秒
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                relatedBlogsFuture, previousBlogFuture, nextBlogFuture,
+                hotBlogsFuture, latestBlogsFuture, categoryBlogsFuture
+            );
+
+            allFutures.get(5, TimeUnit.SECONDS);
+
+            // 设置结果
+            enhancedVO.setRelatedBlogs(relatedBlogsFuture.get());
+            enhancedVO.setPreviousBlog(previousBlogFuture.get());
+            enhancedVO.setNextBlog(nextBlogFuture.get());
+            enhancedVO.setHotBlogs(hotBlogsFuture.get());
+            enhancedVO.setLatestBlogs(latestBlogsFuture.get());
+
+            if (blog.getCategoryId() != null) {
+                enhancedVO.setCategoryBlogs(categoryBlogsFuture.get());
+            }
+
+        } catch (Exception e) {
+            log.error("并行获取博客详情数据失败", e);
+            // 如果并行调用失败，降级到串行调用
+            enhancedVO.setRelatedBlogs(blogService.getRelatedBlogs(id, 5));
+            enhancedVO.setPreviousBlog(blogService.getPreviousBlog(id, blog.getCategoryId()));
+            enhancedVO.setNextBlog(blogService.getNextBlog(id, blog.getCategoryId()));
+            enhancedVO.setHotBlogs(blogService.getHotBlogs(5));
+            enhancedVO.setLatestBlogs(blogService.getLatestBlogs(5));
+
+            if (blog.getCategoryId() != null) {
+                enhancedVO.setCategoryBlogs(blogService.getBlogsByCategory(blog.getCategoryId(), 5));
+            }
         }
 
         return Result.success(enhancedVO);

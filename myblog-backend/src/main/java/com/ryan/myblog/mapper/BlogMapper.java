@@ -104,4 +104,22 @@ public interface BlogMapper extends BaseMapper<Blog> {
     IPage<BlogDetailVO> selectBlogsByAuthor(Page<BlogDetailVO> page,
                                            @Param("authorId") Long authorId,
                                            @Param("status") Integer status);
+
+    /**
+     * 查询热门博客（包含标签信息，不包含content）
+     */
+    List<BlogDetailVO> selectHotBlogsWithTags(@Param("limit") int limit);
+
+    /**
+     * 查询最新博客（包含标签信息，不包含content）
+     */
+    List<BlogDetailVO> selectLatestBlogsWithTags(@Param("limit") int limit);
+
+    /**
+     * 查询相关博客（包含标签信息，不包含content）
+     */
+    List<BlogDetailVO> selectRelatedBlogsWithTags(@Param("blogId") Long blogId,
+                                                 @Param("categoryId") Long categoryId,
+                                                 @Param("tagIds") List<Long> tagIds,
+                                                 @Param("limit") int limit);
 }

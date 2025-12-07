@@ -14,7 +14,8 @@
       "Bash(xargs kill:*)",
       "Bash(./deploy/deploy-update.sh:*)",
       "Bash(chmod:*)",
-      "Bash(./deploy/build-local.sh:*)"
+      "Bash(./deploy/build-local.sh:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

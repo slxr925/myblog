@@ -226,17 +226,13 @@ public class BlogServiceImpl implements BlogService {
     }
     
     @Override
-    public IPage<BlogDetailVO> getBlogPage(PageRequest pageRequest, Long categoryId, 
+    public IPage<BlogDetailVO> getBlogPage(PageRequest pageRequest, Long categoryId,
                                           Long tagId, String keyword, Integer status) {
         Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
-        
+
+        // 使用新的查询方法，已经包含标签信息，无需额外查询
         IPage<BlogDetailVO> result = blogMapper.selectBlogPage(page, categoryId, tagId, keyword, status);
-        
-        // 为每个博客设置标签信息
-        result.getRecords().forEach(blog -> {
-            blog.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
-        });
-        
+
         return result;
     }
     
@@ -518,23 +514,18 @@ public class BlogServiceImpl implements BlogService {
         if (currentBlog == null) {
             return List.of();
         }
-        
+
         // 获取当前博客的标签
         List<Long> tagIds = tagMapper.selectTagsByBlogId(blogId)
                 .stream()
                 .map(tag -> tag.getId())
                 .collect(Collectors.toList());
-        
-        // 查询相关博客
-        List<BlogDetailVO> relatedBlogs = blogMapper.selectRelatedBlogs(
+
+        // 使用新的查询方法，已经包含标签信息
+        List<BlogDetailVO> relatedBlogs = blogMapper.selectRelatedBlogsWithTags(
             blogId, currentBlog.getCategoryId(), tagIds, limit
         );
-        
-        // 为每个博客设置标签信息
-        relatedBlogs.forEach(blog -> {
-            blog.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
-        });
-        
+
         return relatedBlogs;
     }
     
@@ -561,17 +552,15 @@ public class BlogServiceImpl implements BlogService {
     public List<BlogDetailVO> getHotBlogs(int limit) {
         String cacheKey = "blog:hot:" + limit;
         List<BlogDetailVO> hotBlogs = cacheService.get(cacheKey, List.class);
-        
+
         if (hotBlogs == null) {
-            hotBlogs = blogMapper.selectHotBlogs(limit);
-            hotBlogs.forEach(blog -> {
-                blog.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
-            });
-            
+            // 使用新的查询方法，已经包含标签信息
+            hotBlogs = blogMapper.selectHotBlogsWithTags(limit);
+
             // 缓存热门博客，设置30分钟过期
             cacheService.set(cacheKey, hotBlogs, 1800);
         }
-        
+
         return hotBlogs;
     }
     
@@ -580,17 +569,15 @@ public class BlogServiceImpl implements BlogService {
     public List<BlogDetailVO> getLatestBlogs(int limit) {
         String cacheKey = "blog:latest:" + limit;
         List<BlogDetailVO> latestBlogs = cacheService.get(cacheKey, List.class);
-        
+
         if (latestBlogs == null) {
-            latestBlogs = blogMapper.selectLatestBlogs(limit);
-            latestBlogs.forEach(blog -> {
-                blog.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
-            });
-            
+            // 使用新的查询方法，已经包含标签信息
+            latestBlogs = blogMapper.selectLatestBlogsWithTags(limit);
+
             // 缓存最新博客，设置10分钟过期
             cacheService.set(cacheKey, latestBlogs, 600);
         }
-        
+
         return latestBlogs;
     }
     

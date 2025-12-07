@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar, Clock, Heart, MessageCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { api } from '../utils/api';
 import type { BlogPost } from '../types/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthModal } from '../contexts/AuthModalContext';
+import BlogCard from './BlogCard';
 
 const EnhancedBlog = () => {
   const navigate = useNavigate();
@@ -16,52 +17,69 @@ const EnhancedBlog = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 数据转换逻辑
-  const extractBlogArray = (payload: unknown): any[] => {
+  // 优化数据转换逻辑 - 使用useMemo缓存
+  const extractBlogArray = useCallback((payload: unknown): any[] => {
     if (Array.isArray(payload)) return payload;
     if (payload && typeof payload === 'object') {
       const recordPayload = payload as Record<string, unknown>;
       return (recordPayload.records || recordPayload.content || recordPayload.data || []) as any[];
     }
     return [];
-  };
+  }, []);
 
-  const convertBlogsToPosts = (blogData: any[]): BlogPost[] => {
+  const convertBlogsToPosts = useCallback((blogData: any[]): BlogPost[] => {
     return blogData.map((blog: any) => {
-          let publishDate = '';
+      let publishDate = '';
       const publishSource = blog.publishTime ?? blog.date ?? blog.createTime ?? blog.updateTime;
       if (publishSource) {
         try {
-           const dateObj = Array.isArray(publishSource) 
+          const dateObj = Array.isArray(publishSource)
             ? new Date(publishSource[0], (publishSource[1] ?? 1) - 1, publishSource[2] ?? 1)
             : new Date(publishSource);
-              publishDate = dateObj.toLocaleDateString('zh-CN');
+          publishDate = dateObj.toLocaleDateString('zh-CN');
         } catch (e) { publishDate = '未知日期'; }
-          }
+      }
 
-          const tags = Array.isArray(blog.tags)
+      const tags = Array.isArray(blog.tags)
         ? blog.tags.map((t: any) => (typeof t === 'string' ? t : t.name ?? '')).filter(Boolean)
-            : [];
+        : [];
 
-          return {
-            id: Number(blog.id) || blog.id,
+      return {
+        id: Number(blog.id) || blog.id,
         title: blog.title || '未命名文章',
         excerpt: blog.summary || blog.excerpt || '',
-            content: blog.content || '',
+        content: blog.content || '',
         author: blog.authorName || blog.authorNickname || '未知作者',
-            date: publishDate,
+        date: publishDate,
         readTime: `${Math.max(1, Math.ceil(((blog.content || '').length) / 500))} min`,
         views: blog.viewCount ?? 0,
         likes: blog.likeCount ?? 0,
         comments: blog.commentCount ?? 0,
         tags,
         image: blog.coverImg || blog.coverImage || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
-            featured: blog.isTop === 1,
-            categoryId: blog.categoryId,
-            categoryName: blog.categoryName,
-          };
-        });
-  };
+        featured: blog.isTop === 1,
+        categoryId: blog.categoryId,
+        categoryName: blog.categoryName,
+      };
+    });
+  }, []);
+
+  // 优化点击处理函数
+  const handlePostClick = useCallback((postId: number | string) => {
+    navigate(`/blog/${postId}`);
+  }, [navigate]);
+
+  const handleScrollToPosts = useCallback(() => {
+    document.getElementById('posts-grid')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  const handleNavigateToProfile = useCallback(() => {
+    navigate('/profile');
+  }, [navigate]);
+
+  const handleNavigateToBlog = useCallback(() => {
+    navigate('/blog');
+  }, [navigate]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -77,7 +95,7 @@ const EnhancedBlog = () => {
       }
     };
     fetchPosts();
-  }, []);
+  }, [extractBlogArray, convertBlogsToPosts]);
 
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
@@ -103,10 +121,10 @@ const EnhancedBlog = () => {
                 这里是 Ryan 的个人博客。我热衷于分享全栈开发、架构设计与 AI 技术落地的心得体会。希望这些文字能给你带来启发。
               </p>
               <div className="flex justify-center gap-4">
-                <Button className="px-8 py-6 text-lg rounded-2xl" onClick={() => document.getElementById('posts-grid')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Button className="px-8 py-6 text-lg rounded-2xl" onClick={handleScrollToPosts}>
                   开始阅读 <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-                <Button variant="secondary" className="px-8 py-6 text-lg rounded-2xl" onClick={() => navigate('/profile')}>
+                <Button variant="secondary" className="px-8 py-6 text-lg rounded-2xl" onClick={handleNavigateToProfile}>
                   关于作者
             </Button>
               </div>
@@ -122,7 +140,7 @@ const EnhancedBlog = () => {
             <h2 className="text-3xl font-bold text-foreground">最新文章</h2>
             <p className="text-muted-foreground mt-2">探索最新的深度技术分享</p>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/blog')}>查看全部 <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <Button variant="ghost" onClick={handleNavigateToBlog}>查看全部 <ArrowRight className="w-4 h-4 ml-2" /></Button>
           </div>
 
               {loading ? (
@@ -134,64 +152,12 @@ const EnhancedBlog = () => {
               ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post, index) => (
-              <motion.div
-                    key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => navigate(`/blog/${post.id}`)}
-                className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col h-full cursor-pointer"
-                  >
-                <div className="relative h-56 overflow-hidden">
-                  <img 
-                    src={post.image} 
-                    alt={post.title}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    {post.tags.slice(0, 2).map(tag => (
-                      <span key={tag} className="px-3 py-1 bg-white/90 backdrop-blur-md text-xs font-semibold text-indigo-600 rounded-full shadow-sm">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-            </div>
-
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                    <Calendar className="w-4 h-4" />
-                    <span>{post.date}</span>
-                    <span className="w-1 h-1 bg-border rounded-full" />
-                    <Clock className="w-4 h-4 ml-1" />
-                    <span>{post.readTime}</span>
-              </div>
-                  
-                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                    {post.title}
-                  </h3>
-                  
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
-                    {post.excerpt}
-                  </p>
-                  
-                  <div className="flex items-center justify-between pt-6 border-t border-border mt-auto">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                        {post.author.charAt(0).toUpperCase()}
-              </div>
-                      <span className="text-sm font-medium text-foreground">{post.author}</span>
-          </div>
-                    <div className="flex items-center gap-4 text-muted-foreground text-sm">
-                      <span className="flex items-center gap-1">
-                        <Heart className="w-4 h-4" /> {post.likes}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" /> {post.comments}
-                      </span>
-              </div>
-            </div>
-            </div>
-              </motion.div>
+              <BlogCard
+                key={post.id}
+                post={post}
+                index={index}
+                onClick={handlePostClick}
+              />
             ))}
           </div>
         )}
@@ -200,4 +166,5 @@ const EnhancedBlog = () => {
   );
 };
 
-export default EnhancedBlog;
+// 使用React.memo优化组件，避免不必要的重渲染
+export default React.memo(EnhancedBlog);
