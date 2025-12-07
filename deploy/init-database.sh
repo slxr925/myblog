@@ -93,12 +93,12 @@ fi
 
 # 执行性能优化索引脚本
 echo "正在创建性能优化索引..."
-if [ -f "../myblog-backend/src/main/resources/sql/performance_indexes.sql" ]; then
-    echo "  执行: performance_indexes.sql"
-    mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < ../myblog-backend/src/main/resources/sql/performance_indexes.sql
+if [ -f "../myblog-backend/database/migrations/2025-12-07-add-performance-indexes.sql" ]; then
+    echo "  执行: 2025-12-07-add-performance-indexes.sql"
+    mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < ../myblog-backend/database/migrations/2025-12-07-add-performance-indexes.sql
     echo -e "${GREEN}性能索引创建完成!${NC}"
 else
-    echo -e "${YELLOW}警告: 找不到性能索引脚本 myblog-backend/src/main/resources/sql/performance_indexes.sql${NC}"
+    echo -e "${YELLOW}警告: 找不到性能索引脚本 myblog-backend/database/migrations/2025-12-07-add-performance-indexes.sql${NC}"
     echo -e "${YELLOW}将手动创建关键索引...${NC}"
 
     # 手动创建关键索引

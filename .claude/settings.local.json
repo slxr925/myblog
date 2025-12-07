@@ -15,7 +15,8 @@
       "Bash(./deploy/deploy-update.sh:*)",
       "Bash(chmod:*)",
       "Bash(./deploy/build-local.sh:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
