@@ -45,69 +45,19 @@ const SearchResultsPage: React.FC = () => {
         let response;
 
         if (searchTerm.trim()) {
-          // 优先使用ES搜索，失败时fallback到MySQL搜索
-          try {
-            response = await api.search.searchBlogs(searchTerm, 50);
-            // 如果ES返回空结果（可能被禁用），尝试MySQL搜索
-            if (!response || (Array.isArray(response) && response.length === 0) || 
-                (response.content && Array.isArray(response.content) && response.content.length === 0)) {
-              console.log('ES搜索无结果，fallback到MySQL搜索');
-              response = await api.blog.searchBlogsByMySQL(searchTerm, 50);
-            }
-          } catch (error) {
-            console.warn('ES搜索失败，使用MySQL搜索:', error);
-            response = await api.blog.searchBlogsByMySQL(searchTerm, 50);
-          }
+          // 后端已有ES→MySQL降级逻辑，直接调用统一接口
+          response = await api.search.searchBlogs(searchTerm, 50);
         } else {
           response = await api.blog.getLatest(50);
         }
 
         const blogData = Array.isArray(response)
           ? response
-          : Array.isArray(response?.content)
-            ? response.content
+          : Array.isArray((response as any)?.content)
+            ? (response as any).content
             : [];
 
-        const formattedPosts = blogData.map((blog: any) => {
-          let publishDate = '';
-          if (blog.publishTime) {
-            try {
-              const dateObj = Array.isArray(blog.publishTime)
-                ? new Date(blog.publishTime[0], blog.publishTime[1] - 1, blog.publishTime[2])
-                : new Date(blog.publishTime);
-              publishDate = dateObj.toLocaleDateString('zh-CN');
-            } catch (error) {
-              publishDate = '未知日期';
-            }
-          }
-
-          const tags = Array.isArray(blog.tags)
-            ? blog.tags.map((tag: any) => {
-                if (typeof tag === 'string') return tag;
-                if (tag && typeof tag === 'object' && tag.name) return String(tag.name);
-                return '';
-              }).filter(Boolean)
-            : (typeof blog.tags === 'string' ? blog.tags.split(',').map((t: string) => t.trim()) : []);
-
-          return {
-            id: Number(blog.id) || blog.id,
-            title: blog.title || '',
-            excerpt: blog.summary || '',
-            content: blog.content || '',
-            author: blog.authorNickname || blog.authorName || '未知作者',
-            date: publishDate,
-            readTime: `${Math.ceil((blog.content?.length || 0) / 500)} min`,
-            views: blog.viewCount || 0,
-            likes: blog.likeCount || 0,
-            comments: blog.commentCount || 0,
-            tags: tags,
-            image: blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
-            featured: blog.isTop === 1,
-            categoryId: blog.categoryId,
-            categoryName: blog.categoryName,
-          };
-        });
-
+        const formattedPosts = blogData.map((blog: any) => formatBlogPost(blog));
         setPosts(formattedPosts);
       } catch (error) {
         console.error('获取搜索结果失败:', error);
@@ -120,21 +70,52 @@ const SearchResultsPage: React.FC = () => {
     fetchSearchResults();
   }, [searchTerm]);
 
+  /**
+   * 格式化博客数据
+   */
+  const formatBlogPost = (blog: any): BlogPost => {
+    let publishDate = '';
+    if (blog.publishTime) {
+      try {
+        const dateObj = Array.isArray(blog.publishTime)
+          ? new Date(blog.publishTime[0], blog.publishTime[1] - 1, blog.publishTime[2])
+          : new Date(blog.publishTime);
+        publishDate = dateObj.toLocaleDateString('zh-CN');
+      } catch {
+        publishDate = '未知日期';
+      }
+    }
+
+    const tags = Array.isArray(blog.tags)
+      ? blog.tags.map((tag: any) => typeof tag === 'string' ? tag : (tag?.name || '')).filter(Boolean)
+      : (typeof blog.tags === 'string' ? blog.tags.split(',').map((t: string) => t.trim()) : []);
+
+    return {
+      id: Number(blog.id) || blog.id,
+      title: blog.title || '',
+      excerpt: blog.summary || '',
+      content: blog.content || '',
+      author: blog.authorNickname || blog.authorName || '未知作者',
+      date: publishDate,
+      readTime: `${Math.ceil((blog.content?.length || 0) / 500)} min`,
+      views: blog.viewCount || 0,
+      likes: blog.likeCount || 0,
+      comments: blog.commentCount || 0,
+      tags,
+      image: blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`,
+      featured: blog.isTop === 1,
+      categoryId: blog.categoryId,
+      categoryName: blog.categoryName,
+    };
+  };
+
+  // 分类过滤（后端已完成关键词搜索，前端只做分类筛选）
   useEffect(() => {
-    let filtered = posts;
-    if (searchTerm) {
-      filtered = filtered.filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-    if (selectedCategory) {
-      filtered = filtered.filter(post => post.categoryName === selectedCategory);
-    }
+    const filtered = selectedCategory 
+      ? posts.filter(post => post.categoryName === selectedCategory)
+      : posts;
     setFilteredPosts(filtered);
-  }, [searchTerm, selectedCategory, posts]);
+  }, [selectedCategory, posts]);
 
   const allCategories = Array.from(new Set(posts.map(post => post.categoryName))).filter(Boolean);
 

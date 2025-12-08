@@ -756,29 +756,19 @@ public class BlogServiceImpl implements BlogService {
             return List.of();
         }
 
-        int resultLimit = limit != null && limit > 0 ? limit : 20;
         String trimmedKeyword = keyword.trim();
-
-        // 分词处理：将关键词按空格分割，支持多关键词搜索
         String[] keywords = trimmedKeyword.split("\\s+");
 
-        // 构建查询条件 - 搜索标题、摘要和内容
-        LambdaQueryWrapper<Blog> queryWrapper = new LambdaQueryWrapper<Blog>()
-                .eq(Blog::getStatus, 1) // 只搜索已发布的博客
-                .eq(Blog::getDeleted, 0); // 只搜索未删除的博客
+        LambdaQueryWrapper<Blog> queryWrapper = createPublishedBlogQuery();
 
-        // 对每个关键词进行OR匹配
+        // 关键词匹配条件
         if (keywords.length == 1) {
-            // 单关键词：标题、摘要、内容任一匹配即可
             queryWrapper.and(wrapper -> wrapper
                     .like(Blog::getTitle, trimmedKeyword)
-                    .or()
-                    .like(Blog::getSummary, trimmedKeyword)
-                    .or()
-                    .like(Blog::getContent, trimmedKeyword)
+                    .or().like(Blog::getSummary, trimmedKeyword)
+                    .or().like(Blog::getContent, trimmedKeyword)
             );
         } else {
-            // 多关键词：任意一个关键词在任意字段匹配即可
             queryWrapper.and(outerWrapper -> {
                 for (int i = 0; i < keywords.length; i++) {
                     String kw = keywords[i].trim();
@@ -786,38 +776,22 @@ public class BlogServiceImpl implements BlogService {
                     if (i == 0) {
                         outerWrapper.and(wrapper -> wrapper
                                 .like(Blog::getTitle, kw)
-                                .or()
-                                .like(Blog::getSummary, kw)
-                                .or()
-                                .like(Blog::getContent, kw)
+                                .or().like(Blog::getSummary, kw)
+                                .or().like(Blog::getContent, kw)
                         );
                     } else {
                         outerWrapper.or(wrapper -> wrapper
                                 .like(Blog::getTitle, kw)
-                                .or()
-                                .like(Blog::getSummary, kw)
-                                .or()
-                                .like(Blog::getContent, kw)
+                                .or().like(Blog::getSummary, kw)
+                                .or().like(Blog::getContent, kw)
                         );
                     }
                 }
             });
         }
 
-        // 排序：置顶在前，然后按发布时间倒序
-        queryWrapper.orderByDesc(Blog::getIsTop)
-                .orderByDesc(Blog::getPublishTime)
-                .last("LIMIT " + resultLimit); // 在SQL层面限制结果数量
-
-        // 查询匹配的博客
-        List<Blog> matchingBlogs = blogMapper.selectList(queryWrapper);
-
-        log.debug("MySQL搜索 - 关键词: '{}', 结果数量: {}", trimmedKeyword, matchingBlogs.size());
-
-        // 转换为BlogListVO
-        return matchingBlogs.stream()
-                .map(this::convertToBlogListVO)
-                .collect(Collectors.toList());
+        List<Blog> matchingBlogs = executeSearchQuery(queryWrapper, limit, "MySQL搜索", trimmedKeyword);
+        return convertToBlogListVOs(matchingBlogs);
     }
 
     @Override
@@ -826,61 +800,66 @@ public class BlogServiceImpl implements BlogService {
             return List.of();
         }
 
-        // 先根据标签名查找标签
-        LambdaQueryWrapper<Tag> tagQuery = new LambdaQueryWrapper<Tag>()
-                .eq(Tag::getName, tagName)
-                .orderByDesc(Tag::getCreateTime); // 按创建时间倒序，取最新的标签
-        List<Tag> tags = tagMapper.selectList(tagQuery);
-
-        if (tags.isEmpty()) {
-            return List.of(); // 标签不存在
+        // 查找有博客关联的标签
+        List<Long> blogIds = findBlogIdsByTagName(tagName);
+        if (blogIds.isEmpty()) {
+            return List.of();
         }
 
-        // 优先选择有博客关联的标签，如果没有则选择最新的
-        Tag selectedTag = null;
-        List<BlogTag> blogTags = null;
+        LambdaQueryWrapper<Blog> queryWrapper = createPublishedBlogQuery()
+                .in(Blog::getId, blogIds);
 
-        for (Tag tag : tags) {
-            // 查找包含该标签的所有已发布博客
-            LambdaQueryWrapper<BlogTag> blogTagQuery = new LambdaQueryWrapper<BlogTag>()
-                    .eq(BlogTag::getTagId, tag.getId());
-            List<BlogTag> currentBlogTags = blogTagMapper.selectList(blogTagQuery);
+        List<Blog> matchingBlogs = executeSearchQuery(queryWrapper, limit, "标签搜索", tagName);
+        return convertToBlogListVOs(matchingBlogs);
+    }
 
-            if (!currentBlogTags.isEmpty()) {
-                selectedTag = tag;
-                blogTags = currentBlogTags;
-                break; // 找到第一个有博客关联的标签就使用它
-            }
-        }
+    /**
+     * 创建已发布博客的基础查询条件
+     */
+    private LambdaQueryWrapper<Blog> createPublishedBlogQuery() {
+        return new LambdaQueryWrapper<Blog>()
+                .eq(Blog::getStatus, 1)
+                .eq(Blog::getDeleted, 0);
+    }
 
-        if (selectedTag == null || blogTags == null || blogTags.isEmpty()) {
-            return List.of(); // 没有博客使用该标签
-        }
-
-    
-        // 获取博客ID列表
-        List<Long> blogIds = blogTags.stream()
-                .map(BlogTag::getBlogId)
-                .collect(Collectors.toList());
-
-        // 查询这些博客，只包含已发布的
+    /**
+     * 执行搜索查询（统一排序和限制）
+     */
+    private List<Blog> executeSearchQuery(LambdaQueryWrapper<Blog> queryWrapper, Integer limit, 
+                                          String searchType, String searchTerm) {
         int resultLimit = limit != null && limit > 0 ? limit : 20;
-        LambdaQueryWrapper<Blog> blogQuery = new LambdaQueryWrapper<Blog>()
-                .in(Blog::getId, blogIds)
-                .eq(Blog::getStatus, 1) // 只搜索已发布的博客
-                .eq(Blog::getDeleted, 0) // 只搜索未删除的博客
-                .orderByDesc(Blog::getIsTop) // 置顶的在前
-                .orderByDesc(Blog::getPublishTime) // 按发布时间倒序
+        queryWrapper.orderByDesc(Blog::getIsTop)
+                .orderByDesc(Blog::getPublishTime)
                 .last("LIMIT " + resultLimit);
 
-        List<Blog> matchingBlogs = blogMapper.selectList(blogQuery);
+        List<Blog> results = blogMapper.selectList(queryWrapper);
+        log.debug("{} - 条件: '{}', 结果数量: {}", searchType, searchTerm, results.size());
+        return results;
+    }
 
-        log.debug("标签搜索 - 标签: '{}', 结果数量: {}", tagName, matchingBlogs.size());
+    /**
+     * 根据标签名查找关联的博客ID列表
+     */
+    private List<Long> findBlogIdsByTagName(String tagName) {
+        List<Tag> tags = tagMapper.selectList(new LambdaQueryWrapper<Tag>()
+                .eq(Tag::getName, tagName)
+                .orderByDesc(Tag::getCreateTime));
 
-        // 转换为BlogListVO
-        return matchingBlogs.stream()
-                .map(this::convertToBlogListVO)
-                .collect(Collectors.toList());
+        for (Tag tag : tags) {
+            List<BlogTag> blogTags = blogTagMapper.selectList(new LambdaQueryWrapper<BlogTag>()
+                    .eq(BlogTag::getTagId, tag.getId()));
+            if (!blogTags.isEmpty()) {
+                return blogTags.stream().map(BlogTag::getBlogId).collect(Collectors.toList());
+            }
+        }
+        return List.of();
+    }
+
+    /**
+     * 批量转换为BlogListVO
+     */
+    private List<BlogListVO> convertToBlogListVOs(List<Blog> blogs) {
+        return blogs.stream().map(this::convertToBlogListVO).collect(Collectors.toList());
     }
 
     /**

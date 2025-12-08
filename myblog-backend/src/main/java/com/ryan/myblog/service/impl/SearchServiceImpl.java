@@ -96,24 +96,13 @@ public class SearchServiceImpl implements SearchService {
     
     @Override
     public Page<BlogDocument> searchBlogs(String keyword, Pageable pageable) {
-        if (!isAvailable()) {
-            log.warn("Elasticsearch被禁用，返回空结果");
+        if (!checkAvailability("searchBlogs")) {
             return Page.empty();
         }
         
         try {
-            Criteria criteria = new Criteria("title").contains(keyword)
-                    .or("content").contains(keyword)
-                    .or("summary").contains(keyword);
-            
-            Query query = new CriteriaQuery(criteria).setPageable(pageable);
-            SearchHits<BlogDocument> searchHits = elasticsearchOperations.search(query, BlogDocument.class);
-            
-            List<BlogDocument> results = searchHits.getSearchHits().stream()
-                    .map(SearchHit::getContent)
-                    .collect(Collectors.toList());
-            
-            return new PageImpl<>(results, pageable, searchHits.getTotalHits());
+            Criteria criteria = createKeywordCriteria(keyword);
+            return executeSearch(criteria, pageable);
         } catch (Exception e) {
             log.error("搜索博客失败，关键词: {}", keyword, e);
             return Page.empty();
@@ -122,8 +111,7 @@ public class SearchServiceImpl implements SearchService {
     
     @Override
     public Page<BlogDocument> advancedSearch(String keyword, Long categoryId, List<String> tags, Pageable pageable) {
-        if (!isAvailable()) {
-            log.warn("Elasticsearch被禁用，返回空结果");
+        if (!checkAvailability("advancedSearch")) {
             return Page.empty();
         }
         
@@ -131,9 +119,7 @@ public class SearchServiceImpl implements SearchService {
             Criteria criteria = new Criteria();
             
             if (keyword != null && !keyword.trim().isEmpty()) {
-                criteria = criteria.subCriteria(new Criteria("title").contains(keyword)
-                        .or("content").contains(keyword)
-                        .or("summary").contains(keyword));
+                criteria = criteria.subCriteria(createKeywordCriteria(keyword));
             }
             
             if (categoryId != null) {
@@ -148,18 +134,45 @@ public class SearchServiceImpl implements SearchService {
                 criteria = criteria.and(tagsCriteria);
             }
             
-            Query query = new CriteriaQuery(criteria).setPageable(pageable);
-            SearchHits<BlogDocument> searchHits = elasticsearchOperations.search(query, BlogDocument.class);
-            
-            List<BlogDocument> results = searchHits.getSearchHits().stream()
-                    .map(SearchHit::getContent)
-                    .collect(Collectors.toList());
-            
-            return new PageImpl<>(results, pageable, searchHits.getTotalHits());
+            return executeSearch(criteria, pageable);
         } catch (Exception e) {
             log.error("高级搜索失败", e);
             return Page.empty();
         }
+    }
+
+    /**
+     * 检查ES可用性
+     */
+    private boolean checkAvailability(String operation) {
+        if (!isAvailable()) {
+            log.warn("Elasticsearch被禁用，跳过{}", operation);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 创建关键词搜索条件
+     */
+    private Criteria createKeywordCriteria(String keyword) {
+        return new Criteria("title").contains(keyword)
+                .or("content").contains(keyword)
+                .or("summary").contains(keyword);
+    }
+
+    /**
+     * 执行ES搜索并返回结果
+     */
+    private Page<BlogDocument> executeSearch(Criteria criteria, Pageable pageable) {
+        Query query = new CriteriaQuery(criteria).setPageable(pageable);
+        SearchHits<BlogDocument> searchHits = elasticsearchOperations.search(query, BlogDocument.class);
+        
+        List<BlogDocument> results = searchHits.getSearchHits().stream()
+                .map(SearchHit::getContent)
+                .collect(Collectors.toList());
+        
+        return new PageImpl<>(results, pageable, searchHits.getTotalHits());
     }
     
     @Override

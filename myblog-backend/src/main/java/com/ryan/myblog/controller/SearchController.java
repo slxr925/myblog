@@ -39,7 +39,7 @@ public class SearchController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
-        // 检查ES是否可用
+        // 尝试ES搜索
         if (searchService.isAvailable()) {
             try {
                 Pageable pageable = PageRequest.of(page, size);
@@ -53,20 +53,9 @@ public class SearchController {
             }
         }
         
-        // ES不可用或搜索失败，降级到MySQL搜索
+        // 降级到MySQL搜索
         log.debug("使用MySQL搜索 - 关键词: '{}'", keyword);
-        int mysqlLimit = page * size + size; // 计算需要的最大数量
-        List<BlogListVO> mysqlResults = blogService.searchBlogs(keyword, mysqlLimit);
-        
-        // 手动分页
-        int fromIndex = Math.min(page * size, mysqlResults.size());
-        int toIndex = Math.min(fromIndex + size, mysqlResults.size());
-        List<BlogListVO> pagedResults = mysqlResults.subList(fromIndex, toIndex);
-        
-        // 返回结果（包装成分页格式）
-        Pageable pageable = PageRequest.of(page, size);
-        Page<BlogListVO> resultPage = new PageImpl<>(pagedResults, pageable, mysqlResults.size());
-        return Result.success(resultPage);
+        return Result.success(fallbackToMySQLSearch(keyword, page, size));
     }
     
     /**
@@ -80,7 +69,7 @@ public class SearchController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
-        // 检查ES是否可用
+        // 尝试ES搜索
         if (searchService.isAvailable()) {
             try {
                 Pageable pageable = PageRequest.of(page, size);
@@ -95,20 +84,24 @@ public class SearchController {
         
         // 降级到MySQL搜索
         if (keyword != null && !keyword.trim().isEmpty()) {
-            int mysqlLimit = page * size + size;
-            List<BlogListVO> mysqlResults = blogService.searchBlogs(keyword, mysqlLimit);
-            
-            // 手动分页
-            int fromIndex = Math.min(page * size, mysqlResults.size());
-            int toIndex = Math.min(fromIndex + size, mysqlResults.size());
-            List<BlogListVO> pagedResults = mysqlResults.subList(fromIndex, toIndex);
-            
-            Pageable pageable = PageRequest.of(page, size);
-            Page<BlogListVO> resultPage = new PageImpl<>(pagedResults, pageable, mysqlResults.size());
-            return Result.success(resultPage);
+            return Result.success(fallbackToMySQLSearch(keyword, page, size));
         }
         
         return Result.success(Page.empty());
+    }
+    
+    /**
+     * MySQL降级搜索（带分页）
+     */
+    private Page<BlogListVO> fallbackToMySQLSearch(String keyword, int page, int size) {
+        int mysqlLimit = page * size + size;
+        List<BlogListVO> mysqlResults = blogService.searchBlogs(keyword, mysqlLimit);
+        
+        int fromIndex = Math.min(page * size, mysqlResults.size());
+        int toIndex = Math.min(fromIndex + size, mysqlResults.size());
+        List<BlogListVO> pagedResults = mysqlResults.subList(fromIndex, toIndex);
+        
+        return new PageImpl<>(pagedResults, PageRequest.of(page, size), mysqlResults.size());
     }
     
     /**
