@@ -30,31 +30,33 @@ export const ModernLayout = () => {
         isHomePage ? 'bg-background/80 backdrop-blur-md border-b border-border' : 'bg-background shadow-sm border-b border-border'
       }`}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <div 
-            className="flex items-center gap-2 cursor-pointer" 
-            onClick={() => navigate('/')}
-          >
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
-              R
+          {/* Logo + Nav */}
+          <div className="flex items-center gap-2">
+            <div 
+              className="flex items-center gap-2 cursor-pointer" 
+              onClick={() => navigate('/')}
+            >
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                R
+              </div>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                Ryan's Blog
+              </span>
             </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-              Ryan's Blog
-            </span>
-          </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
-              首页
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/blog')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
-              文章
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
-              关于
-            </Button>
-          </nav>
+            {/* Desktop Nav - 紧跟在logo右侧 */}
+            <nav className="hidden md:flex items-center gap-1 ml-6">
+              <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
+                首页
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/blog')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
+                文章
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
+                关于
+              </Button>
+            </nav>
+          </div>
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-4">
