@@ -82,15 +82,19 @@ const SearchResultsPage: React.FC = () => {
           }
 
           const tags = Array.isArray(blog.tags)
-            ? blog.tags.map((tag: any) => (typeof tag === 'string' ? tag : tag.name)).filter(Boolean)
+            ? blog.tags.map((tag: any) => {
+                if (typeof tag === 'string') return tag;
+                if (tag && typeof tag === 'object' && tag.name) return String(tag.name);
+                return '';
+              }).filter(Boolean)
             : (typeof blog.tags === 'string' ? blog.tags.split(',').map((t: string) => t.trim()) : []);
 
           return {
             id: Number(blog.id) || blog.id,
-            title: blog.title,
+            title: blog.title || '',
             excerpt: blog.summary || '',
             content: blog.content || '',
-            author: blog.authorName || '未知作者',
+            author: blog.authorNickname || blog.authorName || '未知作者',
             date: publishDate,
             readTime: `${Math.ceil((blog.content?.length || 0) / 500)} min`,
             views: blog.viewCount || 0,

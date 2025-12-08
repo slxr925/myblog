@@ -756,39 +756,66 @@ public class BlogServiceImpl implements BlogService {
             return List.of();
         }
 
+        int resultLimit = limit != null && limit > 0 ? limit : 20;
+        String trimmedKeyword = keyword.trim();
+
+        // 分词处理：将关键词按空格分割，支持多关键词搜索
+        String[] keywords = trimmedKeyword.split("\\s+");
+
         // 构建查询条件 - 搜索标题、摘要和内容
         LambdaQueryWrapper<Blog> queryWrapper = new LambdaQueryWrapper<Blog>()
                 .eq(Blog::getStatus, 1) // 只搜索已发布的博客
-                .and(wrapper -> wrapper
-                        .like(Blog::getTitle, keyword)
-                        .or()
-                        .like(Blog::getSummary, keyword)
-                        .or()
-                        .like(Blog::getContent, keyword)
-                )
-                .orderByDesc(Blog::getIsTop) // 置顶的在前
-                .orderByDesc(Blog::getPublishTime); // 按发布时间倒序
+                .eq(Blog::getDeleted, 0); // 只搜索未删除的博客
 
-        // 查询所有匹配的博客
-        List<Blog> allMatchingBlogs = blogMapper.selectList(queryWrapper);
-
-        // 智能限制逻辑
-        int resultLimit = Math.min(limit != null ? limit : 10, allMatchingBlogs.size());
-        if (allMatchingBlogs.size() <= 5) {
-            // 如果结果≤5篇，显示全部结果
-            resultLimit = allMatchingBlogs.size();
+        // 对每个关键词进行OR匹配
+        if (keywords.length == 1) {
+            // 单关键词：标题、摘要、内容任一匹配即可
+            queryWrapper.and(wrapper -> wrapper
+                    .like(Blog::getTitle, trimmedKeyword)
+                    .or()
+                    .like(Blog::getSummary, trimmedKeyword)
+                    .or()
+                    .like(Blog::getContent, trimmedKeyword)
+            );
         } else {
-            // 如果结果>5篇，只显示最新的5篇
-            resultLimit = Math.min(5, allMatchingBlogs.size());
+            // 多关键词：任意一个关键词在任意字段匹配即可
+            queryWrapper.and(outerWrapper -> {
+                for (int i = 0; i < keywords.length; i++) {
+                    String kw = keywords[i].trim();
+                    if (kw.isEmpty()) continue;
+                    if (i == 0) {
+                        outerWrapper.and(wrapper -> wrapper
+                                .like(Blog::getTitle, kw)
+                                .or()
+                                .like(Blog::getSummary, kw)
+                                .or()
+                                .like(Blog::getContent, kw)
+                        );
+                    } else {
+                        outerWrapper.or(wrapper -> wrapper
+                                .like(Blog::getTitle, kw)
+                                .or()
+                                .like(Blog::getSummary, kw)
+                                .or()
+                                .like(Blog::getContent, kw)
+                        );
+                    }
+                }
+            });
         }
 
-        // 限制结果数量
-        List<Blog> limitedBlogs = allMatchingBlogs.stream()
-                .limit(resultLimit)
-                .collect(Collectors.toList());
+        // 排序：置顶在前，然后按发布时间倒序
+        queryWrapper.orderByDesc(Blog::getIsTop)
+                .orderByDesc(Blog::getPublishTime)
+                .last("LIMIT " + resultLimit); // 在SQL层面限制结果数量
+
+        // 查询匹配的博客
+        List<Blog> matchingBlogs = blogMapper.selectList(queryWrapper);
+
+        log.debug("MySQL搜索 - 关键词: '{}', 结果数量: {}", trimmedKeyword, matchingBlogs.size());
 
         // 转换为BlogListVO
-        return limitedBlogs.stream()
+        return matchingBlogs.stream()
                 .map(this::convertToBlogListVO)
                 .collect(Collectors.toList());
     }
@@ -837,31 +864,21 @@ public class BlogServiceImpl implements BlogService {
                 .collect(Collectors.toList());
 
         // 查询这些博客，只包含已发布的
+        int resultLimit = limit != null && limit > 0 ? limit : 20;
         LambdaQueryWrapper<Blog> blogQuery = new LambdaQueryWrapper<Blog>()
                 .in(Blog::getId, blogIds)
                 .eq(Blog::getStatus, 1) // 只搜索已发布的博客
+                .eq(Blog::getDeleted, 0) // 只搜索未删除的博客
                 .orderByDesc(Blog::getIsTop) // 置顶的在前
-                .orderByDesc(Blog::getPublishTime); // 按发布时间倒序
+                .orderByDesc(Blog::getPublishTime) // 按发布时间倒序
+                .last("LIMIT " + resultLimit);
 
-        List<Blog> allMatchingBlogs = blogMapper.selectList(blogQuery);
+        List<Blog> matchingBlogs = blogMapper.selectList(blogQuery);
 
-        // 智能限制逻辑
-        int resultLimit = Math.min(limit != null ? limit : 10, allMatchingBlogs.size());
-        if (allMatchingBlogs.size() <= 5) {
-            // 如果结果≤5篇，显示全部结果
-            resultLimit = allMatchingBlogs.size();
-        } else {
-            // 如果结果>5篇，只显示最新的5篇
-            resultLimit = Math.min(5, allMatchingBlogs.size());
-        }
-
-        // 限制结果数量
-        List<Blog> limitedBlogs = allMatchingBlogs.stream()
-                .limit(resultLimit)
-                .collect(Collectors.toList());
+        log.debug("标签搜索 - 标签: '{}', 结果数量: {}", tagName, matchingBlogs.size());
 
         // 转换为BlogListVO
-        return limitedBlogs.stream()
+        return matchingBlogs.stream()
                 .map(this::convertToBlogListVO)
                 .collect(Collectors.toList());
     }
