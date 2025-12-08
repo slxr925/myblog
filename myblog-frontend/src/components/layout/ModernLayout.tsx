@@ -52,7 +52,7 @@ export const ModernLayout = () => {
               <Button variant="ghost" onClick={() => navigate('/blog')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
                 文章
               </Button>
-              <Button variant="ghost" onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
+              <Button variant="ghost" onClick={() => navigate('/about')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
                 关于
               </Button>
             </nav>
@@ -103,7 +103,7 @@ export const ModernLayout = () => {
               <Button variant="ghost" onClick={() => handleNavigation('/blog')} className="justify-start w-full">
                 <FileText className="w-4 h-4 mr-2" /> 文章
               </Button>
-              <Button variant="ghost" onClick={() => handleNavigation('/profile')} className="justify-start w-full">
+              <Button variant="ghost" onClick={() => handleNavigation('/about')} className="justify-start w-full">
                 <User className="w-4 h-4 mr-2" /> 关于
               </Button>
               

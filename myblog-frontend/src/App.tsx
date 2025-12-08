@@ -6,6 +6,7 @@ import { AuthModalProvider } from './contexts/AuthModalContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import Profile from './pages/Profile'
+import About from './pages/About'
 import BlogDetail from './pages/BlogDetail'
 import EnhancedBlog from './components/EnhancedBlog'
 import { Admin } from './pages/Admin'
@@ -30,6 +31,7 @@ const AppWrapper = () => {
             <Route path="/blog/:id" element={<BlogDetail />} />
             <Route path="/blog" element={<SearchPage />} />
             <Route path="/search" element={<SearchResultsPage />} />
+            <Route path="/about" element={<About />} />
             <Route
               path="/profile"
               element={
