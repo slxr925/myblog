@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -762,14 +763,24 @@ public class BlogServiceImpl implements BlogService {
 
         // 使用MySQL全文索引搜索（性能优化）
         try {
-            List<Blog> results = blogMapper.selectList(new QueryWrapper<Blog>()
-                    .apply("MATCH(title, summary, content) AGAINST({0} IN BOOLEAN MODE)", trimmedKeyword)
-                    .eq("status", 1)
-                    .eq("deleted", 0)
-                    .orderByDesc("is_top")
-                    .orderByDesc("publish_time")
-                    .last("LIMIT " + resultLimit));
+            List<Blog> results = searchWithFullText(trimmedKeyword, resultLimit);
             
+            // 如果全文索引搜索无结果，尝试智能分割关键词后重试
+            if (results.isEmpty()) {
+                List<String> smartKeywords = smartSplitKeyword(trimmedKeyword);
+                for (String smartKeyword : smartKeywords) {
+                    if (!smartKeyword.equals(trimmedKeyword)) {
+                        results = searchWithFullText(smartKeyword, resultLimit);
+                        if (!results.isEmpty()) {
+                            log.debug("智能分割搜索成功 - 原词: '{}', 分割后: '{}', 结果数量: {}", 
+                                    trimmedKeyword, smartKeyword, results.size());
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 返回全文索引搜索结果（可能为空）
             log.debug("全文索引搜索 - 关键词: '{}', 结果数量: {}", trimmedKeyword, results.size());
             return convertToBlogListVOs(results);
         } catch (Exception e) {
@@ -838,6 +849,82 @@ public class BlogServiceImpl implements BlogService {
         return new LambdaQueryWrapper<Blog>()
                 .eq(Blog::getStatus, 1)
                 .eq(Blog::getDeleted, 0);
+    }
+
+    /**
+     * 使用MySQL全文索引搜索（性能优化）
+     */
+    private List<Blog> searchWithFullText(String keyword, int limit) {
+        try {
+            return blogMapper.selectList(new QueryWrapper<Blog>()
+                    .apply("MATCH(title, summary, content) AGAINST({0} IN BOOLEAN MODE)", keyword)
+                    .eq("status", 1)
+                    .eq("deleted", 0)
+                    .orderByDesc("is_top")
+                    .orderByDesc("publish_time")
+                    .last("LIMIT " + limit));
+        } catch (Exception e) {
+            log.warn("全文索引搜索失败: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 智能分割关键词
+     * 处理常见的搜索词组合问题，如: springboot -> spring boot
+     */
+    private List<String> smartSplitKeyword(String keyword) {
+        List<String> variants = new ArrayList<>();
+        variants.add(keyword); // 原词放在首位
+
+        // 1. 处理驼峰命名: SpringBoot -> Spring Boot
+        String camelCaseSplit = keyword.replaceAll("([a-z])([A-Z])", "$1 $2");
+        if (!camelCaseSplit.equals(keyword)) {
+            variants.add(camelCaseSplit);
+            variants.add(camelCaseSplit.toLowerCase());
+        }
+
+        // 2. 处理常见技术词组合（无空格英文词）
+        if (keyword.matches("^[a-zA-Z]+$") && keyword.length() > 6) {
+            // 尝试常见的分割点
+            String lowerKeyword = keyword.toLowerCase();
+            
+            // 常见技术词模式：spring*, vue*, react*, docker*
+            if (lowerKeyword.startsWith("spring")) {
+                variants.add("spring " + keyword.substring(6));
+                variants.add("Spring " + keyword.substring(6));
+            } else if (lowerKeyword.startsWith("vue")) {
+                variants.add("vue " + keyword.substring(3));
+                variants.add("Vue " + keyword.substring(3));
+            } else if (lowerKeyword.startsWith("react")) {
+                variants.add("react " + keyword.substring(5));
+                variants.add("React " + keyword.substring(5));
+            } else if (lowerKeyword.startsWith("docker")) {
+                variants.add("docker " + keyword.substring(6));
+                variants.add("Docker " + keyword.substring(6));
+            } else if (lowerKeyword.startsWith("mysql")) {
+                variants.add("mysql " + keyword.substring(5));
+                variants.add("MySQL " + keyword.substring(5));
+            }
+            
+            // 通用分割：在中间插入空格尝试
+            int midPoint = keyword.length() / 2;
+            for (int i = midPoint - 2; i <= midPoint + 2 && i > 0 && i < keyword.length(); i++) {
+                String split = keyword.substring(0, i) + " " + keyword.substring(i);
+                variants.add(split);
+            }
+        }
+
+        // 3. 处理连字符和下划线: spring-boot -> spring boot
+        if (keyword.contains("-") || keyword.contains("_")) {
+            variants.add(keyword.replaceAll("[-_]", " "));
+        }
+
+        // 去重并保持顺序
+        return variants.stream()
+                .distinct()
+                .limit(5) // 限制最多5个变体，避免过多查询
+                .collect(Collectors.toList());
     }
 
     /**
