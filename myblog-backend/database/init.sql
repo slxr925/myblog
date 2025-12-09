@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS tb_comment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     blog_id BIGINT NOT NULL COMMENT '博客ID',
     user_id BIGINT NOT NULL COMMENT '用户ID',
-    parent_id BIGINT DEFAULT 0 COMMENT '父评论ID，0表示顶级评论',
+    parent_id BIGINT DEFAULT NULL COMMENT '父评论ID（用于回复），NULL表示顶级评论',
     reply_user_id BIGINT COMMENT '回复的用户ID',
     content TEXT NOT NULL COMMENT '评论内容',
     status INT DEFAULT 1 COMMENT '状态：0-待审核，1-已通过，2-已拒绝',
@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS tb_comment (
     INDEX idx_create_time (create_time),
     INDEX idx_deleted (deleted),
     FOREIGN KEY (blog_id) REFERENCES tb_blog(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES tb_user(id) ON DELETE CASCADE,
-    FOREIGN KEY (parent_id) REFERENCES tb_comment(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES tb_user(id) ON DELETE CASCADE
+    -- 注意：parent_id 不设置外键约束，因为前端使用 0 表示顶级评论，后端会将其转换为 NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论表';
 
 -- 用户点赞表

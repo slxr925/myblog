@@ -44,7 +44,14 @@ public class CommentServiceImpl implements CommentService {
         comment.setBlogId(commentSaveDTO.getBlogId());
         comment.setUserId(userId);
         comment.setContent(commentSaveDTO.getContent());
-        comment.setParentId(commentSaveDTO.getParentId());
+
+        // 处理父评论ID：如果为0，则设置为null（顶级评论）
+        if (commentSaveDTO.getParentId() != null && commentSaveDTO.getParentId() > 0) {
+            comment.setParentId(commentSaveDTO.getParentId());
+        } else {
+            comment.setParentId(null);
+        }
+
         comment.setReplyUserId(commentSaveDTO.getReplyUserId());
         comment.setStatus(1); // 默认通过审核，如需要审核可设为0
         comment.setLikeCount(0);
