@@ -75,20 +75,57 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     console.error('API响应错误:', error.config?.url, error.response?.status, error.message);
-    if (error.response?.status === 401) {
-      // 检查是否是敏感操作
-      const sensitivePaths = ['/api/admin/dashboard', '/api/user/info', '/api/user/change-password'];
-      const isSensitiveOperation = sensitivePaths.some(path => error.config?.url?.includes(path));
 
-      // 如果是敏感操作或已有token但失效了，则清除认证信息并跳转
-      if (isSensitiveOperation || (localStorage.getItem('token') && !error.config?.url?.includes('/api/admin/track-visit'))) {
+    if (error.response?.status === 401) {
+      // 只在登录或注册接口之外的401错误才清除认证信息
+      const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
+      const isTrackVisit = error.config?.url?.includes('/track-visit');
+
+      // 如果不是登录/注册接口,且不是访问统计接口,才清除token
+      if (!isAuthEndpoint && !isTrackVisit && localStorage.getItem('token')) {
+        // 清除认证信息
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        // 跳转到首页，让用户重新登录
-        window.location.href = '/';
+        localStorage.removeItem('refreshToken');
+
+        // 区分不同类型的401错误
+        const errorMessage = error.response?.data?.message || '';
+        let friendlyMessage = '您的登录已过期，请重新登录';
+
+        if (errorMessage.includes('invalid') || errorMessage.includes('无效')) {
+          friendlyMessage = '登录信息无效，请重新登录';
+        } else if (errorMessage.includes('expired') || errorMessage.includes('过期')) {
+          friendlyMessage = '登录已过期，请重新登录';
+        } else if (errorMessage.includes('unauthorized') || errorMessage.includes('未授权')) {
+          friendlyMessage = '您没有权限访问此资源，请重新登录';
+        }
+
+        // 不直接跳转，而是触发一个自定义事件
+        window.dispatchEvent(new CustomEvent('auth:expired', {
+          detail: { message: friendlyMessage, originalError: error }
+        }));
       }
     }
-    return Promise.reject(error);
+
+    // 为其他错误也添加友好的错误提示
+    let errorMessage = '网络错误，请稍后重试';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      if (error.message.includes('timeout')) {
+        errorMessage = '请求超时，请检查网络连接';
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = '网络连接失败，请检查网络';
+      }
+    }
+
+    // 返回增强的错误对象
+    const enhancedError = new Error(errorMessage);
+    enhancedError.originalError = error;
+    enhancedError.status = error.response?.status;
+    enhancedError.isAuthError = error.response?.status === 401;
+
+    return Promise.reject(enhancedError);
   }
 );
 

@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { AuthModalProvider } from './contexts/AuthModalContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import AuthErrorHandler from './components/auth/AuthErrorHandler'
 import Profile from './pages/Profile'
 import About from './pages/About'
 import BlogDetail from './pages/BlogDetail'
@@ -24,6 +25,7 @@ const AppWrapper = () => {
         <AuthProvider>
           <AuthModalProvider>
             <Router>
+              <AuthErrorHandler />
           <Routes>
                 {/* 前台布局路由 */}
                 <Route element={<ModernLayout />}>

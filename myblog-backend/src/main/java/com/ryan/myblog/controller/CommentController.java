@@ -7,6 +7,7 @@ import com.ryan.myblog.model.dto.CommentSaveDTO;
 import com.ryan.myblog.service.CommentService;
 import com.ryan.myblog.model.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
@@ -28,9 +29,13 @@ public class CommentController {
      * 发布评论
      */
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public Result<Void> saveComment(@Validated @RequestBody CommentSaveDTO commentSaveDTO) {
         try {
             Long userId = getCurrentUserId();
+            if (userId == null) {
+                return Result.error(401, "用户未登录");
+            }
             commentService.saveComment(commentSaveDTO, userId);
             return Result.success();
         } catch (Exception e) {
@@ -87,10 +92,14 @@ public class CommentController {
      * 审核评论（管理员功能）
      */
     @PostMapping("/{id}/audit")
-    public Result<Void> auditComment(@PathVariable Long id, 
+    @PreAuthorize("isAuthenticated()")
+    public Result<Void> auditComment(@PathVariable Long id,
                                    @RequestParam Integer status) {
         try {
             Long operatorId = getCurrentUserId();
+            if (operatorId == null) {
+                return Result.error(401, "用户未登录");
+            }
             commentService.auditComment(id, status, operatorId);
             return Result.success();
         } catch (Exception e) {
@@ -102,9 +111,13 @@ public class CommentController {
      * 删除评论
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public Result<Void> deleteComment(@PathVariable Long id) {
         try {
             Long operatorId = getCurrentUserId();
+            if (operatorId == null) {
+                return Result.error(401, "用户未登录");
+            }
             commentService.deleteComment(id, operatorId);
             return Result.success();
         } catch (Exception e) {
@@ -116,9 +129,13 @@ public class CommentController {
      * 点赞/取消点赞评论
      */
     @PostMapping("/{id}/like")
+    @PreAuthorize("isAuthenticated()")
     public Result<Void> toggleCommentLike(@PathVariable Long id) {
         try {
             Long userId = getCurrentUserId();
+            if (userId == null) {
+                return Result.error(401, "用户未登录");
+            }
             commentService.toggleCommentLike(id, userId);
             return Result.success();
         } catch (Exception e) {
@@ -155,6 +172,6 @@ public class CommentController {
         if (authentication != null && authentication.getPrincipal() instanceof Long) {
             return (Long) authentication.getPrincipal();
         }
-        throw new RuntimeException("用户未登录");
+        return null;
     }
 }

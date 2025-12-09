@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Heart, Reply, MoreHorizontal, Send, User } from 'lucide-react';
+import { MessageCircle, Heart, Reply, MoreHorizontal, Send, User, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -193,19 +193,22 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 获取评论列表
   const fetchComments = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await api.comment.getByBlogId(blogId, { page: 1, size: 100 });
       if (response && response.records) {
         setComments(response.records);
       } else {
         setComments([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取评论失败:', error);
+      setError(error.message || '获取评论失败，请稍后重试');
       setComments([]);
     } finally {
       setLoading(false);
@@ -220,10 +223,21 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
 
   // 提交新评论
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim()) {
+      setError('请输入评论内容');
+      return;
+    }
+
+    if (!user) {
+      setError('请先登录后再发表评论');
+      // 触发显示登录模态框
+      window.dispatchEvent(new CustomEvent('auth:showLogin'));
+      return;
+    }
 
     try {
       setSubmitting(true);
+      setError(null);
       const commentData: CommentCreateDTO = {
         blogId,
         content: newComment.trim(),
@@ -233,8 +247,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       await api.comment.create(commentData);
       setNewComment('');
       await fetchComments(); // 重新获取评论列表
-    } catch (error) {
+    } catch (error: any) {
       console.error('提交评论失败:', error);
+      if (error.isAuthError) {
+        setError('登录已过期，请重新登录');
+        // 触发认证过期事件
+        window.dispatchEvent(new CustomEvent('auth:expired', {
+          detail: { message: '登录已过期，请重新登录' }
+        }));
+      } else {
+        setError(error.message || '提交评论失败，请稍后重试');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -242,9 +265,19 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
 
   // 回复评论
   const handleReply = async (parentId: number, content: string) => {
-    if (!user) return;
+    if (!content.trim()) {
+      setError('请输入回复内容');
+      return;
+    }
+
+    if (!user) {
+      setError('请先登录后再回复评论');
+      window.dispatchEvent(new CustomEvent('auth:showLogin'));
+      return;
+    }
 
     try {
+      setError(null);
       const commentData: CommentCreateDTO = {
         blogId,
         content,
@@ -253,22 +286,40 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
 
       await api.comment.create(commentData);
       await fetchComments(); // 重新获取评论列表
-    } catch (error) {
+    } catch (error: any) {
       console.error('回复评论失败:', error);
+      if (error.isAuthError) {
+        setError('登录已过期，请重新登录');
+        window.dispatchEvent(new CustomEvent('auth:expired', {
+          detail: { message: '登录已过期，请重新登录' }
+        }));
+      } else {
+        setError(error.message || '回复评论失败，请稍后重试');
+      }
     }
   };
 
   // 点赞评论
   const handleLikeComment = async (commentId: number) => {
-    if (!user) return;
+    if (!user) {
+      setError('请先登录后再点赞评论');
+      return;
+    }
 
     try {
       await api.comment.toggleLike(commentId);
-
       // 重新获取评论列表以更新点赞数
       await fetchComments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('点赞评论失败:', error);
+      if (error.isAuthError) {
+        setError('登录已过期，请重新登录');
+        window.dispatchEvent(new CustomEvent('auth:expired', {
+          detail: { message: '登录已过期，请重新登录' }
+        }));
+      } else {
+        setError(error.message || '点赞失败，请稍后重试');
+      }
     }
   };
 
@@ -280,8 +331,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       try {
         await api.comment.delete(commentId);
         await fetchComments(); // 重新获取评论列表
-      } catch (error) {
+      } catch (error: any) {
         console.error('删除评论失败:', error);
+        if (error.isAuthError) {
+          setError('登录已过期，请重新登录');
+          window.dispatchEvent(new CustomEvent('auth:expired', {
+            detail: { message: '登录已过期，请重新登录' }
+          }));
+        } else {
+          setError(error.message || '删除评论失败，请稍后重试');
+        }
       }
     }
   };
@@ -296,10 +355,28 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
         </h3>
       </div>
 
+      {/* 错误提示 */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setError(null)}
+            className="text-red-500 hover:text-red-700"
+          >
+            ×
+          </Button>
+        </div>
+      )}
+
       {/* 发表评论 */}
-      {user ? (
-        <Card className="mb-6 border-gray-200 shadow-sm">
-          <CardContent className="p-4">
+      <Card className="mb-6 border-gray-200 shadow-sm">
+        <CardContent className="p-4">
+          {user ? (
             <div className="flex space-x-3">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user.avatar} alt={user.nickname || user.username} />
@@ -326,15 +403,19 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="mb-6 border-gray-200 shadow-sm">
-          <CardContent className="p-6 text-center">
-            <p className="text-gray-600">请先登录后再发表评论</p>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">登录后即可发表评论</p>
+              <Button
+                onClick={() => window.dispatchEvent(new CustomEvent('auth:showLogin'))}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                立即登录
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 评论列表 */}
       {loading ? (

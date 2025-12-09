@@ -91,22 +91,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initAuth = async () => {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
-      
+
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
+
+          // 检查 token 是否过期（简单的检查，实际由后端验证）
+          // JWT token 通常包含过期时间
+          try {
+            const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+            const currentTime = Date.now() / 1000;
+
+            // 如果 token 即将过期（5分钟内），提前刷新
+            if (tokenPayload.exp && tokenPayload.exp < currentTime + 300) {
+              console.log('Token 即将过期，清除认证状态');
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              localStorage.removeItem('refreshToken');
+              return;
+            }
+          } catch (tokenError) {
+            // 如果解析 token 失败，可能不是 JWT 格式，继续使用
+            console.log('无法解析 token 格式，继续使用');
+          }
+
           dispatch({
             type: 'LOGIN_SUCCESS',
             payload: { user, token },
           });
-          
-          // 验证token是否仍然有效
-          await refreshUser();
+
+          // 设置定时器，在 token 过期前5分钟提醒用户
+          if (token.includes('.')) {
+            try {
+              const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+              if (tokenPayload.exp) {
+                const timeUntilExpiry = (tokenPayload.exp * 1000) - Date.now() - (5 * 60 * 1000);
+                if (timeUntilExpiry > 0) {
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('auth:expiring', {
+                      detail: { message: '您的登录即将在5分钟后过期，请及时保存工作' }
+                    }));
+                  }, timeUntilExpiry);
+                }
+              }
+            } catch (e) {
+              // 忽略错误
+            }
+          }
+
         } catch (error) {
           console.error('初始化认证状态失败:', error);
           // 如果解析失败，清除无效的认证信息
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('refreshToken');
         }
       }
     };
@@ -232,10 +270,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
 
       dispatch({ type: 'REFRESH_USER', payload: user });
-    } catch (error) {
+    } catch (error: any) {
       console.error('刷新用户信息失败:', error);
-      // 如果token无效，触发登出
-      logout();
+      // 如果是认证错误，不要直接调用 logout，而是触发认证过期事件
+      if (error.isAuthError) {
+        window.dispatchEvent(new CustomEvent('auth:expired', {
+          detail: {
+            message: '登录已过期，请重新登录',
+            originalError: error
+          }
+        }));
+      } else {
+        // 其他错误也触发登出
+        logout();
+      }
     }
   };
 
