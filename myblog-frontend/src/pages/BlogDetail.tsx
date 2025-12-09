@@ -19,6 +19,7 @@ const BlogDetail: React.FC = () => {
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
   const { openAuthModal } = useAuthModal();
 
   const blogData = blog || {} as BlogDetailVO;
@@ -32,6 +33,7 @@ const BlogDetail: React.FC = () => {
         setBlog(response);
         setLikeCount(response.likeCount || 0);
         setIsLiked(response.isLiked || false);
+        setCommentCount(response.commentCount || 0);
 
         api.admin.trackVisit(`/blog/${id}`).catch(err =>
           console.warn('记录博客访问失败:', err)
@@ -88,6 +90,11 @@ const BlogDetail: React.FC = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   }, [blogData.title, blogData.summary]);
+
+  // 处理评论计数变化
+  const handleCommentCountChange = useCallback((count: number) => {
+    setCommentCount(count);
+  }, []);
 
   if (loading) {
     return (
@@ -204,9 +211,9 @@ const BlogDetail: React.FC = () => {
       <div className="container mx-auto px-4 max-w-4xl pb-20">
         <div className="border-t border-border pt-10">
           <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
-            <MessageCircle className="w-6 h-6" /> 评论 ({blogData.commentCount || 0})
+            <MessageCircle className="w-6 h-6" /> 评论 ({commentCount})
           </h3>
-            <CommentSection blogId={blog.id} />
+            <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
         </div>
       </div>
     </div>

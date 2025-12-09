@@ -16,6 +16,7 @@ import { zhCN } from 'date-fns/locale';
 interface CommentSectionProps {
   blogId: number;
   className?: string;
+  onCommentCountChange?: (count: number) => void;
 }
 
 interface CommentItemProps {
@@ -188,7 +189,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   );
 };
 
-export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, className = '' }) => {
+export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, className = '', onCommentCountChange }) => {
   const { user } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [comments, setComments] = useState<CommentVO[]>([]);
@@ -205,8 +206,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       const response = await api.comment.getByBlogId(blogId, { page: 1, size: 100 });
       if (response && response.records) {
         setComments(response.records);
+        // 通知父组件更新评论计数
+        if (onCommentCountChange) {
+          onCommentCountChange(response.records.length);
+        }
       } else {
         setComments([]);
+        if (onCommentCountChange) {
+          onCommentCountChange(0);
+        }
       }
     } catch (error: any) {
       console.error('获取评论失败:', error);
