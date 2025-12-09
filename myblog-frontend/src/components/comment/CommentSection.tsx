@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAuthModal } from '../../contexts/AuthModalContext';
 import { api } from '../../utils/api';
 import type { CommentVO, CommentCreateDTO } from '../../types/api';
 import { formatDistanceToNow } from 'date-fns';
@@ -189,6 +190,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
 export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, className = '' }) => {
   const { user } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const [comments, setComments] = useState<CommentVO[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
@@ -231,7 +233,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
     if (!user) {
       setError('请先登录后再发表评论');
       // 触发显示登录模态框
-      window.dispatchEvent(new CustomEvent('auth:showLogin'));
+      openAuthModal();
       return;
     }
 
@@ -272,7 +274,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
 
     if (!user) {
       setError('请先登录后再回复评论');
-      window.dispatchEvent(new CustomEvent('auth:showLogin'));
+      openAuthModal();
       return;
     }
 
@@ -347,14 +349,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
 
   return (
     <div className={`mt-12 ${className}`}>
-      {/* 评论区标题 */}
-      <div className="flex items-center mb-6">
-        <MessageCircle className="w-5 h-5 mr-2" />
-        <h3 className="text-xl font-semibold text-gray-800">
-          评论 ({comments.length})
-        </h3>
-      </div>
-
       {/* 错误提示 */}
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
@@ -407,7 +401,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">登录后即可发表评论</p>
               <Button
-                onClick={() => window.dispatchEvent(new CustomEvent('auth:showLogin'))}
+                onClick={openAuthModal}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 立即登录

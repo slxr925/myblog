@@ -39,6 +39,8 @@ const BlogDetail: React.FC = () => {
       } catch (err: any) {
         console.error('获取文章详情失败:', err);
       } finally {
+        // 确保页面从顶部开始显示
+        window.scrollTo(0, 0);
         setLoading(false);
       }
     };

@@ -77,6 +77,10 @@ const EnhancedBlog = () => {
     navigate('/profile');
   }, [navigate]);
 
+  const handleNavigateToAbout = useCallback(() => {
+    navigate('/about');
+  }, [navigate]);
+
   const handleNavigateToBlog = useCallback(() => {
     navigate('/blog');
   }, [navigate]);
@@ -124,7 +128,7 @@ const EnhancedBlog = () => {
                 <Button className="px-8 py-6 text-lg rounded-2xl" onClick={handleScrollToPosts}>
                   开始阅读 <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-                <Button variant="secondary" className="px-8 py-6 text-lg rounded-2xl" onClick={handleNavigateToProfile}>
+                <Button variant="secondary" className="px-8 py-6 text-lg rounded-2xl" onClick={handleNavigateToAbout}>
                   关于作者
             </Button>
               </div>
