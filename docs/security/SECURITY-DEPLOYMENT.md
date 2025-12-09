@@ -249,6 +249,38 @@ redis-cli -h 172.17.0.1 -p 26739 -a 你的密码 PING
    - 审计日志保留90天
    - 备份文件保留7天
 
+## 数据库迁移
+
+### 修复评论功能（2025-12-09）
+
+如果是从旧版本升级，可能需要执行以下SQL修复评论功能：
+
+```bash
+# 方法1：使用迁移脚本
+mysql -h172.17.0.1 -P13306 -uroot -p你的密码 myblog < myblog-backend/database/migrations/2025-12-09-fix-comment-parent-id.sql
+
+# 方法2：手动执行
+mysql -h172.17.0.1 -P13306 -uroot -p你的密码 myblog
+ALTER TABLE tb_comment DROP FOREIGN KEY tb_comment_ibfk_3;
+ALTER TABLE tb_comment MODIFY COLUMN parent_id BIGINT DEFAULT NULL;
+UPDATE tb_comment SET parent_id = NULL WHERE parent_id = 0;
+```
+
+### 迁移检查
+
+执行迁移后，验证结果：
+
+```sql
+-- 检查评论表结构
+SHOW CREATE TABLE tb_comment;
+
+-- 统计评论数据
+SELECT
+    COUNT(*) as total_comments,
+    COUNT(CASE WHEN parent_id IS NULL THEN 1 END) as top_level_comments
+FROM tb_comment;
+```
+
 ## 联系支持
 
 如有问题，请查看：
