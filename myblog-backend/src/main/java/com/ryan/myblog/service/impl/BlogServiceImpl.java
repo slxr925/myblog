@@ -1,6 +1,7 @@
 package com.ryan.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryan.myblog.common.PageRequest;
@@ -757,41 +758,58 @@ public class BlogServiceImpl implements BlogService {
         }
 
         String trimmedKeyword = keyword.trim();
-        String[] keywords = trimmedKeyword.split("\\s+");
+        int resultLimit = limit != null && limit > 0 ? limit : 20;
 
-        LambdaQueryWrapper<Blog> queryWrapper = createPublishedBlogQuery();
+        // 使用MySQL全文索引搜索（性能优化）
+        try {
+            List<Blog> results = blogMapper.selectList(new QueryWrapper<Blog>()
+                    .apply("MATCH(title, summary, content) AGAINST({0} IN BOOLEAN MODE)", trimmedKeyword)
+                    .eq("status", 1)
+                    .eq("deleted", 0)
+                    .orderByDesc("is_top")
+                    .orderByDesc("publish_time")
+                    .last("LIMIT " + resultLimit));
+            
+            log.debug("全文索引搜索 - 关键词: '{}', 结果数量: {}", trimmedKeyword, results.size());
+            return convertToBlogListVOs(results);
+        } catch (Exception e) {
+            log.warn("全文索引搜索失败，降级到LIKE搜索: {}", e.getMessage());
+            
+            // 降级：使用LIKE搜索
+            String[] keywords = trimmedKeyword.split("\\s+");
+            LambdaQueryWrapper<Blog> queryWrapper = createPublishedBlogQuery();
 
-        // 关键词匹配条件
-        if (keywords.length == 1) {
-            queryWrapper.and(wrapper -> wrapper
-                    .like(Blog::getTitle, trimmedKeyword)
-                    .or().like(Blog::getSummary, trimmedKeyword)
-                    .or().like(Blog::getContent, trimmedKeyword)
-            );
-        } else {
-            queryWrapper.and(outerWrapper -> {
-                for (int i = 0; i < keywords.length; i++) {
-                    String kw = keywords[i].trim();
-                    if (kw.isEmpty()) continue;
-                    if (i == 0) {
-                        outerWrapper.and(wrapper -> wrapper
-                                .like(Blog::getTitle, kw)
-                                .or().like(Blog::getSummary, kw)
-                                .or().like(Blog::getContent, kw)
-                        );
-                    } else {
-                        outerWrapper.or(wrapper -> wrapper
-                                .like(Blog::getTitle, kw)
-                                .or().like(Blog::getSummary, kw)
-                                .or().like(Blog::getContent, kw)
-                        );
+            if (keywords.length == 1) {
+                queryWrapper.and(wrapper -> wrapper
+                        .like(Blog::getTitle, trimmedKeyword)
+                        .or().like(Blog::getSummary, trimmedKeyword)
+                        .or().like(Blog::getContent, trimmedKeyword)
+                );
+            } else {
+                queryWrapper.and(outerWrapper -> {
+                    for (int i = 0; i < keywords.length; i++) {
+                        String kw = keywords[i].trim();
+                        if (kw.isEmpty()) continue;
+                        if (i == 0) {
+                            outerWrapper.and(wrapper -> wrapper
+                                    .like(Blog::getTitle, kw)
+                                    .or().like(Blog::getSummary, kw)
+                                    .or().like(Blog::getContent, kw)
+                            );
+                        } else {
+                            outerWrapper.or(wrapper -> wrapper
+                                    .like(Blog::getTitle, kw)
+                                    .or().like(Blog::getSummary, kw)
+                                    .or().like(Blog::getContent, kw)
+                            );
+                        }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        List<Blog> matchingBlogs = executeSearchQuery(queryWrapper, limit, "MySQL搜索", trimmedKeyword);
-        return convertToBlogListVOs(matchingBlogs);
+            List<Blog> fallbackResults = executeSearchQuery(queryWrapper, limit, "LIKE降级搜索", trimmedKeyword);
+            return convertToBlogListVOs(fallbackResults);
+        }
     }
 
     @Override
