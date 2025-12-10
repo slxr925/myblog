@@ -156,6 +156,31 @@ public class CommentController {
     }
     
     /**
+     * 获取当前用户的评论列表
+     */
+    @GetMapping("/user/my")
+    @PreAuthorize("isAuthenticated()")
+    public Result<IPage<CommentVO>> getMyComments(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        try {
+            Long userId = getCurrentUserId();
+            if (userId == null) {
+                return Result.error(401, "用户未登录");
+            }
+
+            PageRequest pageRequest = new PageRequest();
+            pageRequest.setPage(page);
+            pageRequest.setSize(size);
+
+            IPage<CommentVO> result = commentService.getCommentsByUser(pageRequest, userId);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 统计博客评论数
      */
     @GetMapping("/count/{blogId}")

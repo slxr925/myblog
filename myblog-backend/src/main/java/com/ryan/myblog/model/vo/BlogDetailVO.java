@@ -29,6 +29,7 @@ public class BlogDetailVO {
     private Integer likeCount;
     private Integer commentCount;
     private Boolean isLiked;
+    private LocalDateTime likeTime;
     private LocalDateTime publishTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

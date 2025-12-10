@@ -443,6 +443,16 @@ export const api = {
     logout: async (): Promise<void> => {
       await apiClient.post('/user/logout');
     },
+
+    // 获取我的评论列表
+    getMyComments: async (params?: PageParams): Promise<ProcessedResponse<PageResponse<CommentVO>>> => {
+      return apiClient.get('/comment/user/my', { params });
+    },
+
+    // 获取我点赞的博客列表
+    getMyLikedBlogs: async (params?: PageParams): Promise<ProcessedResponse<PageResponse<BlogDetailVO>>> => {
+      return apiClient.get('/blog/liked/my', { params });
+    },
   },
 
   comment: {

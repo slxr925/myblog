@@ -223,6 +223,42 @@ public class CommentServiceImpl implements CommentService {
         wrapper.eq(Comment::getStatus, 1); // 只统计已通过审核的评论
         return commentMapper.selectCount(wrapper);
     }
+
+    @Override
+    public IPage<CommentVO> getCommentsByUser(PageRequest pageRequest, Long userId) {
+        Page<Comment> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        IPage<Comment> commentPage = commentMapper.selectCommentsByUser(userId, page);
+
+        if (CollectionUtils.isEmpty(commentPage.getRecords())) {
+            return new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        }
+
+        // 获取用户信息
+        List<Long> userIds = commentPage.getRecords().stream()
+                .map(Comment::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<User> users = userMapper.selectBatchIds(userIds);
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        // 转换为VO
+        List<CommentVO> commentVOs = commentPage.getRecords().stream()
+                .map(comment -> {
+                    CommentVO vo = convertToVO(comment, userMap);
+                    // 设置博客标题（已在SQL查询中获取）
+                    vo.setBlogTitle(comment.getBlogTitle());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+
+        Page<CommentVO> voPage = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        voPage.setRecords(commentVOs);
+        voPage.setTotal(commentPage.getTotal());
+
+        return voPage;
+    }
     
     /**
      * 将Comment实体转换为CommentVO

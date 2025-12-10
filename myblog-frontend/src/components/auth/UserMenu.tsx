@@ -124,7 +124,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                       onClick={handleProfile}
                     >
                       <User className="w-4 h-4 mr-2" />
-                      个人资料
+                      我
                     </Button>
                     {user.role === Role.ADMIN && (
                       <Button

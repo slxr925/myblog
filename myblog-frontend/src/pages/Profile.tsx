@@ -6,6 +6,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import MyComments from '../components/profile/MyComments';
+import MyLikes from '../components/profile/MyLikes';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
 import { api } from '../utils/api';
@@ -92,13 +95,13 @@ const Profile: React.FC = () => {
     >
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">个人资料</h1>
+          <h1 className="text-3xl font-bold text-foreground">我</h1>
           <p className="text-muted-foreground">管理您的个人信息和偏好设置</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* 左侧：个人信息 */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-1 space-y-6">
             <Card className="border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -227,47 +230,76 @@ const Profile: React.FC = () => {
             </Card>
           </div>
 
-          {/* 右侧：其他 */}
-          <div className="space-y-6">
+          {/* 右侧：Tabs 内容 */}
+          <div className="xl:col-span-2">
             <Card className="border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">账户状态</CardTitle>
+                <CardTitle className="text-lg">个人中心</CardTitle>
+                <CardDescription>查看您的评论、喜爱内容和账户信息</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-border">
-                  <span className="text-muted-foreground text-sm">当前状态</span>
-                  <Badge variant={user.status === 0 ? 'default' : 'destructive'}>
-                    {user.status === 0 ? '正常' : '异常'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground text-sm">最后登录</span>
-                  <span className="text-sm font-medium">
-                    {user.updateTime ? new Date(user.updateTime).toLocaleDateString() : '近期'}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+              <CardContent>
+                <Tabs defaultValue="account" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="account">账户状态</TabsTrigger>
+                    <TabsTrigger value="comments">我的评论</TabsTrigger>
+                    <TabsTrigger value="likes">我的喜爱</TabsTrigger>
+                  </TabsList>
 
-            <Card className="border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">快捷操作</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start" 
-                  onClick={() => navigate('/blog/drafts')}
-                >
-                  <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> 我的草稿
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start" 
-                  onClick={() => setIsChangingPassword(true)}
-                >
-                  <Lock className="w-4 h-4 mr-2 text-muted-foreground" /> 修改密码
-                </Button>
+                  <TabsContent value="account" className="space-y-4">
+                    <div className="p-4 bg-muted/30 rounded-xl">
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="text-muted-foreground text-sm">当前状态</span>
+                        <Badge variant={user.status === 0 ? 'default' : 'destructive'}>
+                          {user.status === 0 ? '正常' : '异常'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="text-muted-foreground text-sm">账户类型</span>
+                        <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
+                          {user.role === Role.ADMIN ? '管理员' : '普通用户'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="text-muted-foreground text-sm">注册时间</span>
+                        <span className="text-sm font-medium">
+                          {user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground text-sm">最后登录</span>
+                        <span className="text-sm font-medium">
+                          {user.updateTime ? new Date(user.updateTime).toLocaleDateString('zh-CN') : '近期'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+                      <h4 className="font-medium text-foreground mb-3">快捷操作</h4>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => navigate('/blog/drafts')}
+                      >
+                        <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> 我的草稿
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => setIsChangingPassword(true)}
+                      >
+                        <Lock className="w-4 h-4 mr-2 text-muted-foreground" /> 修改密码
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="comments">
+                    <MyComments />
+                  </TabsContent>
+
+                  <TabsContent value="likes">
+                    <MyLikes />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>

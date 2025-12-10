@@ -71,7 +71,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => handleNavigation('/profile')}
               >
                 <User className="w-4 h-4 mr-2" />
-                {isAuthenticated ? '个人资料' : '关于'}
+                {isAuthenticated ? '我' : '关于'}
               </Button>
               <Button
                 variant="ghost"
@@ -127,7 +127,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => handleNavigation('/profile')}
               >
                 <User className="w-4 h-4 mr-2" />
-                {isAuthenticated ? '个人资料' : '关于'}
+                {isAuthenticated ? '我' : '关于'}
               </Button>
               <Button
                 variant="ghost"

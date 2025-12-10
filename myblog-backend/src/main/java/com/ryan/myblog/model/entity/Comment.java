@@ -22,6 +22,12 @@ public class Comment {
      */
     @TableField("blog_id")
     private Long blogId;
+
+    /**
+     * 博客标题（非数据库字段，仅用于查询结果）
+     */
+    @TableField(exist = false)
+    private String blogTitle;
     
     /**
      * 评论者ID

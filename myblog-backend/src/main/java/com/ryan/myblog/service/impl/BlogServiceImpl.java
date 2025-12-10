@@ -1069,4 +1069,13 @@ public class BlogServiceImpl implements BlogService {
         // 如果是管理员，有权限
         return securityUtils.isAdmin();
     }
+
+    /**
+     * 获取用户点赞的博客列表
+     */
+    @Override
+    public IPage<BlogDetailVO> getLikedBlogsByUser(PageRequest pageRequest, Long userId) {
+        Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        return blogMapper.selectLikedBlogsByUser(page, userId);
+    }
 }

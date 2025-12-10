@@ -122,4 +122,10 @@ public interface BlogMapper extends BaseMapper<Blog> {
                                                  @Param("categoryId") Long categoryId,
                                                  @Param("tagIds") List<Long> tagIds,
                                                  @Param("limit") int limit);
+
+    /**
+     * 查询用户点赞的博客
+     */
+    IPage<BlogDetailVO> selectLikedBlogsByUser(IPage<BlogDetailVO> page,
+                                              @Param("userId") Long userId);
 }

@@ -44,9 +44,22 @@
 
     <!-- 减少点赞数 -->
     <update id="decrementLikeCount">
-        UPDATE tb_comment 
+        UPDATE tb_comment
         SET like_count = GREATEST(like_count - 1, 0), update_time = NOW()
         WHERE id = #{id} AND deleted = 0
     </update>
+
+    <!-- 根据用户ID分页查询评论列表（包含博客标题） -->
+    <select id="selectCommentsByUser" resultType="com.ryan.myblog.model.entity.Comment">
+        SELECT
+            c.*,
+            b.title as blogTitle
+        FROM tb_comment c
+        LEFT JOIN tb_blog b ON c.blog_id = b.id
+        WHERE c.user_id = #{userId}
+            AND c.status = 1
+            AND c.deleted = 0
+        ORDER BY c.create_time DESC
+    </select>
 
 </mapper>

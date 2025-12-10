@@ -23,6 +23,7 @@
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
         <result column="status_changed_time" property="statusChangedTime"/>
+        <result column="like_time" property="likeTime"/>
     </resultMap>
 
     <resultMap id="BlogDetailWithTagsMap" type="com.ryan.myblog.model.vo.BlogDetailVO">
@@ -46,6 +47,7 @@
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
         <result column="status_changed_time" property="statusChangedTime"/>
+        <result column="like_time" property="likeTime"/>
         <collection property="tags" ofType="com.ryan.myblog.model.vo.TagVO">
             <id column="tag_id" property="id"/>
             <result column="tag_name" property="name"/>
@@ -74,6 +76,7 @@
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
         <result column="status_changed_time" property="statusChangedTime"/>
+        <result column="like_time" property="likeTime"/>
         <collection property="tags" ofType="com.ryan.myblog.model.vo.TagVO">
             <id column="tag_id" property="id"/>
             <result column="tag_name" property="name"/>
@@ -337,6 +340,18 @@
             CASE WHEN b.category_id = #{categoryId} THEN 1 ELSE 2 END,
             b.view_count DESC, b.publish_time DESC
         LIMIT #{limit}
+    </select>
+
+    <!-- 查询用户点赞的博客 -->
+    <select id="selectLikedBlogsByUser" resultMap="BlogDetailMap">
+        SELECT b.*, u.nickname as authorName, u.avatar as authorAvatar,
+               cat.name as categoryName, ul.create_time as likeTime
+        FROM tb_blog b
+        INNER JOIN tb_user_like ul ON b.id = ul.target_id AND ul.target_type = 'blog'
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category cat ON b.category_id = cat.id
+        WHERE ul.user_id = #{userId} AND ul.status = 1 AND b.status = 1
+        ORDER BY ul.create_time DESC
     </select>
 
 </mapper>

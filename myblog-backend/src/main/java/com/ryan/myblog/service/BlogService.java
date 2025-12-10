@@ -144,4 +144,9 @@ public interface BlogService {
      * 更新博客状态
      */
     void updateBlogStatus(Long id, Integer status, Long operatorId);
+
+    /**
+     * 获取用户点赞的博客列表
+     */
+    IPage<BlogDetailVO> getLikedBlogsByUser(PageRequest pageRequest, Long userId);
 }

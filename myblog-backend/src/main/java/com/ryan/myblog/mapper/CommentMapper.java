@@ -30,4 +30,10 @@ public interface CommentMapper extends BaseMapper<Comment> {
      * 减少点赞数
      */
     void decrementLikeCount(@Param("id") Long id);
+
+    /**
+     * 根据用户ID分页查询评论列表（包含博客标题）
+     */
+    IPage<Comment> selectCommentsByUser(@Param("userId") Long userId,
+                                       @Param("page") IPage<Comment> page);
 }

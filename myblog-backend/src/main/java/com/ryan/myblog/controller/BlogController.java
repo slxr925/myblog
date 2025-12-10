@@ -353,6 +353,22 @@ public class BlogController {
     }
 
     /**
+     * 获取当前登录用户点赞的博客列表
+     */
+    @GetMapping("/liked/my")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public Result<IPage<BlogDetailVO>> getMyLikedBlogs(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+        Long userId = getCurrentUserId();
+        IPage<BlogDetailVO> result = blogService.getLikedBlogsByUser(pageRequest, userId);
+        return Result.success(result);
+    }
+
+    /**
      * 获取当前用户ID
      */
     private Long getCurrentUserId() {

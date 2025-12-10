@@ -51,4 +51,9 @@ public interface CommentService {
      * 根据博客ID统计评论数
      */
     Long countCommentsByBlogId(Long blogId);
+
+    /**
+     * 获取用户的评论列表
+     */
+    IPage<CommentVO> getCommentsByUser(PageRequest pageRequest, Long userId);
 }
