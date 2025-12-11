@@ -15,6 +15,7 @@ import SearchPage from './pages/Search'
 import SearchResultsPage from './pages/SearchResults'
 import BlogEditor from './components/editor/BlogEditor'
 import MyDrafts from './pages/MyDrafts'
+import Collections from './pages/user/collections'
 import { Role } from './types/api'
 import { ModernLayout } from './components/layout/ModernLayout'
 
@@ -39,6 +40,14 @@ const AppWrapper = () => {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user/collections"
+              element={
+                <ProtectedRoute>
+                  <Collections />
                 </ProtectedRoute>
               }
             />

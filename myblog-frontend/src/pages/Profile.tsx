@@ -9,12 +9,14 @@ import { Badge } from '../components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import MyComments from '../components/profile/MyComments';
 import MyLikes from '../components/profile/MyLikes';
+import MyCollections from '../components/profile/MyCollections';
+import CollectionsManager from '../components/profile/CollectionsManager';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
 import { api } from '../utils/api';
 import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
 import { FileUpload } from '../components/upload/FileUpload';
-import { User, Lock, Edit2, Save, X, Camera, FileText, Mail } from 'lucide-react';
+import { User, Lock, Edit2, Save, X, Camera, FileText, Mail, Bookmark } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -221,9 +223,14 @@ const Profile: React.FC = () => {
                       <Button variant="outline" onClick={handleCancel}>取消</Button>
                     </>
                   ) : (
-                    <Button onClick={() => setIsEditing(true)}>
-                      <Edit2 className="w-4 h-4 mr-2" /> 编辑资料
+                    <>
+                      <Button onClick={() => setIsEditing(true)}>
+                        <Edit2 className="w-4 h-4 mr-2" /> 编辑资料
                       </Button>
+                      <Button variant="outline" onClick={() => setIsChangingPassword(true)}>
+                        <Lock className="w-4 h-4 mr-2" /> 修改密码
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
@@ -239,10 +246,11 @@ const Profile: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="account" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="account">账户状态</TabsTrigger>
                     <TabsTrigger value="comments">我的评论</TabsTrigger>
                     <TabsTrigger value="likes">我的喜爱</TabsTrigger>
+                    <TabsTrigger value="collections">我的收藏</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="account" className="space-y-4">
@@ -273,7 +281,7 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+                    <div className="p-4 bg-muted/30 rounded-xl">
                       <h4 className="font-medium text-foreground mb-3">快捷操作</h4>
                       <Button
                         variant="outline"
@@ -281,13 +289,6 @@ const Profile: React.FC = () => {
                         onClick={() => navigate('/blog/drafts')}
                       >
                         <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> 我的草稿
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => setIsChangingPassword(true)}
-                      >
-                        <Lock className="w-4 h-4 mr-2 text-muted-foreground" /> 修改密码
                       </Button>
                     </div>
                   </TabsContent>
@@ -298,6 +299,10 @@ const Profile: React.FC = () => {
 
                   <TabsContent value="likes">
                     <MyLikes />
+                  </TabsContent>
+
+                  <TabsContent value="collections">
+                    <CollectionsManager />
                   </TabsContent>
                 </Tabs>
               </CardContent>

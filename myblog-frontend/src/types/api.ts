@@ -266,3 +266,80 @@ export interface AdminStatsDTO {
   weeklyStats: DailyStatsDTO[];
   monthlyStats: DailyStatsDTO[];
 }
+
+// ========== 收藏相关类型定义 ==========
+
+// 收藏夹分类
+export interface CollectionFolder {
+  id: number;
+  userId: number;
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  sortOrder: number;
+  collectionCount: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
+// 用户收藏
+export interface UserCollection {
+  id: number;
+  userId: number;
+  targetType: string;
+  targetId: number;
+  folderId: number;
+  note?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+// 收藏夹VO（包含收藏数量）
+export interface CollectionFolderVO {
+  id: number;
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  sortOrder: number;
+  collectionCount: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
+// 收藏记录VO（包含博客信息）
+export interface UserCollectionVO {
+  id: number;
+  folderId: number;
+  folderName: string;
+  blogId: number;
+  blogTitle: string;
+  blogSummary?: string;
+  authorName: string;
+  viewCount: number;
+  blog?: BlogListVO;
+  note?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+// 收藏夹创建/更新DTO
+export interface CollectionFolderDTO {
+  name: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+// 收藏操作DTO
+export interface CollectToggleDTO {
+  targetId: number;
+  targetType: string;
+  folderId?: number;
+  note?: string;
+}
+
+// 收藏结果DTO
+export interface CollectResultDTO {
+  isCollected: boolean;
+  message: string;
+  folderId?: number;
+}

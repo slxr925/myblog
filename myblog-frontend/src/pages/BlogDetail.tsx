@@ -9,6 +9,7 @@ import { api } from '../utils/api';
 import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
+import CollectButton from '../components/blog/CollectButton';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -148,13 +149,18 @@ const BlogDetail: React.FC = () => {
             
             <div className="flex gap-2">
               <Button
-                variant={isLiked ? "default" : "secondary"} 
+                variant={isLiked ? "default" : "secondary"}
                 className={`rounded-full w-10 h-10 p-0 flex items-center justify-center ${isLiked ? 'bg-red-500 hover:bg-red-600' : ''}`}
                 onClick={handleLike}
                 disabled={isLiking}
               >
                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
               </Button>
+              <CollectButton
+                blogId={blog.id}
+                size="icon"
+                className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+              />
               <Button variant="secondary" className="rounded-full w-10 h-10 p-0 flex items-center justify-center" onClick={handleShare}>
                 <Share2 className="w-5 h-5" />
               </Button>

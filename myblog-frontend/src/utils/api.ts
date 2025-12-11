@@ -658,6 +658,73 @@ export const api = {
     },
   },
 
+  collection: {
+    // 获取收藏夹列表
+    getFolders: async (): Promise<CollectionFolderVO[]> => {
+      return apiClient.get('/collection/folders') as Promise<CollectionFolderVO[]>;
+    },
+
+    // 创建收藏夹
+    createFolder: async (folderData: CollectionFolderDTO): Promise<CollectionFolderVO> => {
+      return apiClient.post('/collection/folders', folderData) as Promise<CollectionFolderVO>;
+    },
+
+    // 更新收藏夹
+    updateFolder: async (id: number, folderData: CollectionFolderDTO): Promise<void> => {
+      await apiClient.put(`/collection/folders/${id}`, folderData);
+    },
+
+    // 删除收藏夹
+    deleteFolder: async (id: number): Promise<void> => {
+      await apiClient.delete(`/collection/folders/${id}`);
+    },
+
+    // 收藏/取消收藏
+    toggle: async (data: CollectToggleDTO): Promise<CollectResultDTO> => {
+      return apiClient.post('/collection/toggle', data) as Promise<CollectResultDTO>;
+    },
+
+    // 检查是否已收藏
+    checkCollected: async (targetId: number, targetType = 'blog'): Promise<boolean> => {
+      return apiClient.get(`/collection/check/${targetId}`, { params: { targetType } }) as Promise<boolean>;
+    },
+
+    // 获取收藏列表（指定文件夹）
+    getList: async (params?: any): Promise<PageResult<UserCollectionVO>> => {
+      const response = await apiClient.get('/collection/list', { params });
+      const records = response as UserCollectionVO[];
+      // Backend returns list directly, so we need to wrap it to maintain PageResult format
+      // Use a placeholder for total - components will handle this appropriately
+      return {
+        records,
+        total: records.length,
+        current: params?.page || 1,
+        size: params?.pageSize || 10
+      } as PageResult<UserCollectionVO>;
+    },
+
+    // 获取所有收藏（不分文件夹）
+    getAllList: async (page = 1, size = 10): Promise<UserCollectionVO[]> => {
+      return apiClient.get('/collection/list/all', { params: { page, size } }) as Promise<UserCollectionVO[]>;
+    },
+
+    // 批量移动收藏
+    batchMove: async (targetFolderId: number, collectionIds: number[]): Promise<void> => {
+      await apiClient.post('/collection/move', null, { params: { targetFolderId, collectionIds } });
+    },
+
+    // 批量删除收藏
+    batchDelete: async (collectionIds: number[]): Promise<void> => {
+      // Since backend doesn't have batch delete endpoint, delete individually
+      await Promise.all(collectionIds.map(id => apiClient.delete(`/collection/${id}`)));
+    },
+
+    // 删除收藏
+    delete: async (id: number): Promise<void> => {
+      await apiClient.delete(`/collection/${id}`);
+    },
+  },
+
   auth: {
     // 保存认证信息到本地存储
     saveAuth: (token: string, user: User): void => {

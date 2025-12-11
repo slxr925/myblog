@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ryan.myblog.mapper.UserCollectionMapper">
+
+    <!-- 获取用户收藏列表（带博客信息） -->
+    <select id="getUserCollectionsPage" resultType="com.ryan.myblog.model.vo.UserCollectionVO">
+        SELECT
+            uc.id,
+            uc.folder_id AS folderId,
+            cf.name AS folderName,
+            uc.note,
+            uc.create_time AS createTime,
+            uc.update_time AS updateTime,
+            b.id AS "blog.id",
+            b.title AS "blog.title",
+            b.summary AS "blog.summary",
+            b.cover_img AS "blog.coverImage",
+            b.author_id AS "blog.authorId",
+            u.nickname AS "blog.authorNickname",
+            u.avatar AS "blog.authorAvatar",
+            b.category_id AS "blog.categoryId",
+            c.name AS "blog.categoryName",
+            b.status AS "blog.status",
+            b.visibility AS "blog.visibility",
+            b.is_top AS "blog.isTop",
+            b.view_count AS "blog.viewCount",
+            b.like_count AS "blog.likeCount",
+            b.comment_count AS "blog.commentCount",
+            b.publish_time AS "blog.publishTime",
+            b.create_time AS "blog.createTime",
+            b.update_time AS "blog.updateTime",
+            b.status_changed_time AS "blog.statusChangedTime",
+            b.id AS blogId,
+            b.title AS blogTitle,
+            b.summary AS blogSummary,
+            u.nickname AS authorName,
+            b.view_count AS viewCount
+        FROM tb_user_collection uc
+        INNER JOIN tb_collection_folder cf ON uc.folder_id = cf.id AND cf.deleted = 0
+        INNER JOIN tb_blog b ON uc.target_id = b.id AND uc.target_type = 'blog'
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE uc.user_id = #{userId}
+          AND uc.deleted = 0
+          AND b.deleted = 0
+          <if test="folderId != null">
+            AND uc.folder_id = #{folderId}
+          </if>
+        ORDER BY uc.create_time DESC
+    </select>
+
+    <!-- 获取用户所有收藏（不分文件夹） -->
+    <select id="getUserAllCollectionsPage" resultType="com.ryan.myblog.model.vo.UserCollectionVO">
+        SELECT
+            uc.id,
+            uc.folder_id AS folderId,
+            cf.name AS folderName,
+            uc.note,
+            uc.create_time AS createTime,
+            uc.update_time AS updateTime,
+            b.id AS "blog.id",
+            b.title AS "blog.title",
+            b.summary AS "blog.summary",
+            b.cover_img AS "blog.coverImage",
+            b.author_id AS "blog.authorId",
+            u.nickname AS "blog.authorNickname",
+            u.avatar AS "blog.authorAvatar",
+            b.category_id AS "blog.categoryId",
+            c.name AS "blog.categoryName",
+            b.status AS "blog.status",
+            b.visibility AS "blog.visibility",
+            b.is_top AS "blog.isTop",
+            b.view_count AS "blog.viewCount",
+            b.like_count AS "blog.likeCount",
+            b.comment_count AS "blog.commentCount",
+            b.publish_time AS "blog.publishTime",
+            b.create_time AS "blog.createTime",
+            b.update_time AS "blog.updateTime",
+            b.status_changed_time AS "blog.statusChangedTime",
+            b.id AS blogId,
+            b.title AS blogTitle,
+            b.summary AS blogSummary,
+            u.nickname AS authorName,
+            b.view_count AS viewCount
+        FROM tb_user_collection uc
+        INNER JOIN tb_collection_folder cf ON uc.folder_id = cf.id AND cf.deleted = 0
+        INNER JOIN tb_blog b ON uc.target_id = b.id AND uc.target_type = 'blog'
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE uc.user_id = #{userId}
+          AND uc.deleted = 0
+          AND b.deleted = 0
+        ORDER BY uc.create_time DESC
+    </select>
+
+    <!-- 根据用户和目标获取收藏记录 -->
+    <select id="selectByUserAndTarget" resultType="com.ryan.myblog.model.entity.UserCollection">
+        SELECT * FROM tb_user_collection
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+          AND deleted = 0
+        LIMIT 1
+    </select>
+
+</mapper>

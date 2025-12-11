@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ryan.myblog.mapper.CollectionFolderMapper">
+
+    <!-- 获取用户收藏夹列表（包含收藏数量） -->
+    <select id="getUserFoldersWithCount" resultType="com.ryan.myblog.model.vo.CollectionFolderVO">
+        SELECT
+            cf.id,
+            cf.name,
+            cf.description,
+            cf.is_default AS isDefault,
+            cf.sort_order AS sortOrder,
+            cf.collection_count AS collectionCount,
+            cf.create_time AS createTime,
+            cf.update_time AS updateTime
+        FROM tb_collection_folder cf
+        WHERE cf.user_id = #{userId} AND cf.deleted = 0
+        ORDER BY cf.is_default DESC, cf.sort_order ASC, cf.create_time DESC
+    </select>
+
+    <!-- 获取用户默认收藏夹 -->
+    <select id="getUserDefaultFolder" resultType="com.ryan.myblog.model.entity.CollectionFolder">
+        SELECT * FROM tb_collection_folder
+        WHERE user_id = #{userId} AND is_default = 1 AND deleted = 0
+        LIMIT 1
+    </select>
+
+</mapper>
