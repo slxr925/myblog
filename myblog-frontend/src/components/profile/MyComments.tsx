@@ -27,7 +27,8 @@ export const MyComments: React.FC = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [comments, setComments] = useState<ExtendedCommentVO[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const pageSize = 10;
@@ -37,10 +38,10 @@ export const MyComments: React.FC = () => {
   // 获取评论列表
   const fetchComments = async (page: number = 1) => {
     if (!user) {
-      setLoading(false);
+      setHasLoaded(true);
       return;
     }
-    
+
     try {
       setLoading(true);
       const response = await api.user.getMyComments({ page, size: pageSize });
@@ -58,6 +59,7 @@ export const MyComments: React.FC = () => {
       setTotal(0);
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   };
 
@@ -138,9 +140,8 @@ export const MyComments: React.FC = () => {
             <Card className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <AlertCircle className={`w-5 h-5 ${
-                    message.type === 'success' ? 'text-green-500' : 'text-red-500'
-                  }`} />
+                  <AlertCircle className={`w-5 h-5 ${message.type === 'success' ? 'text-green-500' : 'text-red-500'
+                    }`} />
                   <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
                     {message.text}
                   </span>
@@ -151,24 +152,8 @@ export const MyComments: React.FC = () => {
         ))}
       </AnimatePresence>
 
-      {/* 加载状态 */}
-      {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-16 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : comments.length > 0 ? (
+      {/* 数据列表 - 加载完成前不显示任何内容 */}
+      {!hasLoaded ? null : comments.length > 0 ? (
         <div className="space-y-4">
           {comments.map((comment) => (
             <Card key={comment.id} className="hover:shadow-md transition-shadow">

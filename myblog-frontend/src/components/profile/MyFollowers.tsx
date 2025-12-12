@@ -20,7 +20,8 @@ interface Message {
 export const MyFollowers: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [followers, setFollowers] = useState<UserFollowVO[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [total, setTotal] = useState(0);
     const pageSize = 10;
@@ -30,7 +31,7 @@ export const MyFollowers: React.FC = () => {
     // 获取粉丝列表
     const fetchFollowers = async (page: number = 1) => {
         if (!user) {
-            setLoading(false);
+            setHasLoaded(true);
             return;
         }
 
@@ -51,6 +52,7 @@ export const MyFollowers: React.FC = () => {
             setTotal(0);
         } finally {
             setLoading(false);
+            setHasLoaded(true);
         }
     };
 
@@ -122,24 +124,8 @@ export const MyFollowers: React.FC = () => {
                 ))}
             </AnimatePresence>
 
-            {/* 加载状态 */}
-            {loading ? (
-                <div className="space-y-4">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardContent className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                                    <div className="flex-1">
-                                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            ) : followers.length > 0 ? (
+            {/* 数据列表 - 加载完成前不显示任何内容 */}
+            {!hasLoaded ? null : followers.length > 0 ? (
                 <div className="space-y-4">
                     {followers.map((follower) => (
                         <Card key={follower.userId} className="hover:shadow-md transition-shadow">

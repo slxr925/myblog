@@ -11,7 +11,9 @@ import com.ryan.myblog.model.entity.UserLike;
 import com.ryan.myblog.mapper.CommentMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.mapper.UserMapper;
+import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.service.CommentService;
+import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.model.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,11 +34,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
-    
+
     private final CommentMapper commentMapper;
     private final UserMapper userMapper;
     private final UserLikeMapper userLikeMapper;
-    
+    private final BlogMapper blogMapper;
+    private final CacheService cacheService;
+
     @Override
     @Transactional
     public void saveComment(CommentSaveDTO commentSaveDTO, Long userId) {
@@ -59,8 +63,14 @@ public class CommentServiceImpl implements CommentService {
         comment.setUpdateTime(LocalDateTime.now());
 
         commentMapper.insert(comment);
+
+        // 更新博客评论数
+        blogMapper.incrementCommentCount(commentSaveDTO.getBlogId());
+
+        // 清除博客列表缓存
+        clearBlogCaches();
     }
-    
+
     @Override
     public List<CommentVO> getCommentTree(Long blogId, Integer status) {
         // 查询所有评论
@@ -70,74 +80,74 @@ public class CommentServiceImpl implements CommentService {
             wrapper.eq(Comment::getStatus, status);
         }
         wrapper.orderByAsc(Comment::getCreateTime);
-        
+
         List<Comment> comments = commentMapper.selectList(wrapper);
         if (CollectionUtils.isEmpty(comments)) {
             return new ArrayList<>();
         }
-        
+
         // 获取所有用户信息
         List<Long> userIds = comments.stream()
                 .map(Comment::getUserId)
                 .distinct()
                 .collect(Collectors.toList());
-        
+
         List<User> users = userMapper.selectBatchIds(userIds);
         Map<Long, User> userMap = users.stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
-        
+
         // 转换为VO
         List<CommentVO> commentVOs = comments.stream()
                 .map(comment -> convertToVO(comment, userMap))
                 .collect(Collectors.toList());
-        
+
         // 构建树形结构
         return buildCommentTree(commentVOs);
     }
-    
+
     @Override
     public IPage<CommentVO> getCommentPage(PageRequest pageRequest, Long blogId, Integer status, String keyword) {
         Page<Comment> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
         IPage<Comment> commentPage = commentMapper.selectCommentPage(page, blogId, status, keyword);
-        
+
         if (CollectionUtils.isEmpty(commentPage.getRecords())) {
             return new Page<>(pageRequest.getPage(), pageRequest.getSize());
         }
-        
+
         // 获取用户信息
         List<Long> userIds = commentPage.getRecords().stream()
                 .map(Comment::getUserId)
                 .distinct()
                 .collect(Collectors.toList());
-        
+
         List<User> users = userMapper.selectBatchIds(userIds);
         Map<Long, User> userMap = users.stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
-        
+
         // 转换为VO
         List<CommentVO> commentVOs = commentPage.getRecords().stream()
                 .map(comment -> convertToVO(comment, userMap))
                 .collect(Collectors.toList());
-        
+
         Page<CommentVO> voPage = new Page<>(pageRequest.getPage(), pageRequest.getSize());
         voPage.setRecords(commentVOs);
         voPage.setTotal(commentPage.getTotal());
-        
+
         return voPage;
     }
-    
+
     @Override
     public void auditComment(Long id, Integer status, Long operatorId) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
             throw new RuntimeException("评论不存在");
         }
-        
+
         comment.setStatus(status);
         comment.setUpdateTime(LocalDateTime.now());
         commentMapper.updateById(comment);
     }
-    
+
     @Override
     @Transactional
     public void deleteComment(Long id, Long operatorId) {
@@ -149,13 +159,20 @@ public class CommentServiceImpl implements CommentService {
         // 检查权限：只有评论者本人或管理员可以删除
         User operator = userMapper.selectById(operatorId);
         if (!comment.getUserId().equals(operatorId) &&
-            (operator == null || operator.getRole() != 1)) {
+                (operator == null || operator.getRole() != 1)) {
             throw new RuntimeException("无权限删除此评论");
         }
 
+        Long blogId = comment.getBlogId();
         commentMapper.deleteById(id);
+
+        // 更新博客评论数
+        blogMapper.decrementCommentCount(blogId);
+
+        // 清除博客列表缓存
+        clearBlogCaches();
     }
-    
+
     @Override
     @Transactional
     public void toggleCommentLike(Long id, Long userId) {
@@ -202,20 +219,20 @@ public class CommentServiceImpl implements CommentService {
             }
         }
     }
-    
+
     @Override
     public CommentVO getCommentById(Long id) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
             return null;
         }
-        
+
         User user = userMapper.selectById(comment.getUserId());
         Map<Long, User> userMap = Map.of(user.getId(), user);
-        
+
         return convertToVO(comment, userMap);
     }
-    
+
     @Override
     public Long countCommentsByBlogId(Long blogId) {
         LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
@@ -259,7 +276,7 @@ public class CommentServiceImpl implements CommentService {
 
         return voPage;
     }
-    
+
     /**
      * 将Comment实体转换为CommentVO
      */
@@ -274,7 +291,7 @@ public class CommentServiceImpl implements CommentService {
         vo.setStatus(comment.getStatus());
         vo.setLikeCount(comment.getLikeCount());
         vo.setCreateTime(comment.getCreateTime());
-        
+
         // 设置用户信息
         User user = userMap.get(comment.getUserId());
         if (user != null) {
@@ -282,7 +299,7 @@ public class CommentServiceImpl implements CommentService {
             vo.setNickname(user.getNickname());
             vo.setAvatar(user.getAvatar());
         }
-        
+
         // 设置回复用户昵称
         if (comment.getReplyUserId() != null) {
             User replyUser = userMap.get(comment.getReplyUserId());
@@ -290,10 +307,10 @@ public class CommentServiceImpl implements CommentService {
                 vo.setReplyUserNickname(replyUser.getNickname());
             }
         }
-        
+
         return vo;
     }
-    
+
     /**
      * 构建评论树形结构
      */
@@ -302,7 +319,7 @@ public class CommentServiceImpl implements CommentService {
         Map<Long, List<CommentVO>> childrenMap = comments.stream()
                 .filter(comment -> comment.getParentId() != null)
                 .collect(Collectors.groupingBy(CommentVO::getParentId));
-        
+
         for (CommentVO comment : comments) {
             if (comment.getParentId() == null) {
                 // 根评论
@@ -310,7 +327,16 @@ public class CommentServiceImpl implements CommentService {
                 rootComments.add(comment);
             }
         }
-        
+
         return rootComments;
+    }
+
+    /**
+     * 清除博客列表相关缓存
+     */
+    private void clearBlogCaches() {
+        cacheService.deleteByPattern("blog:latest:*");
+        cacheService.deleteByPattern("blog:hot:*");
+        cacheService.deleteByPattern("blog:page:*");
     }
 }

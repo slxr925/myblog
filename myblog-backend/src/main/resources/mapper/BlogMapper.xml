@@ -144,6 +144,14 @@
         UPDATE tb_blog SET like_count = like_count - 1 WHERE id = #{id} AND like_count > 0
     </update>
 
+    <update id="incrementCommentCount">
+        UPDATE tb_blog SET comment_count = comment_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decrementCommentCount">
+        UPDATE tb_blog SET comment_count = comment_count - 1 WHERE id = #{id} AND comment_count > 0
+    </update>
+
     <select id="selectRelatedBlogs" resultMap="BlogDetailMap">
         SELECT DISTINCT b.*, u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
         FROM tb_blog b
