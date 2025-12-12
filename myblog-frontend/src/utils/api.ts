@@ -19,7 +19,14 @@ import type {
   CommentVO,
   CommentCreateDTO,
   AdminStatsDTO,
-  LikeResultDTO
+  LikeResultDTO,
+  CollectionFolderVO,
+  CollectionFolderDTO,
+  CollectToggleDTO,
+  CollectResultDTO,
+  UserCollectionVO,
+  UserFollowVO,
+  FollowPageResponse
 } from '../types/api';
 
 // 创建axios实例
@@ -151,7 +158,7 @@ const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
     console.error('日期转换错误:', error, 'publishTime:', blog.publishTime);
     publishDate = '未知日期';
   }
-  
+
   // 处理标签
   const tags = blog.tags ? blog.tags.map(tag => {
     if (typeof tag === 'string') {
@@ -161,7 +168,7 @@ const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
     }
     return '';
   }).filter(tag => tag) : [];
-  
+
   const transformedPost = {
     id: blog.id,
     title: blog.title,
@@ -722,6 +729,53 @@ export const api = {
     // 删除收藏
     delete: async (id: number): Promise<void> => {
       await apiClient.delete(`/collection/${id}`);
+    },
+  },
+
+  follow: {
+    // 关注用户
+    followUser: async (userId: number): Promise<void> => {
+      await apiClient.post(`/follow/${userId}`);
+    },
+
+    // 取消关注
+    unfollowUser: async (userId: number): Promise<void> => {
+      await apiClient.delete(`/follow/${userId}`);
+    },
+
+    // 检查关注状态
+    checkFollowStatus: async (userId: number): Promise<boolean> => {
+      return apiClient.get(`/follow/status/${userId}`) as Promise<boolean>;
+    },
+
+    // 获取我的粉丝列表
+    getMyFollowers: async (page = 1, size = 10): Promise<FollowPageResponse> => {
+      return apiClient.get('/follow/followers', { params: { page, size } }) as Promise<FollowPageResponse>;
+    },
+
+    // 获取我的关注列表
+    getMyFollowing: async (page = 1, size = 10): Promise<FollowPageResponse> => {
+      return apiClient.get('/follow/following', { params: { page, size } }) as Promise<FollowPageResponse>;
+    },
+
+    // 获取指定用户的粉丝列表
+    getUserFollowers: async (userId: number, page = 1, size = 10): Promise<FollowPageResponse> => {
+      return apiClient.get(`/follow/followers/${userId}`, { params: { page, size } }) as Promise<FollowPageResponse>;
+    },
+
+    // 获取指定用户的关注列表
+    getUserFollowing: async (userId: number, page = 1, size = 10): Promise<FollowPageResponse> => {
+      return apiClient.get(`/follow/following/${userId}`, { params: { page, size } }) as Promise<FollowPageResponse>;
+    },
+
+    // 获取我的粉丝数量
+    getMyFollowerCount: async (): Promise<number> => {
+      return apiClient.get('/follow/followers/count') as Promise<number>;
+    },
+
+    // 获取我的关注数量
+    getMyFollowingCount: async (): Promise<number> => {
+      return apiClient.get('/follow/following/count') as Promise<number>;
     },
   },
 

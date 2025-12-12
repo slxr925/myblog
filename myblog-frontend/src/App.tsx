@@ -3,6 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { AuthModalProvider } from './contexts/AuthModalContext'
+import { FollowProvider } from './contexts/FollowContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import AuthErrorHandler from './components/auth/AuthErrorHandler'
@@ -24,75 +25,77 @@ const AppWrapper = () => {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <AuthModalProvider>
-            <Router>
-              <AuthErrorHandler />
-          <Routes>
-                {/* 前台布局路由 */}
-                <Route element={<ModernLayout />}>
-            <Route path="/" element={<EnhancedBlog />} />
-            <Route path="/blog/:id" element={<BlogDetail />} />
-            <Route path="/blog" element={<SearchPage />} />
-            <Route path="/search" element={<SearchResultsPage />} />
-            <Route path="/about" element={<About />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/user/collections"
-              element={
-                <ProtectedRoute>
-                  <Collections />
-                </ProtectedRoute>
-              }
-            />
-                </Route>
+          <FollowProvider>
+            <AuthModalProvider>
+              <Router>
+                <AuthErrorHandler />
+                <Routes>
+                  {/* 前台布局路由 */}
+                  <Route element={<ModernLayout />}>
+                    <Route path="/" element={<EnhancedBlog />} />
+                    <Route path="/blog/:id" element={<BlogDetail />} />
+                    <Route path="/blog" element={<SearchPage />} />
+                    <Route path="/search" element={<SearchResultsPage />} />
+                    <Route path="/about" element={<About />} />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/user/collections"
+                      element={
+                        <ProtectedRoute>
+                          <Collections />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Route>
 
-                {/* 管理员专属路由 (独立布局) */}
-            <Route
-              path="/blog/new"
-              element={
-                    <ProtectedRoute requiredRole={Role.ADMIN}>
-                  <BlogEditor mode="create" />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/blog/edit/:id"
-              element={
-                    <ProtectedRoute requiredRole={Role.ADMIN}>
-                  <BlogEditor mode="edit" />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/blog/drafts"
-              element={
-                    <ProtectedRoute requiredRole={Role.ADMIN}>
-                  <MyDrafts />
-                </ProtectedRoute>
-              }
-            />
+                  {/* 管理员专属路由 (独立布局) */}
+                  <Route
+                    path="/blog/new"
+                    element={
+                      <ProtectedRoute requiredRole={Role.ADMIN}>
+                        <BlogEditor mode="create" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/blog/edit/:id"
+                    element={
+                      <ProtectedRoute requiredRole={Role.ADMIN}>
+                        <BlogEditor mode="edit" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/blog/drafts"
+                    element={
+                      <ProtectedRoute requiredRole={Role.ADMIN}>
+                        <MyDrafts />
+                      </ProtectedRoute>
+                    }
+                  />
 
-            <Route
-              path="/dashboard"
-              element={
-                    <ProtectedRoute requiredRole={Role.ADMIN}>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Router>
-          </AuthModalProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </ErrorBoundary>
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole={Role.ADMIN}>
+                        <Admin />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </Router>
+            </AuthModalProvider>
+          </FollowProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
 

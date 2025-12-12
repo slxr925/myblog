@@ -11,6 +11,8 @@ import MyComments from '../components/profile/MyComments';
 import MyLikes from '../components/profile/MyLikes';
 import MyCollections from '../components/profile/MyCollections';
 import CollectionsManager from '../components/profile/CollectionsManager';
+import MyFollowers from '../components/profile/MyFollowers';
+import MyFollowing from '../components/profile/MyFollowing';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
 import { api } from '../utils/api';
@@ -137,8 +139,8 @@ const Profile: React.FC = () => {
                     <p className="text-muted-foreground">{user.email}</p>
                     <div className="mt-2 flex gap-2">
                       <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
-                      {user.role === Role.ADMIN ? '管理员' : '普通用户'}
-                    </Badge>
+                        {user.role === Role.ADMIN ? '管理员' : '普通用户'}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -165,34 +167,34 @@ const Profile: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">用户名</label>
                     <Input value={user.username} disabled className="bg-slate-50" />
-                    </div>
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">昵称</label>
-                        <Input
-                          name="nickname"
-                      value={isEditing ? formData.nickname : (user.nickname || '未设置')} 
+                    <Input
+                      name="nickname"
+                      value={isEditing ? formData.nickname : (user.nickname || '未设置')}
                       disabled={!isEditing}
-                          onChange={handleInputChange}
+                      onChange={handleInputChange}
                       className={!isEditing ? "bg-muted/30" : ""}
-                        />
-                    </div>
+                    />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">邮箱</label>
-                        <Input
-                          name="email"
-                      value={isEditing ? formData.email : user.email} 
+                    <Input
+                      name="email"
+                      value={isEditing ? formData.email : user.email}
                       disabled={!isEditing}
-                          onChange={handleInputChange}
+                      onChange={handleInputChange}
                       className={!isEditing ? "bg-muted/30" : ""}
-                        />
-                    </div>
+                    />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">注册时间</label>
-                      <Input
-                      value={user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'} 
-                        disabled
+                    <Input
+                      value={user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'}
+                      disabled
                       className="bg-slate-50"
-                      />
+                    />
                   </div>
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-sm font-medium text-foreground">个人简介</label>
@@ -246,11 +248,13 @@ const Profile: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="account" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="account">账户状态</TabsTrigger>
                     <TabsTrigger value="comments">我的评论</TabsTrigger>
                     <TabsTrigger value="likes">我的喜爱</TabsTrigger>
                     <TabsTrigger value="collections">我的收藏</TabsTrigger>
+                    <TabsTrigger value="followers">我的粉丝</TabsTrigger>
+                    <TabsTrigger value="following">我关注的</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="account" className="space-y-4">
@@ -303,6 +307,14 @@ const Profile: React.FC = () => {
 
                   <TabsContent value="collections">
                     <CollectionsManager />
+                  </TabsContent>
+
+                  <TabsContent value="followers">
+                    <MyFollowers />
+                  </TabsContent>
+
+                  <TabsContent value="following">
+                    <MyFollowing />
                   </TabsContent>
                 </Tabs>
               </CardContent>

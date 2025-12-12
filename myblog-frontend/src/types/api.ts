@@ -343,3 +343,25 @@ export interface CollectResultDTO {
   message: string;
   folderId?: number;
 }
+
+// ========== 关注相关类型定义 ==========
+
+// 用户关注关系VO
+export interface UserFollowVO {
+  userId: number;
+  username: string;
+  nickname?: string;
+  avatar?: string;
+  bio?: string;
+  followTime: string;
+  isFollowing: boolean;
+}
+
+// 关注响应数据
+export interface FollowPageResponse {
+  records: UserFollowVO[];
+  total: number;
+  current: number;
+  size: number;
+  pages?: number;
+}

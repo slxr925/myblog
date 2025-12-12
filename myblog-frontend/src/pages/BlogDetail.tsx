@@ -10,6 +10,7 @@ import type { BlogDetailVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { CommentSection } from '../components/comment/CommentSection';
 import CollectButton from '../components/blog/CollectButton';
+import FollowButton from '../components/user/FollowButton';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -86,7 +87,7 @@ const BlogDetail: React.FC = () => {
           text: blogData.summary,
           url: window.location.href,
         });
-      } catch (error) {}
+      } catch (error) { }
     } else {
       navigator.clipboard.writeText(window.location.href);
     }
@@ -108,8 +109,8 @@ const BlogDetail: React.FC = () => {
   if (!blog) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-            <h2 className="text-xl font-bold mb-2">文章不存在</h2>
-            <Button onClick={() => navigate('/')}>返回首页</Button>
+        <h2 className="text-xl font-bold mb-2">文章不存在</h2>
+        <Button onClick={() => navigate('/')}>返回首页</Button>
       </div>
     );
   }
@@ -127,11 +128,11 @@ const BlogDetail: React.FC = () => {
               {blogData.publishTime ? new Date(blogData.publishTime).toLocaleDateString('zh-CN') : '未知日期'}
             </span>
           </div>
-          
+
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-8 leading-tight">
-              {blogData.title}
-            </h1>
-            
+            {blogData.title}
+          </h1>
+
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
@@ -145,8 +146,14 @@ const BlogDetail: React.FC = () => {
                   <span>{blogData.viewCount} views</span>
                 </div>
               </div>
+              {/* 新增关注按钮 */}
+              <FollowButton
+                userId={blogData.authorId}
+                username={blogData.authorName}
+                size="sm"
+              />
             </div>
-            
+
             <div className="flex gap-2">
               <Button
                 variant={isLiked ? "default" : "secondary"}
@@ -174,16 +181,16 @@ const BlogDetail: React.FC = () => {
         {/* Main Content */}
         <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
           {blogData.coverImg && (
-            <img 
-              src={blogData.coverImg} 
-              alt={blogData.title} 
+            <img
+              src={blogData.coverImg}
+              alt={blogData.title}
               className="w-full aspect-video object-cover mb-10 rounded-2xl"
             />
           )}
-          
-            {blogData.content ? (
-              <MarkdownRenderer content={blogData.content} />
-            ) : (
+
+          {blogData.content ? (
+            <MarkdownRenderer content={blogData.content} />
+          ) : (
             <p className="text-muted-foreground">暂无内容</p>
           )}
         </article>
@@ -200,15 +207,15 @@ const BlogDetail: React.FC = () => {
             <h3 className="font-bold text-lg mb-2">订阅更新</h3>
             <p className="text-indigo-100 text-sm mb-4">每周精选技术文章，直接发送到你的邮箱。</p>
             <div className="space-y-3">
-              <input 
-                type="email" 
-                placeholder="your@email.com" 
+              <input
+                type="email"
+                placeholder="your@email.com"
                 className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
               />
               <Button className="w-full bg-white text-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-50 border-none">
                 订阅
               </Button>
-              </div>
+            </div>
           </div>
         </aside>
       </div>
@@ -219,7 +226,7 @@ const BlogDetail: React.FC = () => {
           <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
             <MessageCircle className="w-6 h-6" /> 评论 ({commentCount})
           </h3>
-            <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
+          <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
         </div>
       </div>
     </div>

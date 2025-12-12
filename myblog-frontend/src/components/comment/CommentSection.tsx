@@ -12,6 +12,7 @@ import { api } from '../../utils/api';
 import type { CommentVO, CommentCreateDTO } from '../../types/api';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import FollowButton from '../user/FollowButton';
 
 interface CommentSectionProps {
   blogId: number;
@@ -68,13 +69,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={comment.userAvatar} alt={comment.userName} />
+                <AvatarImage src={comment.userAvatar} alt={comment.nickname || comment.username} />
                 <AvatarFallback className="text-sm">
                   <User className="w-4 h-4" />
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium text-gray-800">{comment.userName}</div>
+                <div className="font-medium text-gray-800">{comment.nickname || comment.username}</div>
                 <div className="text-xs text-gray-500">
                   {formatDistanceToNow(new Date(comment.createTime), {
                     addSuffix: true,
@@ -82,6 +83,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   })}
                 </div>
               </div>
+              {/* 新增关注按钮 */}
+              <FollowButton
+                userId={comment.userId}
+                username={comment.nickname || comment.username}
+                size="sm"
+                variant="ghost"
+              />
             </div>
             <div className="flex items-center space-x-2">
               <Button
