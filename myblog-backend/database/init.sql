@@ -219,6 +219,10 @@ ON DUPLICATE KEY UPDATE create_time = NOW();
 -- 设置数据库字符集
 ALTER DATABASE myblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- ============================================
+-- 扩展功能表：收藏和用户关注
+-- ============================================
+
 -- 收藏夹分类表
 CREATE TABLE IF NOT EXISTS tb_collection_folder (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
@@ -260,6 +264,32 @@ CREATE TABLE IF NOT EXISTS tb_user_collection (
     FOREIGN KEY (folder_id) REFERENCES tb_collection_folder(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收藏表';
 
+-- 用户关注关系表
+CREATE TABLE IF NOT EXISTS tb_user_follow (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关注关系ID',
+    follower_id BIGINT NOT NULL COMMENT '关注者ID（粉丝）',
+    followee_id BIGINT NOT NULL COMMENT '被关注者ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    
+    -- 唯一索引：防止重复关注
+    UNIQUE KEY uk_follower_followee (follower_id, followee_id, deleted),
+    
+    -- 索引：优化查询粉丝列表（谁关注了我）
+    INDEX idx_followee_id (followee_id, deleted, create_time),
+    
+    -- 索引：优化查询关注列表（我关注了谁）
+    INDEX idx_follower_id (follower_id, deleted, create_time),
+    
+    -- 索引：优化按时间查询
+    INDEX idx_create_time (create_time),
+    
+    -- 外键约束：确保数据一致性
+    FOREIGN KEY (follower_id) REFERENCES tb_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (followee_id) REFERENCES tb_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户关注关系表';
+
 -- 为所有现有用户创建默认收藏夹
 INSERT INTO tb_collection_folder (user_id, name, is_default, sort_order)
 SELECT
@@ -273,3 +303,4 @@ WHERE id NOT IN (
     FROM tb_collection_folder
     WHERE deleted = 0
 );
+
