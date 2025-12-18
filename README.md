@@ -166,14 +166,21 @@ cd /path/to/myblog
 
 ---
 
-### 详细文档
+### 📚 文档中心
+
+**完整文档请查看：** [doc/README.md](doc/README.md)
 
 | 文档 | 说明 | 适用场景 |
 |------|------|---------|
-| 📖 [deploy/README.md](deploy/README.md) | **完整部署指南** | 首次部署必读 ⭐ |
-| 🔄 [版本迭代流程](deploy/README.md#-版本迭代流程) | 代码更新后如何部署 | 日常最常用 ⭐⭐⭐ |
-| 🔑 [deploy/SSH-SETUP.md](deploy/SSH-SETUP.md) | SSH密钥配置 | 实现一键部署 |
-| ⚙️ [配置管理](deploy/README.md#-核心配置) | 环境变量和配置 | 修改配置时查看 |
+| 📖 [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md) | **完整部署手册** | 首次部署必读 ⭐ |
+| 🚀 [doc/QUICK-ITERATION.md](doc/QUICK-ITERATION.md) | **快速迭代部署** | 日常开发最常用 ⭐⭐⭐ |
+| 🔐 [doc/SSH-SETUP.md](doc/SSH-SETUP.md) | **SSH密钥配置** | 实现一键部署 |
+| 🏗️ [doc/PROJECT-STRUCTURE.md](doc/PROJECT-STRUCTURE.md) | **项目结构说明** | 了解项目架构 |
+
+**快速开始：**
+- 🆕 首次部署 → [DEPLOYMENT.md](doc/DEPLOYMENT.md)
+- 🔄 日常更新 → [QUICK-ITERATION.md](doc/QUICK-ITERATION.md)
+- 💻 本地开发 → 参考项目结构文档
 
 ### 常用运维命令
 
