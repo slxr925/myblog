@@ -89,7 +89,7 @@ const EnhancedBlog = () => {
     const fetchPosts = async () => {
       setLoading(true);
       try {
-        const result = await api.blog.getLatest(9);
+        const result = await api.blog.getLatest(6);
         const blogData = extractBlogArray(result);
         setPosts(convertBlogsToPosts(blogData));
       } catch (error) {
@@ -106,31 +106,31 @@ const EnhancedBlog = () => {
       {/* Hero Section */}
       <div className="relative bg-background border-b border-border overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-background to-purple-50/30 dark:from-indigo-950/30 dark:via-background dark:to-purple-950/20 pointer-events-none" />
-        
-        <div className="container mx-auto px-4 pt-20 pb-24 relative">
+
+        <div className="container mx-auto px-4 pt-12 pb-16 relative">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <Badge className="mb-6">👋 Welcome to my digital garden</Badge>
-              <h1 className="text-5xl md:text-7xl font-bold text-foreground mt-2 mb-8 tracking-tight leading-tight">
-                探索技术边界 <br/>
+              <Badge className="mb-4">👋 Welcome to my digital garden</Badge>
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground mt-2 mb-6 tracking-tight leading-tight">
+                探索技术边界 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
                   分享代码与思考
                 </span>
               </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
                 这里是 Ryan 的个人博客。我热衷于分享全栈开发、架构设计与 AI 技术落地的心得体会。希望这些文字能给你带来启发。
               </p>
-              <div className="flex justify-center gap-4">
-                <Button className="px-8 py-6 text-lg rounded-2xl" onClick={handleScrollToPosts}>
-                  开始阅读 <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-                <Button variant="secondary" className="px-8 py-6 text-lg rounded-2xl" onClick={handleNavigateToAbout}>
+              <div className="flex justify-center gap-3">
+                <Button className="px-6 py-5 text-base rounded-2xl" onClick={handleScrollToPosts}>
+                  开始阅读 <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button variant="secondary" className="px-6 py-5 text-base rounded-2xl" onClick={handleNavigateToAbout}>
                   关于作者
-            </Button>
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -145,15 +145,15 @@ const EnhancedBlog = () => {
             <p className="text-muted-foreground mt-2">探索最新的深度技术分享</p>
           </div>
           <Button variant="ghost" onClick={handleNavigateToBlog}>查看全部 <ArrowRight className="w-4 h-4 ml-2" /></Button>
-          </div>
+        </div>
 
-              {loading ? (
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="bg-card rounded-3xl h-96 animate-pulse border border-border" />
             ))}
           </div>
-              ) : (
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post, index) => (
               <BlogCard
@@ -165,7 +165,7 @@ const EnhancedBlog = () => {
             ))}
           </div>
         )}
-        </div>
+      </div>
     </div>
   );
 };
