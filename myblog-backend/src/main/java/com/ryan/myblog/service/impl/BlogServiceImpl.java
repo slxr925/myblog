@@ -51,7 +51,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 public class BlogServiceImpl implements BlogService {
-    
+
     private final BlogMapper blogMapper;
     private final BlogTagMapper blogTagMapper;
     private final TagMapper tagMapper;
@@ -65,7 +65,7 @@ public class BlogServiceImpl implements BlogService {
     private final BlogDocumentConverter blogDocumentConverter;
     private final SecurityUtils securityUtils;
     private final RedisTemplate<String, Object> redisTemplate;
-    
+
     @Override
     @Transactional
     public BlogDetailVO saveBlog(BlogSaveDTO blogSaveDTO, Long authorId) {
@@ -87,18 +87,18 @@ public class BlogServiceImpl implements BlogService {
         blog.setLikeCount(0);
         blog.setCommentCount(0);
         blog.setStatusChangedTime(LocalDateTime.now());
-        
+
         if (blogSaveDTO.getStatus() == 1) { // 已发布
             blog.setPublishTime(LocalDateTime.now());
         }
-        
+
         // 保存博客
         blogMapper.insert(blog);
-        
+
         // 保存标签关联
         List<Long> tagIds = resolveTagIds(blogSaveDTO);
         saveBlogTags(blog.getId(), tagIds);
-        
+
         // 清除相关缓存
         clearBlogCaches();
 
@@ -117,7 +117,7 @@ public class BlogServiceImpl implements BlogService {
         }
         return detail;
     }
-    
+
     @Override
     @Transactional
     public BlogDetailVO updateBlog(Long id, BlogSaveDTO blogSaveDTO, Long authorId) {
@@ -131,7 +131,7 @@ public class BlogServiceImpl implements BlogService {
         if (!existBlog.getAuthorId().equals(authorId)) {
             throw new RuntimeException("无权限修改此博客");
         }
-        
+
         Integer previousStatus = existBlog.getStatus();
 
         // 更新博客信息
@@ -141,10 +141,11 @@ public class BlogServiceImpl implements BlogService {
         existBlog.setCoverImg(blogSaveDTO.getCoverImg());
         existBlog.setCategoryId(blogSaveDTO.getCategoryId());
         existBlog.setStatus(blogSaveDTO.getStatus());
-        Integer visibility = blogSaveDTO.getVisibility() != null ? blogSaveDTO.getVisibility() : existBlog.getVisibility();
+        Integer visibility = blogSaveDTO.getVisibility() != null ? blogSaveDTO.getVisibility()
+                : existBlog.getVisibility();
         existBlog.setVisibility(visibility != null ? visibility : 1);
         existBlog.setIsTop(blogSaveDTO.getIsTop());
-        
+
         if (!Objects.equals(previousStatus, blogSaveDTO.getStatus())) {
             existBlog.setStatusChangedTime(LocalDateTime.now());
         }
@@ -152,14 +153,14 @@ public class BlogServiceImpl implements BlogService {
         if (blogSaveDTO.getStatus() == 1 && existBlog.getPublishTime() == null) {
             existBlog.setPublishTime(LocalDateTime.now());
         }
-        
+
         blogMapper.updateById(existBlog);
-        
+
         // 更新标签关联
         blogTagMapper.deleteByBlogId(id);
         List<Long> tagIds = resolveTagIds(blogSaveDTO);
         saveBlogTags(id, tagIds);
-        
+
         // 清除缓存
         clearBlogCache(id);
         clearBlogCaches();
@@ -177,7 +178,7 @@ public class BlogServiceImpl implements BlogService {
         } else if (existBlog.getStatus() != 1) {
             // 如果博客不再是已发布状态，从ES删除 - 不阻塞主流程
             try {
-            deleteBlogFromElasticsearch(existBlog.getId());
+                deleteBlogFromElasticsearch(existBlog.getId());
             } catch (Exception e) {
                 log.error("从ES删除博客索引失败(不影响主流程): {}", existBlog.getId(), e);
             }
@@ -207,7 +208,7 @@ public class BlogServiceImpl implements BlogService {
 
         // 记录删除操作
         log.info("用户 {} 删除博客 {} (作者: {}, 标题: {})",
-                 operatorId, id, blog.getAuthorId(), blog.getTitle());
+                operatorId, id, blog.getAuthorId(), blog.getTitle());
 
         blogMapper.deleteById(id);
         blogTagMapper.deleteByBlogId(id);
@@ -221,15 +222,15 @@ public class BlogServiceImpl implements BlogService {
 
         // 从ES删除索引 - 不阻塞主流程
         try {
-        deleteBlogFromElasticsearch(id);
+            deleteBlogFromElasticsearch(id);
         } catch (Exception e) {
             log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
         }
     }
-    
+
     @Override
     public IPage<BlogDetailVO> getBlogPage(PageRequest pageRequest, Long categoryId,
-                                          Long tagId, String keyword, Integer status) {
+            Long tagId, String keyword, Integer status) {
         Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
 
         // 使用新的查询方法，已经包含标签信息，无需额外查询
@@ -237,7 +238,7 @@ public class BlogServiceImpl implements BlogService {
 
         return result;
     }
-    
+
     @Override
     public BlogDetailVO getBlogDetail(Long id) {
         return getBlogDetail(id, null);
@@ -273,7 +274,7 @@ public class BlogServiceImpl implements BlogService {
 
         return blog;
     }
-    
+
     @Override
     public void incrementViewCount(Long id) {
         // 使用Redis进行浏览量去重，防止同一用户短时间内重复计数
@@ -283,8 +284,7 @@ public class BlogServiceImpl implements BlogService {
         try {
             // 尝试设置今日访问标记，30分钟过期
             Boolean isNewView = redisTemplate.opsForValue().setIfAbsent(
-                viewKey + ":" + today, "1", 30, TimeUnit.MINUTES
-            );
+                    viewKey + ":" + today, "1", 30, TimeUnit.MINUTES);
 
             if (Boolean.TRUE.equals(isNewView)) {
                 // 只有新的访问才增加浏览量
@@ -299,7 +299,7 @@ public class BlogServiceImpl implements BlogService {
             blogMapper.incrementViewCount(id);
         }
     }
-    
+
     @Override
     @Transactional
     public Boolean toggleLike(Long id, Long userId) {
@@ -424,7 +424,7 @@ public class BlogServiceImpl implements BlogService {
 
         return new LikeResultDTO(finalIsLiked, updatedBlog.getLikeCount(), updatedBlog.getViewCount());
     }
-    
+
     @Override
     public void publishBlog(Long id, Long authorId) {
         Blog blog = blogMapper.selectById(id);
@@ -434,18 +434,18 @@ public class BlogServiceImpl implements BlogService {
         if (!checkBlogPermission(blog.getAuthorId(), authorId)) {
             throw new RuntimeException("无权限发布此博客");
         }
-        
+
         blog.setStatus(1);
         blog.setVisibility(1);
         blog.setPublishTime(LocalDateTime.now());
         blog.setStatusChangedTime(LocalDateTime.now());
         blogMapper.updateById(blog);
         log.info("用户 {} 发布博客 {}", authorId, id);
-        
+
         // 清除相关缓存
         clearBlogCache(id);
         clearBlogCaches();
-        
+
         // 更新缓存版本
         cacheConsistencyService.updateCacheVersion("blog:*");
 
@@ -468,27 +468,27 @@ public class BlogServiceImpl implements BlogService {
         if (!checkBlogPermission(blog.getAuthorId(), authorId)) {
             throw new RuntimeException("无权限下线此博客");
         }
-        
+
         blog.setStatus(2);
         blog.setStatusChangedTime(LocalDateTime.now());
         blogMapper.updateById(blog);
         log.info("用户 {} 将博客 {} 下线", authorId, id);
-        
+
         // 清除相关缓存
         clearBlogCache(id);
         clearBlogCaches();
-        
+
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("blog:*", "博客下线");
 
         // 从ES删除索引（因为博客不再是已发布状态）- 异步操作,不阻塞主流程
         try {
-        deleteBlogFromElasticsearch(id);
+            deleteBlogFromElasticsearch(id);
         } catch (Exception e) {
             log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
         }
     }
-    
+
     /**
      * 保存博客标签关联
      */
@@ -505,10 +505,10 @@ public class BlogServiceImpl implements BlogService {
                     return blogTag;
                 })
                 .collect(Collectors.toList());
-        
+
         blogTagMapper.insertBatch(blogTags);
     }
-    
+
     @Override
     public List<BlogDetailVO> getRelatedBlogs(Long blogId, int limit) {
         // 获取当前博客信息
@@ -525,12 +525,11 @@ public class BlogServiceImpl implements BlogService {
 
         // 使用新的查询方法，已经包含标签信息
         List<BlogDetailVO> relatedBlogs = blogMapper.selectRelatedBlogsWithTags(
-            blogId, currentBlog.getCategoryId(), tagIds, limit
-        );
+                blogId, currentBlog.getCategoryId(), tagIds, limit);
 
         return relatedBlogs;
     }
-    
+
     @Override
     public BlogDetailVO getPreviousBlog(Long blogId, Long categoryId) {
         BlogDetailVO previousBlog = blogMapper.selectPreviousBlog(blogId, categoryId);
@@ -539,7 +538,7 @@ public class BlogServiceImpl implements BlogService {
         }
         return previousBlog;
     }
-    
+
     @Override
     public BlogDetailVO getNextBlog(Long blogId, Long categoryId) {
         BlogDetailVO nextBlog = blogMapper.selectNextBlog(blogId, categoryId);
@@ -548,12 +547,12 @@ public class BlogServiceImpl implements BlogService {
         }
         return nextBlog;
     }
-    
+
     @Override
-    @SuppressWarnings("unchecked")
     public List<BlogDetailVO> getHotBlogs(int limit) {
         String cacheKey = "blog:hot:" + limit;
-        List<BlogDetailVO> hotBlogs = cacheService.get(cacheKey, List.class);
+        // 使用getList正确处理泛型列表的反序列化
+        List<BlogDetailVO> hotBlogs = cacheService.getList(cacheKey, BlogDetailVO.class);
 
         if (hotBlogs == null) {
             // 使用新的查询方法，已经包含标签信息
@@ -565,12 +564,12 @@ public class BlogServiceImpl implements BlogService {
 
         return hotBlogs;
     }
-    
+
     @Override
-    @SuppressWarnings("unchecked")
     public List<BlogDetailVO> getLatestBlogs(int limit) {
         String cacheKey = "blog:latest:" + limit;
-        List<BlogDetailVO> latestBlogs = cacheService.get(cacheKey, List.class);
+        // 使用getList正确处理泛型列表的反序列化
+        List<BlogDetailVO> latestBlogs = cacheService.getList(cacheKey, BlogDetailVO.class);
 
         if (latestBlogs == null) {
             // 使用新的查询方法，已经包含标签信息
@@ -582,7 +581,27 @@ public class BlogServiceImpl implements BlogService {
 
         return latestBlogs;
     }
-    
+
+    @Override
+    public List<BlogListVO> getRecentBlogs(int limit) {
+        List<BlogDetailVO> latest = getLatestBlogs(limit);
+        return latest.stream()
+                .map(blog -> {
+                    BlogListVO vo = new BlogListVO();
+                    vo.setId(blog.getId());
+                    vo.setTitle(blog.getTitle());
+                    vo.setSummary(blog.getSummary());
+                    vo.setCoverImage(blog.getCoverImg());
+                    vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L);
+                    vo.setLikeCount(blog.getLikeCount() != null ? blog.getLikeCount().longValue() : 0L);
+                    vo.setCommentCount(blog.getCommentCount() != null ? blog.getCommentCount().longValue() : 0L);
+                    vo.setPublishTime(blog.getPublishTime());
+                    vo.setCategoryName(blog.getCategoryName());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Override
     public List<BlogDetailVO> getBlogsByCategory(Long categoryId, int limit) {
         List<BlogDetailVO> blogs = blogMapper.selectBlogsByCategory(categoryId, limit);
@@ -591,13 +610,13 @@ public class BlogServiceImpl implements BlogService {
         });
         return blogs;
     }
-    
+
     @Override
     public List<BlogDetailVO> getBlogsByTags(List<Long> tagIds, Long excludeBlogId, int limit) {
         if (tagIds == null || tagIds.isEmpty()) {
             return List.of();
         }
-        
+
         List<BlogDetailVO> blogs = blogMapper.selectBlogsByTags(tagIds, excludeBlogId, limit);
         blogs.forEach(blog -> {
             blog.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
@@ -675,8 +694,7 @@ public class BlogServiceImpl implements BlogService {
 
         // 获取标签信息
         List<BlogTag> blogTags = blogTagMapper.selectList(
-                new LambdaQueryWrapper<BlogTag>().eq(BlogTag::getBlogId, blog.getId())
-        );
+                new LambdaQueryWrapper<BlogTag>().eq(BlogTag::getBlogId, blog.getId()));
         if (!blogTags.isEmpty()) {
             List<Long> tagIds = blogTags.stream().map(BlogTag::getTagId).collect(Collectors.toList());
             List<Tag> tags = tagMapper.selectBatchIds(tagIds);
@@ -746,7 +764,7 @@ public class BlogServiceImpl implements BlogService {
 
         // 草稿不应该在ES中出现 - 不阻塞主流程
         try {
-        deleteBlogFromElasticsearch(id);
+            deleteBlogFromElasticsearch(id);
         } catch (Exception e) {
             log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
         }
@@ -764,7 +782,7 @@ public class BlogServiceImpl implements BlogService {
         // 使用MySQL全文索引搜索（性能优化）
         try {
             List<Blog> results = searchWithFullText(trimmedKeyword, resultLimit);
-            
+
             // 如果全文索引搜索无结果，尝试智能分割关键词后重试
             if (results.isEmpty()) {
                 List<String> smartKeywords = smartSplitKeyword(trimmedKeyword);
@@ -772,20 +790,20 @@ public class BlogServiceImpl implements BlogService {
                     if (!smartKeyword.equals(trimmedKeyword)) {
                         results = searchWithFullText(smartKeyword, resultLimit);
                         if (!results.isEmpty()) {
-                            log.debug("智能分割搜索成功 - 原词: '{}', 分割后: '{}', 结果数量: {}", 
+                            log.debug("智能分割搜索成功 - 原词: '{}', 分割后: '{}', 结果数量: {}",
                                     trimmedKeyword, smartKeyword, results.size());
                             break;
                         }
                     }
                 }
             }
-            
+
             // 返回全文索引搜索结果（可能为空）
             log.debug("全文索引搜索 - 关键词: '{}', 结果数量: {}", trimmedKeyword, results.size());
             return convertToBlogListVOs(results);
         } catch (Exception e) {
             log.warn("全文索引搜索失败，降级到LIKE搜索: {}", e.getMessage());
-            
+
             // 降级：使用LIKE搜索
             String[] keywords = trimmedKeyword.split("\\s+");
             LambdaQueryWrapper<Blog> queryWrapper = createPublishedBlogQuery();
@@ -794,25 +812,23 @@ public class BlogServiceImpl implements BlogService {
                 queryWrapper.and(wrapper -> wrapper
                         .like(Blog::getTitle, trimmedKeyword)
                         .or().like(Blog::getSummary, trimmedKeyword)
-                        .or().like(Blog::getContent, trimmedKeyword)
-                );
+                        .or().like(Blog::getContent, trimmedKeyword));
             } else {
                 queryWrapper.and(outerWrapper -> {
                     for (int i = 0; i < keywords.length; i++) {
                         String kw = keywords[i].trim();
-                        if (kw.isEmpty()) continue;
+                        if (kw.isEmpty())
+                            continue;
                         if (i == 0) {
                             outerWrapper.and(wrapper -> wrapper
                                     .like(Blog::getTitle, kw)
                                     .or().like(Blog::getSummary, kw)
-                                    .or().like(Blog::getContent, kw)
-                            );
+                                    .or().like(Blog::getContent, kw));
                         } else {
                             outerWrapper.or(wrapper -> wrapper
                                     .like(Blog::getTitle, kw)
                                     .or().like(Blog::getSummary, kw)
-                                    .or().like(Blog::getContent, kw)
-                            );
+                                    .or().like(Blog::getContent, kw));
                         }
                     }
                 });
@@ -888,7 +904,7 @@ public class BlogServiceImpl implements BlogService {
         if (keyword.matches("^[a-zA-Z]+$") && keyword.length() > 6) {
             // 尝试常见的分割点
             String lowerKeyword = keyword.toLowerCase();
-            
+
             // 常见技术词模式：spring*, vue*, react*, docker*
             if (lowerKeyword.startsWith("spring")) {
                 variants.add("spring " + keyword.substring(6));
@@ -906,7 +922,7 @@ public class BlogServiceImpl implements BlogService {
                 variants.add("mysql " + keyword.substring(5));
                 variants.add("MySQL " + keyword.substring(5));
             }
-            
+
             // 通用分割：在中间插入空格尝试
             int midPoint = keyword.length() / 2;
             for (int i = midPoint - 2; i <= midPoint + 2 && i > 0 && i < keyword.length(); i++) {
@@ -930,8 +946,8 @@ public class BlogServiceImpl implements BlogService {
     /**
      * 执行搜索查询（统一排序和限制）
      */
-    private List<Blog> executeSearchQuery(LambdaQueryWrapper<Blog> queryWrapper, Integer limit, 
-                                          String searchType, String searchTerm) {
+    private List<Blog> executeSearchQuery(LambdaQueryWrapper<Blog> queryWrapper, Integer limit,
+            String searchType, String searchTerm) {
         int resultLimit = limit != null && limit > 0 ? limit : 20;
         queryWrapper.orderByDesc(Blog::getIsTop)
                 .orderByDesc(Blog::getPublishTime)
@@ -973,7 +989,7 @@ public class BlogServiceImpl implements BlogService {
     private void clearBlogCache(Long blogId) {
         cacheService.delete("blog:detail:" + blogId);
     }
-    
+
     /**
      * 清除博客相关缓存
      */
@@ -999,24 +1015,24 @@ public class BlogServiceImpl implements BlogService {
 
         // 异步执行，避免阻塞主流程
         CompletableFuture.runAsync(() -> {
-        try {
-            // 获取作者信息
-            User author = userMapper.selectById(blog.getAuthorId());
-            // 获取分类信息
-            Category category = categoryMapper.selectById(blog.getCategoryId());
-            // 获取标签信息
-            List<Tag> tags = getBlogTags(blog.getId());
+            try {
+                // 获取作者信息
+                User author = userMapper.selectById(blog.getAuthorId());
+                // 获取分类信息
+                Category category = categoryMapper.selectById(blog.getCategoryId());
+                // 获取标签信息
+                List<Tag> tags = getBlogTags(blog.getId());
 
-            // 转换为ES文档
-            var document = blogDocumentConverter.convertToDocument(blog, author, category, tags);
+                // 转换为ES文档
+                var document = blogDocumentConverter.convertToDocument(blog, author, category, tags);
 
-            // 索引到ES
-            searchService.indexBlog(document);
+                // 索引到ES
+                searchService.indexBlog(document);
 
-            log.info("成功同步博客到ES: {}", blog.getId());
-        } catch (Exception e) {
+                log.info("成功同步博客到ES: {}", blog.getId());
+            } catch (Exception e) {
                 log.error("异步同步博客到ES失败: {}", blog.getId(), e);
-        }
+            }
         });
     }
 
@@ -1046,8 +1062,8 @@ public class BlogServiceImpl implements BlogService {
     private List<Tag> getBlogTags(Long blogId) {
         List<Long> tagIds = blogTagMapper.selectList(
                 new LambdaQueryWrapper<BlogTag>()
-                        .eq(BlogTag::getBlogId, blogId)
-        ).stream().map(BlogTag::getTagId).collect(Collectors.toList());
+                        .eq(BlogTag::getBlogId, blogId))
+                .stream().map(BlogTag::getTagId).collect(Collectors.toList());
 
         if (tagIds.isEmpty()) {
             return List.of();

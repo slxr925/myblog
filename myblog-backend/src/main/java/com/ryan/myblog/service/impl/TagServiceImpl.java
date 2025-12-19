@@ -32,34 +32,33 @@ public class TagServiceImpl implements TagService {
     private final BlogMapper blogMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
-    
+
     private static final String TAG_LIST_KEY = "tag:list";
     private static final long CACHE_EXPIRE_SECONDS = 3600; // 1小时
-    
+
     @Override
-    @SuppressWarnings("unchecked")
     public List<Tag> getAllTags() {
-        // 先从缓存中获取
-        List<Tag> tags = cacheService.get(TAG_LIST_KEY, List.class);
-        
+        // 先从缓存中获取，使用getList正确处理泛型列表的反序列化
+        List<Tag> tags = cacheService.getList(TAG_LIST_KEY, Tag.class);
+
         if (tags == null) {
             // 缓存中没有，从数据库查询
             LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
             wrapper.orderByDesc(Tag::getCreateTime);
             tags = tagMapper.selectList(wrapper);
-            
+
             // 存入缓存
             cacheService.set(TAG_LIST_KEY, tags, CACHE_EXPIRE_SECONDS);
         }
-        
+
         return tags;
     }
-    
+
     @Override
     public Tag getTagById(Long id) {
         return tagMapper.selectById(id);
     }
-    
+
     @Override
     @Transactional
     public void saveTag(Tag tag) {
@@ -106,34 +105,34 @@ public class TagServiceImpl implements TagService {
         cacheService.delete(TAG_LIST_KEY);
         cacheConsistencyService.updateCacheVersion("tag:*");
     }
-    
+
     @Override
     public List<TagVO> getTagsByBlogId(Long blogId) {
         return tagMapper.selectTagsByBlogId(blogId);
     }
-    
+
     @Override
     public List<Tag> saveTagsIfNotExist(List<String> tagNames) {
         List<Tag> tags = new ArrayList<>();
-        
+
         if (tagNames == null || tagNames.isEmpty()) {
             return tags;
         }
-        
+
         // 生成默认颜色列表
-        String[] colors = {"#f56a00", "#722ed1", "#1890ff", "#eb2f96", "#52c41a", 
-                          "#13c2c2", "#faad14", "#fa541c", "#2f54eb", "#389e0d"};
-        
+        String[] colors = { "#f56a00", "#722ed1", "#1890ff", "#eb2f96", "#52c41a",
+                "#13c2c2", "#faad14", "#fa541c", "#2f54eb", "#389e0d" };
+
         for (String tagName : tagNames) {
             if (!StringUtils.hasText(tagName)) {
                 continue;
             }
-            
+
             // 查询标签是否已存在
             LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Tag::getName, tagName.trim());
             Tag existTag = tagMapper.selectOne(wrapper);
-            
+
             if (existTag != null) {
                 tags.add(existTag);
             } else {
@@ -143,18 +142,18 @@ public class TagServiceImpl implements TagService {
                 newTag.setColor(colors[tags.size() % colors.length]); // 循环使用颜色
                 newTag.setCreateTime(LocalDateTime.now());
                 newTag.setUpdateTime(LocalDateTime.now());
-                
+
                 tagMapper.insert(newTag);
                 tags.add(newTag);
             }
         }
-        
+
         // 如果有新增标签，发布缓存失效通知
         if (!tags.isEmpty()) {
             cacheService.delete(TAG_LIST_KEY);
             cacheConsistencyService.updateCacheVersion("tag:*");
         }
-        
+
         return tags;
     }
 
@@ -181,8 +180,8 @@ public class TagServiceImpl implements TagService {
 
         // 获取已发布博客的标签关联
         List<Long> usedTagIds = blogTagMapper.selectList(
-                new LambdaQueryWrapper<BlogTag>().in(BlogTag::getBlogId, publishedBlogIds)
-        ).stream().map(BlogTag::getTagId).distinct().collect(Collectors.toList());
+                new LambdaQueryWrapper<BlogTag>().in(BlogTag::getBlogId, publishedBlogIds)).stream()
+                .map(BlogTag::getTagId).distinct().collect(Collectors.toList());
 
         // 查询标签信息
         if (!usedTagIds.isEmpty()) {

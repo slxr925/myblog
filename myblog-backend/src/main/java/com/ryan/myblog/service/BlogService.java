@@ -100,6 +100,11 @@ public interface BlogService {
     List<BlogDetailVO> getLatestBlogs(int limit);
     
     /**
+     * 获取最新博客（简化版）
+     */
+    List<BlogListVO> getRecentBlogs(int limit);
+    
+    /**
      * 根据分类获取推荐博客
      */
     List<BlogDetailVO> getBlogsByCategory(Long categoryId, int limit);

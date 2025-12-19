@@ -20,12 +20,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CacheServiceImpl implements CacheService {
-    
+
     private final RedisTemplate<String, Object> redisTemplate;
-    
+
     // 创建一个ObjectMapper实例，并注册Java 8时间模块
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-    
+
     @Override
     public void set(String key, Object value) {
         try {
@@ -35,7 +35,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("缓存设置失败: key={}, error={}", key, e.getMessage());
         }
     }
-    
+
     @Override
     public void set(String key, Object value, long seconds) {
         try {
@@ -45,7 +45,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("缓存设置失败: key={}, error={}", key, e.getMessage());
         }
     }
-    
+
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(String key, Class<T> clazz) {
@@ -54,20 +54,20 @@ public class CacheServiceImpl implements CacheService {
             if (value == null) {
                 return null;
             }
-            
+
             if (clazz.isInstance(value)) {
                 return (T) value;
             }
-            
+
             // 如果类型不匹配，尝试JSON转换
             if (value instanceof String) {
                 return objectMapper.readValue((String) value, clazz);
             }
-            
+
             // 尝试通过JSON序列化转换
             String json = objectMapper.writeValueAsString(value);
             return objectMapper.readValue(json, clazz);
-            
+
         } catch (JsonProcessingException e) {
             log.error("缓存JSON转换失败: key={}, error={}", key, e.getMessage());
             return null;
@@ -76,7 +76,55 @@ public class CacheServiceImpl implements CacheService {
             return null;
         }
     }
-    
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> List<T> getList(String key, Class<T> elementType) {
+        try {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value == null) {
+                return null;
+            }
+
+            // 如果已经是List类型
+            if (value instanceof List) {
+                List<?> list = (List<?>) value;
+                if (list.isEmpty()) {
+                    return new ArrayList<>();
+                }
+
+                // 检查第一个元素是否已经是目标类型
+                Object firstElement = list.get(0);
+                if (elementType.isInstance(firstElement)) {
+                    return (List<T>) list;
+                }
+
+                // 需要转换每个元素
+                List<T> result = new ArrayList<>();
+                for (Object item : list) {
+                    String json = objectMapper.writeValueAsString(item);
+                    T converted = objectMapper.readValue(json, elementType);
+                    result.add(converted);
+                }
+                return result;
+            }
+
+            // 如果是JSON字符串
+            if (value instanceof String) {
+                return objectMapper.readValue((String) value,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, elementType));
+            }
+
+            return null;
+        } catch (JsonProcessingException e) {
+            log.error("缓存列表JSON转换失败: key={}, error={}", key, e.getMessage());
+            return null;
+        } catch (Exception e) {
+            log.error("缓存列表获取失败: key={}, error={}", key, e.getMessage());
+            return null;
+        }
+    }
+
     @Override
     public void delete(String key) {
         try {
@@ -86,7 +134,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("缓存删除失败: key={}, error={}", key, e.getMessage());
         }
     }
-    
+
     @Override
     public boolean exists(String key) {
         try {
@@ -97,7 +145,7 @@ public class CacheServiceImpl implements CacheService {
             return false;
         }
     }
-    
+
     @Override
     public void expire(String key, long seconds) {
         try {
@@ -107,7 +155,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("缓存过期时间设置失败: key={}, error={}", key, e.getMessage());
         }
     }
-    
+
     @Override
     public void multiSet(Map<String, Object> keyValues) {
         try {
@@ -117,7 +165,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("批量缓存设置失败: error={}", e.getMessage());
         }
     }
-    
+
     @Override
     public void multiSet(Map<String, Object> keyValues, long seconds) {
         try {
@@ -133,7 +181,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("批量缓存设置失败: error={}", e.getMessage());
         }
     }
-    
+
     @Override
     @SuppressWarnings("unchecked")
     public <T> List<T> multiGet(List<String> keys, Class<T> clazz) {
@@ -142,7 +190,7 @@ public class CacheServiceImpl implements CacheService {
             if (values == null) {
                 return new ArrayList<>();
             }
-            
+
             return values.stream()
                     .map(value -> {
                         if (value == null) {
@@ -152,11 +200,11 @@ public class CacheServiceImpl implements CacheService {
                             if (clazz.isInstance(value)) {
                                 return (T) value;
                             }
-                            
+
                             if (value instanceof String) {
                                 return objectMapper.readValue((String) value, clazz);
                             }
-                            
+
                             String json = objectMapper.writeValueAsString(value);
                             return objectMapper.readValue(json, clazz);
                         } catch (JsonProcessingException e) {
@@ -170,7 +218,7 @@ public class CacheServiceImpl implements CacheService {
             return new ArrayList<>();
         }
     }
-    
+
     @Override
     public void multiDelete(List<String> keys) {
         try {
@@ -180,7 +228,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("批量缓存删除失败: error={}", e.getMessage());
         }
     }
-    
+
     @Override
     public void deleteByPattern(String pattern) {
         try {
@@ -193,7 +241,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("模式匹配缓存删除失败: pattern={}, error={}", pattern, e.getMessage());
         }
     }
-    
+
     @Override
     public Set<String> getKeysByPattern(String pattern) {
         try {
@@ -204,7 +252,7 @@ public class CacheServiceImpl implements CacheService {
             return new HashSet<>();
         }
     }
-    
+
     @Override
     public long getExpire(String key) {
         try {
@@ -215,12 +263,12 @@ public class CacheServiceImpl implements CacheService {
             return -1;
         }
     }
-    
+
     @Override
     public long increment(String key) {
         return increment(key, 1);
     }
-    
+
     @Override
     public long increment(String key, long delta) {
         try {
@@ -232,7 +280,7 @@ public class CacheServiceImpl implements CacheService {
             return 0;
         }
     }
-    
+
     @Override
     public long getSize(String key) {
         try {
@@ -243,7 +291,7 @@ public class CacheServiceImpl implements CacheService {
             return 0;
         }
     }
-    
+
     @Override
     public void clear() {
         try {
@@ -256,7 +304,7 @@ public class CacheServiceImpl implements CacheService {
             log.error("清除所有缓存失败: error={}", e.getMessage());
         }
     }
-    
+
     @Override
     public Map<String, Object> getCacheStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -270,11 +318,11 @@ public class CacheServiceImpl implements CacheService {
                 stats.put("keyspace_hits", info.getProperty("keyspace_hits"));
                 stats.put("keyspace_misses", info.getProperty("keyspace_misses"));
             }
-            
+
             // 获取缓存键数量
             Set<String> keys = redisTemplate.keys("*");
             stats.put("total_keys", keys != null ? keys.size() : 0);
-            
+
             // 按前缀统计
             Map<String, Long> keyPrefixStats = new HashMap<>();
             if (keys != null) {
@@ -284,7 +332,7 @@ public class CacheServiceImpl implements CacheService {
                 });
             }
             stats.put("key_prefix_stats", keyPrefixStats);
-            
+
         } catch (Exception e) {
             log.error("获取缓存统计信息失败: error={}", e.getMessage());
             stats.put("error", e.getMessage());

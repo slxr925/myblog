@@ -822,4 +822,17 @@ export const api = {
       return localStorage.getItem('token');
     },
   },
+
+  // AI助手相关API
+  ai: {
+    // AI聊天
+    chat: (request: { question: string; conversationId?: string; history?: { role: string; content: string }[] }) => {
+      return apiClient.post('/ai/chat', request);
+    },
+
+    // 获取AI助手介绍
+    getIntroduction: (): Promise<string> => {
+      return apiClient.get('/ai/introduction');
+    },
+  },
 };

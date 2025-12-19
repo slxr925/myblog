@@ -92,6 +92,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/cache/**").permitAll()
                 // 记录页面访问日志（允许匿名访问）
                 .requestMatchers("/api/admin/track-visit").permitAll()
+                // 允许访问AI助手接口
+                .requestMatchers("/api/ai/**").permitAll()
                 // 管理员专用接口
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // 博客管理接口需要管理员权限

@@ -23,32 +23,31 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
-    
+
     private final CategoryMapper categoryMapper;
     private final BlogMapper blogMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
-    
+
     private static final String CATEGORY_LIST_KEY = "category:list";
     private static final String CATEGORY_DETAIL_KEY_PREFIX = "category:detail:";
     private static final long CACHE_EXPIRE_SECONDS = 3600; // 1小时
-    
+
     @Override
-    @SuppressWarnings("unchecked")
     public List<Category> getAllCategories() {
-        // 先从缓存中获取
-        List<Category> categories = cacheService.get(CATEGORY_LIST_KEY, List.class);
-        
+        // 先从缓存中获取，使用getList正确处理泛型列表的反序列化
+        List<Category> categories = cacheService.getList(CATEGORY_LIST_KEY, Category.class);
+
         if (categories == null) {
             // 缓存中没有，从数据库查询
             LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
             wrapper.orderByAsc(Category::getSort, Category::getCreateTime);
             categories = categoryMapper.selectList(wrapper);
-            
+
             // 存入缓存
             cacheService.set(CATEGORY_LIST_KEY, categories, CACHE_EXPIRE_SECONDS);
         }
-        
+
         return categories;
     }
 
@@ -78,17 +77,17 @@ public class CategoryServiceImpl implements CategoryService {
     public Category getCategoryById(Long id) {
         String cacheKey = CATEGORY_DETAIL_KEY_PREFIX + id;
         Category category = cacheService.get(cacheKey, Category.class);
-        
+
         if (category == null) {
             category = categoryMapper.selectById(id);
             if (category != null) {
                 cacheService.set(cacheKey, category, CACHE_EXPIRE_SECONDS);
             }
         }
-        
+
         return category;
     }
-    
+
     @Override
     @Transactional
     public void saveCategory(Category category) {
@@ -129,14 +128,14 @@ public class CategoryServiceImpl implements CategoryService {
         // 发布缓存失效通知
         cacheConsistencyService.publishCacheInvalidation("category:*", "分类删除");
     }
-    
+
     /**
      * 清除单个分类缓存
      */
     private void clearCategoryCache(Long categoryId) {
         cacheService.delete(CATEGORY_DETAIL_KEY_PREFIX + categoryId);
     }
-    
+
     /**
      * 清除分类列表缓存
      */

@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { UserMenu } from '../auth/UserMenu';
 import ThemeToggle from '../theme/ThemeToggle';
 import RealTimeSearch from '../search/RealTimeSearch';
+import { AIAssistant } from '../ai/AIAssistant';
 import { Menu, X, Home, FileText, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -162,6 +163,9 @@ export const ModernLayout = () => {
           </div>
         </div>
       </footer>
+
+      {/* AI助手 */}
+      <AIAssistant />
     </div>
   );
 };

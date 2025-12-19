@@ -54,14 +54,21 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
       const searchData = response?.content ?? [];
 
       const formattedSuggestions = searchData.map((doc: any) => {
-        const docTags = Array.isArray(doc.tags) ? doc.tags : [];
+        // 处理tags：可能是字符串数组或对象数组
+        const rawTags = Array.isArray(doc.tags) ? doc.tags : [];
+        const parsedTags = rawTags.map((tag: any) => {
+          if (typeof tag === 'string') return tag;
+          if (tag && typeof tag === 'object' && 'name' in tag) return tag.name;
+          return '';
+        }).filter(Boolean);
+        
         const numericId = Number(doc.id);
         return {
           id: Number.isNaN(numericId) ? doc.id : numericId,
           title: doc.title,
           summary: doc.summary,
           categoryName: doc.categoryName,
-          tags: docTags
+          tags: parsedTags
         };
       });
 
