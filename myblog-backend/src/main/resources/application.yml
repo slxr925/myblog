@@ -25,12 +25,13 @@ spring:
 
   # AI配置
   ai:
-    enabled: ${AI_ENABLED:false}  # 默认禁用AI功能，避免没有API Key时报错
+    enabled: ${AI_ENABLED:true}  # 默认启用AI功能
     openai:
       api-key: ${OPENAI_API_KEY:}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       chat:
-        enabled: ${AI_ENABLED:false}  # 禁用自动配置
+        enabled: ${AI_ENABLED:true}
+        completions-path: ${OPENAI_COMPLETIONS_PATH:/v1/chat/completions}  # 自定义API路径
         options:
           model: ${OPENAI_MODEL:gpt-3.5-turbo}
           temperature: 0.7

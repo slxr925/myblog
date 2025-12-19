@@ -1,6 +1,6 @@
 # 生产环境配置
 spring:
-  # AI配置 - 默认禁用，通过环境变量启用
+  # AI配置 - 通过环境变量配置
   ai:
     enabled: ${AI_ENABLED:false}
     openai:
@@ -8,6 +8,7 @@ spring:
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       chat:
         enabled: ${AI_ENABLED:false}
+        completions-path: ${OPENAI_COMPLETIONS_PATH:/v1/chat/completions}
         options:
           model: ${OPENAI_MODEL:gpt-4o-mini}
           temperature: 0.7

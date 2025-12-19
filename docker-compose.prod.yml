@@ -16,7 +16,7 @@ services:
     networks:
       - myblog-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -50,6 +50,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_COMPLETIONS_PATH: ${OPENAI_COMPLETIONS_PATH:-/v1/chat/completions}
       JAVA_OPTS: "-Xms1g -Xmx2g -XX:+UseG1GC -XX:+UseContainerSupport"
     # 移除端口映射，只通过Nginx访问
     expose:
@@ -62,7 +63,7 @@ services:
     networks:
       - myblog-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -103,4 +104,3 @@ services:
 networks:
   myblog-network:
     driver: bridge
-
