@@ -1,7 +1,6 @@
 package com.ryan.myblog.event.listener;
 
 import com.ryan.myblog.event.LikeEvent;
-import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.model.entity.UserLike;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +47,6 @@ import java.time.LocalDateTime;
 public class LikeEventListener {
 
     private final UserLikeMapper userLikeMapper;
-    private final BlogMapper blogMapper;
 
     /**
      * 处理点赞事件
@@ -138,10 +136,6 @@ public class LikeEventListener {
             log.warn("重复的点赞事件: userId={}, blogId={}", userId, blogId);
             return;
         }
-
-        // 增加博客点赞数
-        blogMapper.incrementLikeCount(blogId);
-        log.debug("增加博客点赞数: blogId={}", blogId);
     }
 
     /**
@@ -175,9 +169,5 @@ public class LikeEventListener {
             log.warn("重复的取消点赞事件: userId={}, blogId={}", userId, blogId);
             return;
         }
-
-        // 减少博客点赞数
-        blogMapper.decrementLikeCount(blogId);
-        log.debug("减少博客点赞数: blogId={}", blogId);
     }
 }

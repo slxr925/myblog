@@ -63,7 +63,8 @@ public class LikeDataSyncTask {
      * - 足够及时发现并修复数据不一致
      * - 异步持久化一般在秒级完成，1小时足够排查问题
      */
-    @Scheduled(cron = "0 0 * * * ?")
+    // 注意：此任务已废弃，因为现在不再维护凗余的 like_count 字段
+    // @Scheduled(cron = "0 0 * * * ?")
     public void syncLikeData() {
         log.info("开始执行点赞数据同步任务...");
 
@@ -80,7 +81,9 @@ public class LikeDataSyncTask {
 
             for (Blog blog : blogs) {
                 try {
-                    SyncResult result = syncBlogLikeData(blog.getId(), blog.getLikeCount().longValue());
+                    // Blog 实体已无 likeCount 字段，需要实时查询
+                    Long mysqlCount = userLikeMapper.countByTarget("blog", blog.getId()).longValue();
+                    SyncResult result = syncBlogLikeData(blog.getId(), mysqlCount);
 
                     switch (result) {
                         case SYNCED_FROM_REDIS:
@@ -161,12 +164,12 @@ public class LikeDataSyncTask {
     @Transactional(rollbackFor = Exception.class)
     protected void syncFromRedisToMySQL(Long blogId, Long redisCount) {
         try {
-            // 1. 更新博客点赞总数
-            Blog blog = new Blog();
-            blog.setId(blogId);
-            blog.setLikeCount(redisCount.intValue());
-            blog.setUpdateTime(LocalDateTime.now());
-            blogMapper.updateById(blog);
+            // 1. 更新博客点赞总数（已废弃：Blog 实体已无 likeCount 字段）
+            // Blog blog = new Blog();
+            // blog.setId(blogId);
+            // blog.setLikeCount(redisCount.intValue());
+            // blog.setUpdateTime(LocalDateTime.now());
+            // blogMapper.updateById(blog);
 
             log.info("更新博客点赞数: blogId={}, count={}", blogId, redisCount);
 

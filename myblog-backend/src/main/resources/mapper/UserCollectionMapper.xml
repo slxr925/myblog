@@ -24,8 +24,11 @@
             b.visibility AS "blog.visibility",
             b.is_top AS "blog.isTop",
             b.view_count AS "blog.viewCount",
-            b.like_count AS "blog.likeCount",
-            b.comment_count AS "blog.commentCount",
+            (SELECT COUNT(*) FROM tb_user_like ul 
+             WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
+             AND ul.status = 1 AND ul.deleted = 0) AS "blog.likeCount",
+            (SELECT COUNT(*) FROM tb_comment c 
+             WHERE c.blog_id = b.id AND c.status = 1 AND c.deleted = 0) AS "blog.commentCount",
             b.publish_time AS "blog.publishTime",
             b.create_time AS "blog.createTime",
             b.update_time AS "blog.updateTime",
@@ -71,8 +74,11 @@
             b.visibility AS "blog.visibility",
             b.is_top AS "blog.isTop",
             b.view_count AS "blog.viewCount",
-            b.like_count AS "blog.likeCount",
-            b.comment_count AS "blog.commentCount",
+            (SELECT COUNT(*) FROM tb_user_like ul 
+             WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
+             AND ul.status = 1 AND ul.deleted = 0) AS "blog.likeCount",
+            (SELECT COUNT(*) FROM tb_comment c 
+             WHERE c.blog_id = b.id AND c.status = 1 AND c.deleted = 0) AS "blog.commentCount",
             b.publish_time AS "blog.publishTime",
             b.create_time AS "blog.createTime",
             b.update_time AS "blog.updateTime",

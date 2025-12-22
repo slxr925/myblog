@@ -37,8 +37,10 @@ public class BlogDocumentConverter {
         document.setStatus(blog.getStatus());
         document.setIsTop(blog.getIsTop() != null && blog.getIsTop() == 1);
         document.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L);
-        document.setLikeCount(blog.getLikeCount() != null ? blog.getLikeCount().longValue() : 0L);
-        document.setCommentCount(blog.getCommentCount() != null ? blog.getCommentCount().longValue() : 0L);
+        // 注意：like_count 和 comment_count 已从 Blog 实体删除，这里设置为 0
+        // 如果需要，应该在调用者传入实际的计数值
+        document.setLikeCount(0L);
+        document.setCommentCount(0L);
         document.setPublishTime(blog.getPublishTime());
         document.setCreateTime(blog.getCreateTime());
         document.setUpdateTime(blog.getUpdateTime());
@@ -88,8 +90,7 @@ public class BlogDocumentConverter {
         blog.setStatus(document.getStatus());
         blog.setIsTop(document.getIsTop() != null && document.getIsTop() ? 1 : 0);
         blog.setViewCount(document.getViewCount() != null ? document.getViewCount().intValue() : 0);
-        blog.setLikeCount(document.getLikeCount() != null ? document.getLikeCount().intValue() : 0);
-        blog.setCommentCount(document.getCommentCount() != null ? document.getCommentCount().intValue() : 0);
+        // likeCount 和 commentCount 已从 Blog 实体删除，不再设置
         blog.setPublishTime(document.getPublishTime());
         blog.setCreateTime(document.getCreateTime());
         blog.setUpdateTime(document.getUpdateTime());

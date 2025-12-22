@@ -38,7 +38,6 @@ public class CommentServiceImpl implements CommentService {
     private final CommentMapper commentMapper;
     private final UserMapper userMapper;
     private final UserLikeMapper userLikeMapper;
-    private final BlogMapper blogMapper;
     private final CacheService cacheService;
 
     @Override
@@ -58,14 +57,10 @@ public class CommentServiceImpl implements CommentService {
 
         comment.setReplyUserId(commentSaveDTO.getReplyUserId());
         comment.setStatus(1); // 默认通过审核，如需要审核可设为0
-        comment.setLikeCount(0);
         comment.setCreateTime(LocalDateTime.now());
         comment.setUpdateTime(LocalDateTime.now());
 
         commentMapper.insert(comment);
-
-        // 更新博客评论数
-        blogMapper.incrementCommentCount(commentSaveDTO.getBlogId());
 
         // 清除博客列表缓存
         clearBlogCaches();
@@ -163,11 +158,7 @@ public class CommentServiceImpl implements CommentService {
             throw new RuntimeException("无权限删除此评论");
         }
 
-        Long blogId = comment.getBlogId();
         commentMapper.deleteById(id);
-
-        // 更新博客评论数
-        blogMapper.decrementCommentCount(blogId);
 
         // 清除博客列表缓存
         clearBlogCaches();
@@ -196,9 +187,6 @@ public class CommentServiceImpl implements CommentService {
             newLike.setUpdateTime(LocalDateTime.now());
             userLikeMapper.insert(newLike);
 
-            // 增加评论点赞数
-            commentMapper.incrementLikeCount(id);
-
             log.info("用户 {} 点赞评论 {}", userId, id);
         } else {
             // 已有点赞记录，切换状态
@@ -207,14 +195,10 @@ public class CommentServiceImpl implements CommentService {
             existingLike.setUpdateTime(LocalDateTime.now());
             userLikeMapper.updateById(existingLike);
 
-            // 更新评论点赞数
+            // 记录日志
             if (newStatus == 1) {
-                // 之前是取消点赞，现在重新点赞
-                commentMapper.incrementLikeCount(id);
                 log.info("用户 {} 重新点赞评论 {}", userId, id);
             } else {
-                // 之前是点赞，现在取消点赞
-                commentMapper.decrementLikeCount(id);
                 log.info("用户 {} 取消点赞评论 {}", userId, id);
             }
         }
@@ -288,8 +272,8 @@ public class CommentServiceImpl implements CommentService {
         vo.setParentId(comment.getParentId());
         vo.setReplyUserId(comment.getReplyUserId());
         vo.setContent(comment.getContent());
-        vo.setStatus(comment.getStatus());
-        vo.setLikeCount(comment.getLikeCount());
+        Long likeCountLong = userLikeMapper.countByTarget("comment", comment.getId());
+        vo.setLikeCount(likeCountLong != null ? likeCountLong.intValue() : 0);
         vo.setCreateTime(comment.getCreateTime());
 
         // 设置用户信息

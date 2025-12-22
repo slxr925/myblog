@@ -84,8 +84,6 @@ public class BlogServiceImpl implements BlogService {
         blog.setVisibility(visibility);
         blog.setIsTop(blogSaveDTO.getIsTop());
         blog.setViewCount(0);
-        blog.setLikeCount(0);
-        blog.setCommentCount(0);
         blog.setStatusChangedTime(LocalDateTime.now());
 
         if (blogSaveDTO.getStatus() == 1) { // 已发布
@@ -324,9 +322,6 @@ public class BlogServiceImpl implements BlogService {
 
             userLikeMapper.insert(newLike);
 
-            // 增加博客点赞数
-            blogMapper.incrementLikeCount(id);
-
             log.info("用户 {} 首次点赞博客 {}", userId, id);
         } else {
             // 切换点赞状态
@@ -337,14 +332,10 @@ public class BlogServiceImpl implements BlogService {
 
             userLikeMapper.updateById(existingLike);
 
-            // 更新博客点赞数
+            // 记录日志
             if (oldStatus == 1) {
-                // 之前是点赞，现在取消点赞
-                blogMapper.decrementLikeCount(id);
                 log.info("用户 {} 取消点赞博客 {}", userId, id);
             } else {
-                // 之前是取消点赞，现在重新点赞
-                blogMapper.incrementLikeCount(id);
                 log.info("用户 {} 重新点赞博客 {}", userId, id);
             }
         }
@@ -387,7 +378,6 @@ public class BlogServiceImpl implements BlogService {
             newLike.setUpdateTime(java.time.LocalDateTime.now());
 
             userLikeMapper.insert(newLike);
-            blogMapper.incrementLikeCount(id);
             finalIsLiked = true;
 
             log.info("用户 {} 首次点赞博客 {}", userId, id);
@@ -400,14 +390,10 @@ public class BlogServiceImpl implements BlogService {
 
             userLikeMapper.updateById(existingLike);
 
-            // 更新博客点赞数
+            // 记录日志
             if (oldStatus == 1) {
-                // 之前是点赞，现在取消点赞
-                blogMapper.decrementLikeCount(id);
                 log.info("用户 {} 取消点赞博客 {}", userId, id);
             } else {
-                // 之前是取消点赞，现在重新点赞
-                blogMapper.incrementLikeCount(id);
                 log.info("用户 {} 重新点赞博客 {}", userId, id);
             }
             finalIsLiked = newStatus == 1;
@@ -419,10 +405,16 @@ public class BlogServiceImpl implements BlogService {
         cacheService.deleteByPattern("blog:hot:*");
         cacheService.deleteByPattern("blog:latest:*");
 
-        // 获取更新后的博客数据
-        Blog updatedBlog = blogMapper.selectById(id);
+        // 获取更新后的博客数据（需要重新查询才能获得实时的 likeCount）
+        BlogDetailVO updatedBlog = blogMapper.selectBlogDetail(id);
+        Integer likeCount = updatedBlog != null && updatedBlog.getLikeCount() != null
+                ? updatedBlog.getLikeCount()
+                : 0;
+        Integer viewCount = updatedBlog != null && updatedBlog.getViewCount() != null
+                ? updatedBlog.getViewCount()
+                : 0;
 
-        return new LikeResultDTO(finalIsLiked, updatedBlog.getLikeCount(), updatedBlog.getViewCount());
+        return new LikeResultDTO(finalIsLiked, likeCount, viewCount);
     }
 
     @Override
@@ -667,9 +659,11 @@ public class BlogServiceImpl implements BlogService {
         vo.setStatus(blog.getStatus());
         vo.setVisibility(blog.getVisibility());
         vo.setIsTop(blog.getIsTop() != null && blog.getIsTop() == 1); // 转换Integer为Boolean
-        vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L); // 转换Integer为Long
-        vo.setLikeCount(blog.getLikeCount() != null ? blog.getLikeCount().longValue() : 0L);
-        vo.setCommentCount(blog.getCommentCount() != null ? blog.getCommentCount().longValue() : 0L);
+        vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L);
+        // 注意：Blog 实体已无 likeCount/commentCount 字段
+        // 这个转换方法可能不常用，如果需要实际计数，需要传入 BlogDetailVO
+        vo.setLikeCount(0L);
+        vo.setCommentCount(0L);
         vo.setPublishTime(blog.getPublishTime());
         vo.setCreateTime(blog.getCreateTime());
         vo.setUpdateTime(blog.getUpdateTime());

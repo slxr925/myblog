@@ -12,7 +12,9 @@
             c.reply_user_id,
             c.content,
             c.status,
-            c.like_count,
+            (SELECT COUNT(*) FROM tb_user_like ul 
+             WHERE ul.target_type = 'comment' AND ul.target_id = c.id 
+             AND ul.status = 1 AND ul.deleted = 0) AS like_count,
             c.create_time,
             c.update_time,
             c.deleted
@@ -35,24 +37,15 @@
         ORDER BY c.create_time DESC
     </select>
 
-    <!-- 增加点赞数 -->
-    <update id="incrementLikeCount">
-        UPDATE tb_comment 
-        SET like_count = like_count + 1, update_time = NOW()
-        WHERE id = #{id} AND deleted = 0
-    </update>
 
-    <!-- 减少点赞数 -->
-    <update id="decrementLikeCount">
-        UPDATE tb_comment
-        SET like_count = GREATEST(like_count - 1, 0), update_time = NOW()
-        WHERE id = #{id} AND deleted = 0
-    </update>
 
     <!-- 根据用户ID分页查询评论列表（包含博客标题） -->
     <select id="selectCommentsByUser" resultType="com.ryan.myblog.model.entity.Comment">
         SELECT
             c.*,
+            (SELECT COUNT(*) FROM tb_user_like ul 
+             WHERE ul.target_type = 'comment' AND ul.target_id = c.id 
+             AND ul.status = 1 AND ul.deleted = 0) AS like_count,
             b.title as blogTitle
         FROM tb_comment c
         LEFT JOIN tb_blog b ON c.blog_id = b.id
