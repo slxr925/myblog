@@ -43,18 +43,29 @@ echo -e "${GREEN}✓ Docker Compose 已安装${NC}"
 # 2. 检查环境变量
 echo ""
 echo -e "${BLUE}=== 步骤 2: 检查配置 ===${NC}"
-if [ ! -f ".env.prod" ]; then
-    echo -e "${RED}错误: 未找到 .env.prod 文件${NC}"
-    echo "请先创建 .env.prod 配置文件"
-    exit 1
+
+ENV_FILE=".env.prod"
+if [ ! -f "$ENV_FILE" ]; then
+    if [ -f ".env" ]; then
+        echo -e "${YELLOW}提示: 未找到 .env.prod，将使用 .env${NC}"
+        ENV_FILE=".env"
+    else
+        echo -e "${RED}错误: 未找到配置文件 (.env.prod 或 .env)${NC}"
+        echo "请先创建配置文件"
+        exit 1
+    fi
 fi
 
-source .env.prod
+source "$ENV_FILE"
 
 # 确保 docker-compose 可以读取环境变量
-# docker-compose 默认读取 .env 文件，而非 .env.prod
-cp .env.prod .env
-echo -e "${GREEN}✓ 环境配置已同步到 .env${NC}"
+# docker-compose 默认读取 .env 文件
+if [ "$ENV_FILE" != ".env" ]; then
+    cp "$ENV_FILE" .env
+    echo -e "${GREEN}✓ 环境配置已同步到 .env${NC}"
+else
+    echo -e "${GREEN}✓ 使用现有 .env 配置${NC}"
+fi
 
 if [ -z "$MYSQL_PASSWORD" ] || [ -z "$JWT_SECRET" ]; then
     echo -e "${RED}错误: MYSQL_PASSWORD 或 JWT_SECRET 未配置${NC}"
@@ -104,7 +115,7 @@ echo -e "${BLUE}=== 步骤 5: 停止旧容器 ===${NC}"
 
 if docker ps -a | grep -q myblog; then
     echo "停止运行中的容器..."
-    docker-compose -f docker-compose.prod.yml --env-file .env.prod down
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" down
     echo -e "${GREEN}✓ 旧容器已停止${NC}"
 else
     echo "没有运行中的容器"
@@ -133,7 +144,7 @@ echo -e "${GREEN}✓ 镜像构建完成${NC}"
 echo ""
 echo -e "${BLUE}=== 步骤 8: 启动服务 ===${NC}"
 
-docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d
 
 echo "等待服务启动..."
 sleep 10
@@ -169,7 +180,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         echo -e "${YELLOW}尝试回滚到旧版本...${NC}"
         if [ -f "${BACKUP_DIR}/myblog-backend.jar" ]; then
             cp "${BACKUP_DIR}/myblog-backend.jar" "$JAR_FILE"
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod restart backend
+            docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" restart backend
             echo "已回滚，请检查日志"
     fi
         exit 1

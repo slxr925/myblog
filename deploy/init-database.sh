@@ -23,9 +23,17 @@ MYSQL_ROOT_PASSWORD="Kpiass123."
 MYSQL_DATABASE="myblog"
 
 # 读取环境变量（如果存在）
-if [ -f ../.env.prod ]; then
-    echo -e "${GREEN}检测到 .env.prod 文件，正在加载配置...${NC}"
-    source ../.env.prod
+# 读取环境变量（如果存在）
+CONFIG_FILE="../.env.prod"
+if [ ! -f "$CONFIG_FILE" ]; then
+    if [ -f "../.env" ]; then
+        CONFIG_FILE="../.env"
+    fi
+fi
+
+if [ -f "$CONFIG_FILE" ]; then
+    echo -e "${GREEN}检测到配置文件 ($CONFIG_FILE)，正在加载配置...${NC}"
+    source "$CONFIG_FILE"
     MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
     MYSQL_PORT="${MYSQL_PORT:-13306}"
     MYSQL_DATABASE="${MYSQL_DATABASE:-myblog}"
@@ -33,7 +41,7 @@ if [ -f ../.env.prod ]; then
     MYSQL_ROOT_PASSWORD="${MYSQL_PASSWORD}"
     echo "使用配置: ${MYSQL_ROOT_USER}@${MYSQL_HOST}:${MYSQL_PORT}"
 else
-    echo -e "${YELLOW}未找到 .env.prod 文件，使用默认配置${NC}"
+    echo -e "${YELLOW}未找到 .env.prod 或 .env 文件，使用默认配置${NC}"
     read -p "MySQL主机 (默认: ${MYSQL_HOST}): " INPUT_HOST
     MYSQL_HOST="${INPUT_HOST:-$MYSQL_HOST}"
     

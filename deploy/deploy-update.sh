@@ -109,6 +109,37 @@ fi
 echo ""
 
 # ============================================
+# 步骤4.5: 上传部署脚本和配置
+# ============================================
+echo -e "${BLUE}=== 步骤 4.5: 上传部署脚本和配置 ===${NC}"
+
+if [ "$USE_SCP" = true ]; then
+    echo "上传: deploy/*.sh 和 docker-compose.prod.yml"
+    # 确保远程目录存在
+    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy"
+    
+    # 上传脚本
+    if scp deploy/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/; then
+        # 添加执行权限
+        ssh ${SERVER_USER}@${SERVER_HOST} "chmod +x ${SERVER_PATH}/deploy/*.sh"
+        echo -e "${GREEN}✓ 部署脚本上传成功${NC}"
+    else
+        echo -e "${RED}✗ 部署脚本上传失败${NC}"
+        exit 1
+    fi
+    # 上传docker-compose配置
+    if scp docker-compose.prod.yml ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/; then
+        echo -e "${GREEN}✓ docker-compose配置上传成功${NC}"
+    else
+        echo -e "${RED}✗ docker-compose配置上传失败${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}请手动上传: deploy/*.sh 和 docker-compose.prod.yml${NC}"
+fi
+echo ""
+
+# ============================================
 # 步骤5: 服务器部署
 # ============================================
 echo -e "${BLUE}=== 步骤 5/5: 服务器部署 ===${NC}"
