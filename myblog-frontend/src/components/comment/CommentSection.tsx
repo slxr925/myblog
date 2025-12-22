@@ -54,12 +54,20 @@ const CommentItem: React.FC<CommentItemProps> = ({
       alert('请先登录后再点赞评论');
       return;
     }
-    if (!isLiking) {
-      setIsLiking(true);
-      onLike(comment.id);
-      setTimeout(() => setIsLiking(false), 1000);
-    }
+    if (isLiking) return; // 防止快速重复点击
+
+    setIsLiking(true);
+    onLike(comment.id);
+    // 300ms 防抖，既能防止并发问题，又不会让用户感觉卡顿
+    setTimeout(() => setIsLiking(false), 300);
   };
+
+  // 根据点赞状态决定样式
+  const isCommentLiked = comment.isLiked;
+  const likeButtonClass = isCommentLiked
+    ? 'text-red-500 hover:text-red-600'
+    : 'text-gray-500 hover:text-red-500';
+  const heartIconClass = isCommentLiked ? 'fill-current' : '';
 
   return (
     <div className={`${isReply ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''}`}>
@@ -96,10 +104,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
-                className={`text-gray-500 hover:text-red-500 ${isLiking ? 'text-red-500' : ''}`}
+                className={likeButtonClass}
                 disabled={isLiking}
               >
-                <Heart className={`w-4 h-4 mr-1 ${isLiking ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 mr-1 ${heartIconClass}`} />
                 {comment.likeCount}
               </Button>
               {user?.id === comment.userId && onDelete && (

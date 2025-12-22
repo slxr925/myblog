@@ -57,7 +57,7 @@ const BlogDetail: React.FC = () => {
       openAuthModal();
       return;
     }
-    if (!blog || isLiking) return;
+    if (!blog || isLiking) return; // 防止快速重复点击
 
     try {
       setIsLiking(true);
@@ -68,7 +68,8 @@ const BlogDetail: React.FC = () => {
     } catch (error) {
       console.error('点赞失败:', error);
     } finally {
-      setIsLiking(false);
+      // 300ms 防抖，既能防止并发问题，又不会让用户感觉卡顿
+      setTimeout(() => setIsLiking(false), 300);
     }
   }, [user, blog, isLiking, openAuthModal]);
 
