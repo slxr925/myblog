@@ -19,5 +19,19 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React 核心库
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // UI 和动画库
+          'ui-vendor': ['framer-motion', 'lucide-react', 'date-fns'],
+        }
+      }
+    },
+    // 提高 chunk 大小警告阈值（单位：KB）
+    chunkSizeWarningLimit: 1000
   }
 })

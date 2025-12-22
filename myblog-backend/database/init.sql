@@ -300,3 +300,14 @@ WHERE id NOT IN (
     WHERE deleted = 0
 );
 
+-- ============================================
+-- 数据库迁移说明
+-- ============================================
+-- 注意：此初始化脚本已经移除了 like_count 和 comment_count 冗余字段
+-- 所有点赞数通过 tb_user_like 表实时查询
+-- 所有评论数通过 tb_comment 表实时查询
+-- 
+-- 如果从旧版本升级，需要手动执行以下迁移：
+-- ALTER TABLE tb_blog DROP COLUMN IF EXISTS like_count;
+-- ALTER TABLE tb_blog DROP COLUMN IF EXISTS comment_count;
+-- ALTER TABLE tb_comment DROP COLUMN IF EXISTS like_count;

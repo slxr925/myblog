@@ -1,13 +1,9 @@
 package com.ryan.myblog.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.CommentMapper;
-import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.service.CommentCountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,7 +31,6 @@ public class CommentCountServiceImpl implements CommentCountService {
 
     private final StringRedisTemplate redisTemplate;
     private final CommentMapper commentMapper;
-    private final BlogMapper blogMapper;
 
     private static final String COMMENT_COUNT_PREFIX = "blog:comment:count:";
 
@@ -159,29 +154,6 @@ public class CommentCountServiceImpl implements CommentCountService {
 
         } catch (Exception e) {
             log.error("从数据库恢复评论数失败: blogId={}", blogId, e);
-        }
-    }
-
-    @Override
-    public void warmUpCache(int limit) {
-        try {
-            // 查询最新的 N 篇博客
-            List<Blog> blogs = blogMapper.selectList(
-                    new LambdaQueryWrapper<Blog>()
-                            .eq(Blog::getDeleted, 0)
-                            .orderByDesc(Blog::getCreateTime)
-                            .last("LIMIT " + limit));
-
-            log.info("开始预热评论数缓存，数量: {}", blogs.size());
-
-            for (Blog blog : blogs) {
-                recoverFromDatabase(blog.getId());
-            }
-
-            log.info("评论数缓存预热完成");
-
-        } catch (Exception e) {
-            log.error("评论数缓存预热失败", e);
         }
     }
 }

@@ -61,12 +61,4 @@ public interface CommentCountService {
      * @param blogId 博客ID
      */
     void recoverFromDatabase(Long blogId);
-
-    /**
-     * 批量预热缓存
-     * 应用启动时调用，加载热点数据到 Redis
-     * 
-     * @param limit 预热数量（建议：1000）
-     */
-    void warmUpCache(int limit);
 }

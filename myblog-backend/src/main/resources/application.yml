@@ -1,5 +1,10 @@
 # 应用配置
 app:
+  # 缓存预热配置
+  cache:
+    warmup:
+      enabled: ${CACHE_WARMUP_ENABLED:true}  # 启用缓存预热
+
   elasticsearch:
     enabled: ${ELASTICSEARCH_ENABLED:true}  # 启用Elasticsearch
     uris: http://${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}

@@ -1,10 +1,7 @@
 package com.ryan.myblog.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryan.myblog.event.LikeEvent;
-import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
-import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.model.entity.UserLike;
 import com.ryan.myblog.service.RedisLikeService;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +53,6 @@ public class RedisLikeServiceImpl implements RedisLikeService {
     private final StringRedisTemplate redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
     private final UserLikeMapper userLikeMapper;
-    private final BlogMapper blogMapper;
 
     // Redis Key前缀
     private static final String LIKE_SET_PREFIX = "blog:likes:"; // ZSet: 点赞用户集合
@@ -295,29 +291,6 @@ public class RedisLikeServiceImpl implements RedisLikeService {
             log.info("从数据库恢复点赞数: blogId={}, count={}", blogId, count);
         } catch (Exception e) {
             log.error("从数据库恢复点赞数失败: blogId={}", blogId, e);
-        }
-    }
-
-    @Override
-    public void warmUpCache(int limit) {
-        try {
-            // 查询最新的 N 篇博客
-            List<Blog> blogs = blogMapper.selectList(
-                    new LambdaQueryWrapper<Blog>()
-                            .eq(Blog::getDeleted, 0)
-                            .orderByDesc(Blog::getCreateTime)
-                            .last("LIMIT " + limit));
-
-            log.info("开始预热点赞缓存，数量: {}", blogs.size());
-
-            // 使用 initBlogLikes 初始化完整数据（包括 ZSet 和 Count）
-            for (Blog blog : blogs) {
-                initBlogLikes(blog.getId());
-            }
-
-            log.info("点赞缓存预热完成，预热博客数: {}", blogs.size());
-        } catch (Exception e) {
-            log.error("缓存预热失败", e);
         }
     }
 }
