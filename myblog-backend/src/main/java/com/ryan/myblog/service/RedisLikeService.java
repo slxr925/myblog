@@ -1,5 +1,8 @@
 package com.ryan.myblog.service;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Redis点赞服务接口
  * 使用Redis实现高性能点赞功能
@@ -32,7 +35,7 @@ public interface RedisLikeService {
     Boolean toggleLike(Long blogId, Long userId);
 
     /**
-     * 获取博客点赞数
+     * 获取博客点赞数（直接从 Redis）
      * 
      * @param blogId 博客ID
      * @return 点赞总数
@@ -64,4 +67,32 @@ public interface RedisLikeService {
      * @param blogId 博客ID
      */
     void initBlogLikes(Long blogId);
+
+    /**
+     * 批量获取点赞数
+     * 使用 Redis Pipeline 优化性能
+     * 
+     * @param blogIds 博客ID列表
+     * @return Map<博客ID, 点赞数>
+     */
+    Map<Long, Long> batchGetLikeCounts(List<Long> blogIds);
+
+    /**
+     * 从数据库恢复点赞数到 Redis
+     * 用于：
+     * 1. Redis 故障恢复
+     * 2. 缓存未命中时懒加载
+     * 3. 缓存预热
+     * 
+     * @param blogId 博客ID
+     */
+    void recoverFromDatabase(Long blogId);
+
+    /**
+     * 批量预热缓存
+     * 应用启动时调用，加载热点数据到 Redis
+     * 
+     * @param limit 预热数量（建议：1000）
+     */
+    void warmUpCache(int limit);
 }

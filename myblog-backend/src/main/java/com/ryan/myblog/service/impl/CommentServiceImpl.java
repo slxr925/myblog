@@ -13,7 +13,9 @@ import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.service.CommentService;
+import com.ryan.myblog.service.CommentCountService;
 import com.ryan.myblog.service.CacheService;
+import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +40,9 @@ public class CommentServiceImpl implements CommentService {
     private final CommentMapper commentMapper;
     private final UserMapper userMapper;
     private final UserLikeMapper userLikeMapper;
+    private final CommentCountService commentCountService;
     private final CacheService cacheService;
+    private final SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -61,6 +65,9 @@ public class CommentServiceImpl implements CommentService {
         comment.setUpdateTime(LocalDateTime.now());
 
         commentMapper.insert(comment);
+
+        // 更新 Redis 评论数 (+1)
+        commentCountService.incrementCommentCount(commentSaveDTO.getBlogId());
 
         // 清除博客列表缓存
         clearBlogCaches();
@@ -159,6 +166,9 @@ public class CommentServiceImpl implements CommentService {
         }
 
         commentMapper.deleteById(id);
+
+        // 更新 Redis 评论数 (-1)
+        commentCountService.decrementCommentCount(comment.getBlogId());
 
         // 清除博客列表缓存
         clearBlogCaches();
@@ -272,8 +282,24 @@ public class CommentServiceImpl implements CommentService {
         vo.setParentId(comment.getParentId());
         vo.setReplyUserId(comment.getReplyUserId());
         vo.setContent(comment.getContent());
+
+        // 实时查询点赞数
         Long likeCountLong = userLikeMapper.countByTarget("comment", comment.getId());
         vo.setLikeCount(likeCountLong != null ? likeCountLong.intValue() : 0);
+
+        // 查询当前用户是否点赞了该评论
+        Long currentUserId = securityUtils.getCurrentUserId();
+        if (currentUserId != null) {
+            // 检查当前用户是否点赞
+            UserLike userLike = userLikeMapper.selectByUserAndTarget(
+                    currentUserId,
+                    "comment",
+                    comment.getId());
+            vo.setIsLiked(userLike != null && userLike.getStatus() == 1);
+        } else {
+            vo.setIsLiked(false);
+        }
+
         vo.setCreateTime(comment.getCreateTime());
 
         // 设置用户信息

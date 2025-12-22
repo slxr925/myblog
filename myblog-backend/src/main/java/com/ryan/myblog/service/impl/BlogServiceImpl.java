@@ -22,6 +22,8 @@ import com.ryan.myblog.mapper.CategoryMapper;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
+import com.ryan.myblog.service.CommentCountService;
+import com.ryan.myblog.service.RedisLikeService;
 import com.ryan.myblog.service.SearchService;
 import com.ryan.myblog.service.TagService;
 import com.ryan.myblog.converter.BlogDocumentConverter;
@@ -60,6 +62,8 @@ public class BlogServiceImpl implements BlogService {
     private final CategoryMapper categoryMapper;
     private final CacheService cacheService;
     private final CacheConsistencyService cacheConsistencyService;
+    private final RedisLikeService redisLikeService;
+    private final CommentCountService commentCountService;
     private final SearchService searchService;
     private final TagService tagService;
     private final BlogDocumentConverter blogDocumentConverter;
@@ -974,7 +978,28 @@ public class BlogServiceImpl implements BlogService {
      * 批量转换为BlogListVO
      */
     private List<BlogListVO> convertToBlogListVOs(List<Blog> blogs) {
-        return blogs.stream().map(this::convertToBlogListVO).collect(Collectors.toList());
+        if (blogs == null || blogs.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 批量获取博客ID
+        List<Long> blogIds = blogs.stream()
+                .map(Blog::getId)
+                .collect(Collectors.toList());
+
+        // 批量从 Redis 获取计数
+        java.util.Map<Long, Long> likeCounts = redisLikeService.batchGetLikeCounts(blogIds);
+        java.util.Map<Long, Long> commentCounts = commentCountService.batchGetCommentCounts(blogIds);
+
+        // 转换并设置计数
+        return blogs.stream()
+                .map(blog -> {
+                    BlogListVO vo = convertToBlogListVO(blog);
+                    vo.setLikeCount(likeCounts.getOrDefault(blog.getId(), 0L));
+                    vo.setCommentCount(commentCounts.getOrDefault(blog.getId(), 0L));
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     /**

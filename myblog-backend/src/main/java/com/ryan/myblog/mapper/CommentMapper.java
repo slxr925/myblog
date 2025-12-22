@@ -13,17 +13,25 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface CommentMapper extends BaseMapper<Comment> {
 
-    /**
-     * 分页查询评论列表（包含用户信息）
-     */
-    IPage<Comment> selectCommentPage(Page<Comment> page,
-            @Param("blogId") Long blogId,
-            @Param("status") Integer status,
-            @Param("keyword") String keyword);
+        /**
+         * 分页查询评论列表（包含用户信息）
+         */
+        IPage<Comment> selectCommentPage(Page<Comment> page,
+                        @Param("blogId") Long blogId,
+                        @Param("status") Integer status,
+                        @Param("keyword") String keyword);
 
-    /**
-     * 根据用户ID分页查询评论列表（包含博客标题）
-     */
-    IPage<Comment> selectCommentsByUser(@Param("userId") Long userId,
-            @Param("page") IPage<Comment> page);
+        /**
+         * 根据用户ID分页查询评论列表（包含博客标题）
+         */
+        IPage<Comment> selectCommentsByUser(@Param("userId") Long userId,
+                        @Param("page") IPage<Comment> page);
+
+        /**
+         * 统计博客的评论数
+         * 
+         * @param blogId 博客ID
+         * @return 评论数
+         */
+        Integer countByBlogId(@Param("blogId") Long blogId);
 }

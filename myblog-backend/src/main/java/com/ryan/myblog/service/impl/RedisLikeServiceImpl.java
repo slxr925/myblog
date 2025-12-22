@@ -1,17 +1,20 @@
 package com.ryan.myblog.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ryan.myblog.event.LikeEvent;
+import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
+import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.model.entity.UserLike;
 import com.ryan.myblog.service.RedisLikeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +56,7 @@ public class RedisLikeServiceImpl implements RedisLikeService {
     private final StringRedisTemplate redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
     private final UserLikeMapper userLikeMapper;
+    private final BlogMapper blogMapper;
 
     // Redis Key前缀
     private static final String LIKE_SET_PREFIX = "blog:likes:"; // ZSet: 点赞用户集合
@@ -66,11 +70,6 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      * 2. 根据结果执行ZADD或ZREM（原子操作）
      * 3. 对应更新计数器（INCR/DECR，原子操作）
      * 4. 发布异步事件，持久化到数据库
-     * 
-     * 为什么是原子的？
-     * - Redis是单线程执行命令
-     * - 即使并发10000个请求，Redis也是一个一个执行
-     * - 不会出现竞态条件
      */
     @Override
     public Boolean toggleLike(Long blogId, Long userId) {
@@ -237,7 +236,7 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      * 通过Spring事件机制，解耦Redis操作和数据库操作
      * 
      * 优势：
-     * 1. 异步非阻塞：不影响主流程响应速度
+     * 1.异步非阻塞：不影响主流程响应速度
      * 2. 解耦：Redis层不依赖数据库层
      * 3. 可靠性：事件监听器可以实现重试逻辑
      */
@@ -249,6 +248,76 @@ public class RedisLikeServiceImpl implements RedisLikeService {
         } catch (Exception e) {
             log.error("发布点赞事件失败", e);
             // 失败后的补偿措施：可以记录到失败队列，后续重试
+        }
+    }
+
+    @Override
+    public Map<Long, Long> batchGetLikeCounts(List<Long> blogIds) {
+        if (blogIds == null || blogIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> result = new HashMap<>();
+        try {
+            List<Object> values = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                for (Long blogId : blogIds) {
+                    byte[] key = (LIKE_COUNT_PREFIX + blogId).getBytes();
+                    connection.stringCommands().get(key);
+                }
+                return null;
+            });
+            for (int i = 0; i < blogIds.size(); i++) {
+                Long blogId = blogIds.get(i);
+                Object value = values.get(i);
+                if (value != null) {
+                    result.put(blogId, Long.parseLong(value.toString()));
+                } else {
+                    recoverFromDatabase(blogId);
+                    result.put(blogId, getLikeCount(blogId));
+                }
+            }
+        } catch (Exception e) {
+            log.error("批量获取点赞数失败", e);
+            for (Long blogId : blogIds) {
+                Long count = userLikeMapper.countByTarget("blog", blogId);
+                result.put(blogId, count != null ? count : 0L);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void recoverFromDatabase(Long blogId) {
+        String countKey = LIKE_COUNT_PREFIX + blogId;
+        try {
+            Long dbCount = userLikeMapper.countByTarget("blog", blogId);
+            Long count = dbCount != null ? dbCount : 0L;
+            redisTemplate.opsForValue().set(countKey, count.toString());
+            log.info("从数据库恢复点赞数: blogId={}, count={}", blogId, count);
+        } catch (Exception e) {
+            log.error("从数据库恢复点赞数失败: blogId={}", blogId, e);
+        }
+    }
+
+    @Override
+    public void warmUpCache(int limit) {
+        try {
+            // 查询最新的 N 篇博客
+            List<Blog> blogs = blogMapper.selectList(
+                    new LambdaQueryWrapper<Blog>()
+                            .eq(Blog::getDeleted, 0)
+                            .orderByDesc(Blog::getCreateTime)
+                            .last("LIMIT " + limit));
+
+            log.info("开始预热点赞缓存，数量: {}", blogs.size());
+
+            // 使用 initBlogLikes 初始化完整数据（包括 ZSet 和 Count）
+            for (Blog blog : blogs) {
+                initBlogLikes(blog.getId());
+            }
+
+            log.info("点赞缓存预热完成，预热博客数: {}", blogs.size());
+        } catch (Exception e) {
+            log.error("缓存预热失败", e);
         }
     }
 }

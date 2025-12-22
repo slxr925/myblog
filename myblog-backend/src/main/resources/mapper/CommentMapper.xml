@@ -54,5 +54,14 @@
             AND c.deleted = 0
         ORDER BY c.create_time DESC
     </select>
+    
+    <!-- 统计博客的评论数 -->
+    <select id="countByBlogId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tb_comment
+        WHERE blog_id = #{blogId}
+          AND status = 1
+          AND deleted = 0
+    </select>
 
 </mapper>
