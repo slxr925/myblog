@@ -62,16 +62,9 @@ const BlogDetail: React.FC = () => {
     try {
       setIsLiking(true);
       const result: LikeResultDTO = await api.blog.toggleLikeWithDetails(blog.id);
+      // 只更新点赞相关的状态，不更新整个 blog 对象，避免触发子组件重新渲染
       setIsLiked(result.isLiked);
       setLikeCount(result.likeCount);
-      if (blog) {
-        setBlog({
-          ...blog,
-          likeCount: result.likeCount,
-          viewCount: result.viewCount,
-          isLiked: result.isLiked
-        });
-      }
     } catch (error) {
       console.error('点赞失败:', error);
     } finally {

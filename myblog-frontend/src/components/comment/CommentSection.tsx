@@ -317,7 +317,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
     }
   };
 
-  // 点赞评论
+  // 点赞评论 - 使用乐观更新避免骨架屏闪现
   const handleLikeComment = async (commentId: number) => {
     if (!user) {
       setError('请先登录后再点赞评论');
@@ -325,11 +325,42 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
     }
 
     try {
+      // 乐观更新：先更新UI，提升用户体验
+      setComments(prevComments =>
+        prevComments.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              likeCount: (comment.likeCount || 0) + (comment.isLiked ? -1 : 1),
+              isLiked: !comment.isLiked
+            };
+          }
+          // 同时检查是否是子评论
+          if (comment.replies && comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply =>
+                reply.id === commentId
+                  ? {
+                    ...reply,
+                    likeCount: (reply.likeCount || 0) + (reply.isLiked ? -1 : 1),
+                    isLiked: !reply.isLiked
+                  }
+                  : reply
+              )
+            };
+          }
+          return comment;
+        })
+      );
+
+      // 后台调用API
       await api.comment.toggleLike(commentId);
-      // 重新获取评论列表以更新点赞数
-      await fetchComments();
     } catch (error: any) {
       console.error('点赞评论失败:', error);
+      // 如果失败，恢复原状态
+      await fetchComments();
+
       if (error.isAuthError) {
         setError('登录已过期，请重新登录');
         window.dispatchEvent(new CustomEvent('auth:expired', {
@@ -472,4 +503,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   );
 };
 
-export default CommentSection;
+// 使用 React.memo 优化组件，只有当 blogId 变化时才重新渲染
+export default React.memo(CommentSection, (prevProps, nextProps) => {
+  // 返回 true 表示不需要重新渲染，返回 false 表示需要重新渲染
+  return prevProps.blogId === nextProps.blogId &&
+    prevProps.className === nextProps.className;
+});
