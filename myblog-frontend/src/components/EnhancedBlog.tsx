@@ -124,11 +124,11 @@ const EnhancedBlog = () => {
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
                 这里是 Ryan 的个人博客。我热衷于分享全栈开发、架构设计与 AI 技术落地的心得体会。希望这些文字能给你带来启发。
               </p>
-              <div className="flex justify-center gap-3">
-                <Button className="px-6 py-5 text-base rounded-2xl" onClick={handleScrollToPosts}>
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full sm:w-auto">
+                <Button className="w-full sm:w-auto px-6 py-5 text-base rounded-2xl" onClick={handleScrollToPosts}>
                   开始阅读 <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-                <Button variant="secondary" className="px-6 py-5 text-base rounded-2xl" onClick={handleNavigateToAbout}>
+                <Button variant="secondary" className="w-full sm:w-auto px-6 py-5 text-base rounded-2xl" onClick={handleNavigateToAbout}>
                   关于作者
                 </Button>
               </div>
@@ -139,7 +139,7 @@ const EnhancedBlog = () => {
 
       {/* Articles Grid */}
       <div id="posts-grid" className="container mx-auto px-4 py-16">
-        <div className="flex items-end justify-between mb-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-10 gap-4">
           <div>
             <h2 className="text-3xl font-bold text-foreground">最新文章</h2>
             <p className="text-muted-foreground mt-2">探索最新的深度技术分享</p>

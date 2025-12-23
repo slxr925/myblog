@@ -27,14 +27,13 @@ export const ModernLayout = () => {
   return (
     <div className="min-h-screen bg-background font-sans text-foreground flex flex-col">
       {/* Navbar */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isHomePage ? 'bg-background/80 backdrop-blur-md border-b border-border' : 'bg-background shadow-sm border-b border-border'
-      }`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isHomePage ? 'bg-background/80 backdrop-blur-md border-b border-border' : 'bg-background shadow-sm border-b border-border'
+        }`}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo + Nav */}
           <div className="flex items-center gap-2">
-            <div 
-              className="flex items-center gap-2 cursor-pointer" 
+            <div
+              className="flex items-center gap-2 cursor-pointer"
               onClick={() => navigate('/')}
             >
               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
@@ -62,13 +61,13 @@ export const ModernLayout = () => {
           {/* Actions */}
           <div className="hidden md:flex items-center gap-4">
             <div className="w-64">
-               <RealTimeSearch placeholder="搜索文章..." />
+              <RealTimeSearch placeholder="搜索文章..." />
             </div>
-            
+
             <div className="h-6 w-px bg-border" />
-            
+
             <ThemeToggle />
-            
+
             {isAuthenticated ? (
               <UserMenu />
             ) : (
@@ -79,7 +78,7 @@ export const ModernLayout = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="md:hidden p-2 text-muted-foreground hover:bg-muted rounded-lg"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -107,13 +106,13 @@ export const ModernLayout = () => {
               <Button variant="ghost" onClick={() => handleNavigation('/about')} className="justify-start w-full">
                 <User className="w-4 h-4 mr-2" /> 关于
               </Button>
-              
+
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
-              
+
               <div className="px-2">
-                 <RealTimeSearch placeholder="搜索文章..." />
+                <RealTimeSearch placeholder="搜索文章..." />
               </div>
-              
+
               <div className="flex items-center justify-between px-2 mt-2">
                 <span className="text-sm text-slate-500 dark:text-slate-400">切换主题</span>
                 <ThemeToggle />
@@ -124,10 +123,10 @@ export const ModernLayout = () => {
                   登录
                 </Button>
               )}
-              
+
               {isAuthenticated && (
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
-                   <UserMenu />
+                  <UserMenu />
                 </div>
               )}
             </div>
@@ -150,12 +149,12 @@ export const ModernLayout = () => {
               </div>
               <span className="font-bold text-foreground">Ryan's Blog</span>
             </div>
-            
+
             <div className="text-muted-foreground text-sm">
               © {new Date().getFullYear()} Ryan Xu. All rights reserved.
             </div>
-            
-            <div className="flex gap-6 text-sm text-muted-foreground">
+
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 text-sm text-muted-foreground">
               <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy</a>
               <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms</a>
               <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact</a>
