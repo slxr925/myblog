@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Clock, Eye, Heart, MessageCircle, Calendar, Search, ArrowLeft } from 'lucide-react';
+import { Clock, Heart, MessageCircle, Calendar, Search, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { api } from '../utils/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useAuthModal } from '../contexts/AuthModalContext';
 import { motion } from 'framer-motion';
 
 interface BlogPost {
@@ -28,15 +26,12 @@ interface BlogPost {
 
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const { openAuthModal } = useAuthModal();
   const [searchParams] = useSearchParams();
   const searchTerm = searchParams.get('q') || '';
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -111,31 +106,13 @@ const SearchResultsPage: React.FC = () => {
 
   // 分类过滤（后端已完成关键词搜索，前端只做分类筛选）
   useEffect(() => {
-    const filtered = selectedCategory 
+    const filtered = selectedCategory
       ? posts.filter(post => post.categoryName === selectedCategory)
       : posts;
     setFilteredPosts(filtered);
   }, [selectedCategory, posts]);
 
   const allCategories = Array.from(new Set(posts.map(post => post.categoryName))).filter(Boolean);
-
-  const handleLike = async (postId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!isAuthenticated) {
-      openAuthModal();
-      return;
-    }
-    try {
-      await api.blog.toggleLike(postId);
-      const wasLiked = likedPosts.has(postId);
-      setLikedPosts(prev => {
-        const newSet = new Set(prev);
-        wasLiked ? newSet.delete(postId) : newSet.add(postId);
-        return newSet;
-      });
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: wasLiked ? p.likes - 1 : p.likes + 1 } : p));
-    } catch (error) { console.error(error); }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 py-12">
@@ -150,37 +127,37 @@ const SearchResultsPage: React.FC = () => {
           {searchTerm && (
             <Button variant="link" onClick={() => navigate('/blog')} className="mt-4 text-indigo-600">
               <ArrowLeft className="w-4 h-4 mr-2" /> 查看所有文章
-              </Button>
+            </Button>
           )}
-            </div>
+        </div>
 
         {/* Filters */}
         <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <Button
-                variant={!selectedCategory ? "default" : "outline"}
+          <Button
+            variant={!selectedCategory ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
-                size="sm"
+            size="sm"
             className="rounded-full"
-              >
+          >
             全部
-              </Button>
-              {allCategories.map(category => (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
+          </Button>
+          {allCategories.map(category => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
               onClick={() => setSelectedCategory(category)}
-                  size="sm"
+              size="sm"
               className="rounded-full"
-                >
+            >
               {category}
-                </Button>
-              ))}
-            </div>
+            </Button>
+          ))}
+        </div>
 
         {/* Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1,2,3,4,5,6].map(i => <div key={i} className="h-96 bg-white rounded-3xl animate-pulse" />)}
+            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-96 bg-white rounded-3xl animate-pulse" />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -194,8 +171,8 @@ const SearchResultsPage: React.FC = () => {
                 className="group bg-white rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col h-full cursor-pointer"
               >
                 <div className="relative h-56 overflow-hidden">
-                  <img 
-                    src={post.image} 
+                  <img
+                    src={post.image}
                     alt={post.title}
                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                   />
@@ -203,8 +180,8 @@ const SearchResultsPage: React.FC = () => {
                     <Badge className="bg-white/90 backdrop-blur-md text-indigo-600 shadow-sm">
                       {post.categoryName || '未分类'}
                     </Badge>
-          </div>
-        </div>
+                  </div>
+                </div>
 
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
@@ -218,11 +195,11 @@ const SearchResultsPage: React.FC = () => {
                   <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
                     {post.title}
                   </h3>
-                  
+
                   <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
-                      {post.excerpt}
+                    {post.excerpt}
                   </p>
-                  
+
                   <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
@@ -232,9 +209,9 @@ const SearchResultsPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-4 text-slate-400 text-sm">
                       <span className="flex items-center gap-1">
-                        <Heart className={`w-4 h-4 ${isAuthenticated && likedPosts.has(post.id) ? 'fill-current text-red-500' : ''}`} /> 
-                          {post.likes}
-                        </span>
+                        <Heart className="w-4 h-4" />
+                        {post.likes}
+                      </span>
                       <span className="flex items-center gap-1">
                         <MessageCircle className="w-4 h-4" /> {post.comments}
                       </span>
