@@ -19,11 +19,14 @@ spring:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      minimum-idle: 3                    # 最小空闲连接（降低以节省内存）
+      maximum-pool-size: 10              # 最大连接数（适配 2C2G 服务器）
+      max-lifetime: 1800000              # 连接最大生命周期 30分钟
+      idle-timeout: 600000               # 空闲连接超时 10分钟
+      connection-timeout: 30000          # 连接超时 30秒
+      validation-timeout: 5000           # 验证超时 5秒
+      connection-test-query: SELECT 1    # 连接验证查询
+      leak-detection-threshold: 60000    # 连接泄漏检测 60秒
   
   # Redis配置 - 使用宿主机 Redis (端口26739)
   # 注意：172.17.0.1 是Docker默认网关IP，用于容器访问宿主机服务
