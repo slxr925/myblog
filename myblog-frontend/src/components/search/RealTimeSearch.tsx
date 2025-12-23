@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { api } from '../../utils/api';
 
 interface SearchSuggestion {
@@ -27,6 +28,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,38 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
       timeoutId = setTimeout(() => func(...args), delay);
     };
   };
+
+  // 更新下拉框位置
+  const updateDropdownPosition = () => {
+    if (inputRef.current && isOpen) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        zIndex: 9999,
+      });
+    }
+  };
+
+  // 当下拉框打开或窗口调整大小时更新位置
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      window.addEventListener('resize', updateDropdownPosition);
+      window.addEventListener('scroll', updateDropdownPosition, true);
+      return () => {
+        window.removeEventListener('resize', updateDropdownPosition);
+        window.removeEventListener('scroll', updateDropdownPosition, true);
+      };
+    }
+  }, [isOpen]);
 
   // 搜索建议
   const fetchSuggestions = debounce(async (term: string) => {
@@ -200,9 +234,9 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
         </div>
       </form>
 
-      {/* 搜索建议下拉框 */}
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+      {/* 搜索建议下拉框 - 使用 Portal 渲染到 body */}
+      {isOpen && suggestions.length > 0 && createPortal(
+        <div style={dropdownStyle} className="bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto">
           <div className="p-2">
             {suggestions.map((suggestion, index) => (
               <button
@@ -260,7 +294,8 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
               查看更多关于 "{searchTerm}" 的搜索结果
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
