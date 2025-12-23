@@ -36,9 +36,9 @@ spring:
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       chat:
         enabled: ${AI_ENABLED:true}
-        completions-path: ${OPENAI_COMPLETIONS_PATH:/v1/chat/completions}  # 自定义API路径
+        completions-path: ${OPENAI_COMPLETIONS_PATH:/chat/completions}  # 自定义API路径
         options:
-          model: ${OPENAI_MODEL:gpt-3.5-turbo}
+          model: ${OPENAI_MODEL:GLM-4.7}
           temperature: 0.7
 
   # 自动配置排除

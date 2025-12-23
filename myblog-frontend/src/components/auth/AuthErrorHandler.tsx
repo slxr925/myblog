@@ -38,8 +38,12 @@ export const AuthErrorHandler: React.FC = () => {
     window.dispatchEvent(new CustomEvent('auth:showLogin'));
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     setShow(false);
+
+    // 清除用户状态（确保导航栏显示未登录状态）
+    await logout();
+
     // 导航到首页
     navigate('/');
   };
