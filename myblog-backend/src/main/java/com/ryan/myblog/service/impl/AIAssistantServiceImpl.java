@@ -300,4 +300,122 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                 return articles;
         }
+
+        @Override
+        public String generateTitle(String content) {
+                if (!isAIAvailable()) {
+                        // 降级：提取前50字作为标题
+                        int length = Math.min(50, content.length());
+                        return content.substring(0, length).replaceAll("\\s+", " ").trim() + "...";
+                }
+
+                String prompt = String.format(
+                                "请为以下文章生成一个吸引人的标题，要求：\n" +
+                                                "1. 简洁明了，不超过30字\n" +
+                                                "2. 突出文章核心内容\n" +
+                                                "3. 只返回标题文本，不要其他说明\n\n" +
+                                                "文章内容：\n%s",
+                                truncateContent(content, 1000));
+
+                return callAI(prompt);
+        }
+
+        @Override
+        public String polishContent(String content) {
+                if (!isAIAvailable()) {
+                        return content; // 降级：返回原文
+                }
+
+                String prompt = String.format(
+                                "请润色以下文章内容，要求：\n" +
+                                                "1. 保持原意不变\n" +
+                                                "2. 优化语句表达，使其更流畅\n" +
+                                                "3. 修正语法和错别字\n" +
+                                                "4. 只返回润色后的内容，不要其他说明\n\n" +
+                                                "原文：\n%s",
+                                content);
+
+                return callAI(prompt);
+        }
+
+        @Override
+        public String generateSummary(String content) {
+                if (!isAIAvailable()) {
+                        // 降级：提取前200字
+                        int length = Math.min(200, content.length());
+                        return content.substring(0, length).replaceAll("\\s+", " ").trim() + "...";
+                }
+
+                String prompt = String.format(
+                                "请为以下文章生成摘要，要求：\n" +
+                                                "1. 简洁明了，100-200字\n" +
+                                                "2. 准确概括文章核心内容\n" +
+                                                "3. 只返回摘要文本，不要其他说明\n\n" +
+                                                "文章内容：\n%s",
+                                content);
+
+                return callAI(prompt);
+        }
+
+        @Override
+        public List<String> extractKeywords(String content) {
+                if (!isAIAvailable()) {
+                        // 降级：返回空列表
+                        return java.util.Collections.emptyList();
+                }
+
+                String prompt = String.format(
+                                "请从以下文章中提取5-8个关键词，要求：\n" +
+                                                "1. 关键词需准确反映文章内容\n" +
+                                                "2. 以逗号分隔\n" +
+                                                "3. 只返回关键词列表，不要其他说明\n\n" +
+                                                "文章内容：\n%s",
+                                truncateContent(content, 2000));
+
+                String result = callAI(prompt);
+                return java.util.Arrays.stream(result.split("[,，、]"))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .limit(8)
+                                .collect(Collectors.toList());
+        }
+
+        /**
+         * 检查AI是否可用
+         */
+        private boolean isAIAvailable() {
+                return aiEnabled && apiKey != null && !apiKey.isEmpty() && chatModel != null;
+        }
+
+        /**
+         * 调用AI模型
+         */
+        private String callAI(String prompt) {
+                log.info("准备调用AI，Prompt长度: {}", prompt.length());
+                long start = System.currentTimeMillis();
+                try {
+                        ChatClient chatClient = ChatClient.builder(chatModel).build();
+                        String result = chatClient.prompt()
+                                        .user(prompt)
+                                        .call()
+                                        .content();
+                        log.info("AI调用成功，耗时: {}ms, 结果长度: {}", System.currentTimeMillis() - start, result.length());
+                        return result;
+                } catch (Exception e) {
+                        log.error("AI调用失败，耗时: {}ms", System.currentTimeMillis() - start, e);
+                        throw new RuntimeException("AI服务暂时不可用，请稍后再试");
+                }
+        }
+
+        /**
+         * 截断内容
+         */
+        private String truncateContent(String content, int maxLength) {
+                if (content == null || content.isEmpty()) {
+                        return "";
+                }
+                return content.length() > maxLength
+                                ? content.substring(0, maxLength) + "..."
+                                : content;
+        }
 }

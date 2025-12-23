@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Heart, Share2, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, Heart, Share2, MessageCircle, FileText, Tag, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthModal } from '../contexts/AuthModalContext';
 import { api } from '../utils/api';
@@ -24,7 +26,45 @@ const BlogDetail: React.FC = () => {
   const [commentCount, setCommentCount] = useState(0);
   const { openAuthModal } = useAuthModal();
 
+  // AI 功能状态
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isExtractingKeywords, setIsExtractingKeywords] = useState(false);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiKeywords, setAiKeywords] = useState<string[]>([]);
+
   const blogData = blog || {} as BlogDetailVO;
+
+  // AI 生成摘要
+  const handleGenerateSummary = async () => {
+    if (!blog?.content) return;
+    setIsGeneratingSummary(true);
+    try {
+      const result = await api.ai.generateSummary(blog.content);
+      setAiSummary(result.summary);
+      toast.success('摘要生成成功');
+    } catch (error) {
+      console.error('摘要生成失败:', error);
+      toast.error('摘要生成失败');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  // AI 提取关键词
+  const handleExtractKeywords = async () => {
+    if (!blog?.content) return;
+    setIsExtractingKeywords(true);
+    try {
+      const result = await api.ai.extractKeywords(blog.content);
+      setAiKeywords(result.keywords);
+      toast.success('关键词提取成功');
+    } catch (error) {
+      console.error('关键词提取失败:', error);
+      toast.error('关键词提取失败');
+    } finally {
+      setIsExtractingKeywords(false);
+    }
+  };
 
   useEffect(() => {
     const fetchBlogDetail = async () => {
@@ -187,6 +227,90 @@ const BlogDetail: React.FC = () => {
           ) : (
             <p className="text-muted-foreground">暂无内容</p>
           )}
+          {/* AI功能区 */}
+          <div className="mt-10 pt-8 border-t border-border">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <span className="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">AI 助手</span>
+            </h3>
+
+            <div className="flex gap-3 mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateSummary}
+                disabled={isGeneratingSummary}
+              >
+                {isGeneratingSummary ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    生成中
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2" />
+                    生成摘要
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExtractKeywords}
+                disabled={isExtractingKeywords}
+              >
+                {isExtractingKeywords ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    提取中
+                  </>
+                ) : (
+                  <>
+                    <Tag className="w-4 h-4 mr-2" />
+                    提取关键词
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* 摘要显示 */}
+            {aiSummary && (
+              <Card className="mb-6 bg-muted/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-indigo-500" />
+                    文章摘要
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {aiSummary}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 关键词显示 */}
+            {aiKeywords.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-purple-500" />
+                  智能关键词
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {aiKeywords.map((keyword, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
+                    >
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </article>
 
         {/* Sidebar */}

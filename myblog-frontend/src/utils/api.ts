@@ -834,5 +834,25 @@ export const api = {
     getIntroduction: (): Promise<string> => {
       return apiClient.get('/ai/introduction');
     },
+
+    // 生成文章标题
+    generateTitle: (content: string): Promise<{ title: string }> => {
+      return apiClient.post('/ai/generate-title', { content });
+    },
+
+    // 润色文章内容
+    polishContent: (content: string): Promise<{ polishedContent: string }> => {
+      return apiClient.post('/ai/polish-content', { content });
+    },
+
+    // 生成文章摘要
+    generateSummary: (content: string): Promise<{ summary: string }> => {
+      return apiClient.post('/ai/generate-summary', { content });
+    },
+
+    // 提取文章关键词
+    extractKeywords: (content: string): Promise<{ keywords: string[] }> => {
+      return apiClient.post('/ai/extract-keywords', { content });
+    },
   },
 };

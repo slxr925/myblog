@@ -6,7 +6,9 @@
       "Bash(curl:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(git -C /Users/xuran/Dev/myblog add -A)",
+      "Bash(git -C /Users/xuran/Dev/myblog commit -m \"$\\(cat <<''EOF''\nfix: 修复 ES 日期字段格式问题\n\n为 BlogDocument 中的 LocalDateTime 类型日期字段添加 format 参数，\n解决 ES 搜索时无法转换日期格式的错误。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import { Save, Eye, ArrowLeft, Upload, Image as ImageIcon, ClipboardList, Loader2 } from 'lucide-react';
+import { Save, Eye, ArrowLeft, Upload, Image as ImageIcon, ClipboardList, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { api } from '../../utils/api';
 import type { BlogDetailVO, Category, Tag } from '../../types/api';
 import { BlogStatus } from '../../types/api';
@@ -55,6 +55,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [drafts, setDrafts] = useState<BlogDetailVO[]>([]);
   const [draftsLoading, setDraftsLoading] = useState(false);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSnapshotRef = useRef<string>('');
 
@@ -312,7 +314,47 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, []);
+  }, []);;
+
+  // AI标题生成
+  const handleGenerateTitle = async () => {
+    if (!formData.content.trim()) {
+      toast.error('请先输入文章内容');
+      return;
+    }
+
+    setIsGeneratingTitle(true);
+    try {
+      const result = await api.ai.generateTitle(formData.content);
+      handleInputChange('title', result.title);
+      toast.success('标题生成成功');
+    } catch (error) {
+      console.error('标题生成失败:', error);
+      toast.error('标题生成失败');
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
+  // AI文章润色
+  const handlePolishContent = async () => {
+    if (!formData.content.trim()) {
+      toast.error('请先输入文章内容');
+      return;
+    }
+
+    setIsPolishing(true);
+    try {
+      const result = await api.ai.polishContent(formData.content);
+      handleInputChange('content', result.polishedContent);
+      toast.success('文章润色成功');
+    } catch (error) {
+      console.error('文章润色失败:', error);
+      toast.error('文章润色失败');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -390,6 +432,25 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                 <ClipboardList className="w-4 h-4" />
                 草稿箱
               </Button>
+
+              <Button
+                variant="outline"
+                onClick={handlePolishContent}
+                disabled={!formData.content || isPolishing}
+                className="flex items-center gap-2"
+              >
+                {isPolishing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    润色中
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4" />
+                    AI润色
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>
@@ -409,13 +470,32 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                 {/* 标题 */}
                 <div>
                   <Label htmlFor="title">文章标题 *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="请输入文章标题"
-                    className="text-lg font-medium"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleInputChange('title', e.target.value)}
+                      placeholder="请输入文章标题"
+                      className="text-lg font-medium flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={handleGenerateTitle}
+                      disabled={!formData.content || isGeneratingTitle}
+                    >
+                      {isGeneratingTitle ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          生成中
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          AI生成
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* 摘要 */}

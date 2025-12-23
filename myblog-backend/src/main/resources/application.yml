@@ -33,7 +33,7 @@ spring:
     enabled: ${AI_ENABLED:true}  # 默认启用AI功能
     openai:
       api-key: ${OPENAI_API_KEY:}
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      base-url: ${OPENAI_BASE_URL:https://open.bigmodel.cn/api/coding/paas/v4}
       chat:
         enabled: ${AI_ENABLED:true}
         completions-path: ${OPENAI_COMPLETIONS_PATH:/chat/completions}  # 自定义API路径
