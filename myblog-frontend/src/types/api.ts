@@ -225,8 +225,13 @@ export interface CommentVO {
   blogId: number;
   userId: number;
   username: string;
+  nickname?: string;  // 添加nickname字段
   userAvatar?: string;
   content: string;
+  likeCount?: number;  // 添加点赞数
+  isLiked?: boolean;   // 添加是否点赞
+  replyCount?: number; // 添加回复数
+  replies?: CommentVO[]; // 添加子评论列表
   createTime: string;
   updateTime: string;
 }
@@ -235,6 +240,7 @@ export interface CommentVO {
 export interface CommentCreateDTO {
   blogId: number;
   content: string;
+  parentId?: number;  // 添加parentId字段，用于回复
 }
 
 // 博客状态枚举

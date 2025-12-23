@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Heart, Reply, MoreHorizontal, Send, User, AlertCircle } from 'lucide-react';
+import { MessageCircle, Heart, Reply, MoreHorizontal, Send, User, AlertCircle, Smile } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -13,6 +13,7 @@ import type { CommentVO, CommentCreateDTO } from '../../types/api';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import FollowButton from '../user/FollowButton';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 interface CommentSectionProps {
   blogId: number;
@@ -40,13 +41,39 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const [isLiking, setIsLiking] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyContent, setReplyContent] = useState('');
+  const [showReplyEmojiPicker, setShowReplyEmojiPicker] = useState(false);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleReply = () => {
     if (replyContent.trim()) {
       onReply(comment.id, replyContent.trim());
       setReplyContent('');
       setShowReplyInput(false);
+      setShowReplyEmojiPicker(false);
     }
+  };
+
+  // 处理表情选择
+  const handleReplyEmojiClick = (emojiData: EmojiClickData) => {
+    const textarea = replyTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = replyContent;
+
+    setReplyContent(
+      text.substring(0, start) + emojiData.emoji + text.substring(end)
+    );
+
+    // 恢复光标位置
+    setTimeout(() => {
+      textarea.selectionStart = start + emojiData.emoji.length;
+      textarea.selectionEnd = start + emojiData.emoji.length;
+      textarea.focus();
+    }, 0);
+
+    setShowReplyEmojiPicker(false);
   };
 
   const handleLike = () => {
@@ -153,32 +180,60 @@ const CommentItem: React.FC<CommentItemProps> = ({
               animate={{ opacity: 1, height: 'auto' }}
               className="mt-3"
             >
-              <div className="flex space-x-2">
+              <div className="relative">
                 <Textarea
+                  ref={replyTextareaRef}
                   placeholder="写下你的回复..."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  className="flex-1 min-h-[80px] border-gray-300 focus:border-blue-500"
+                  className="flex-1 min-h-[80px] border-gray-300 focus:border-blue-500 mb-2"
                 />
-                <div className="flex flex-col space-y-2">
+
+                {/* 工具栏 */}
+                <div className="flex items-center justify-between">
                   <Button
-                    onClick={handleReply}
-                    disabled={!replyContent.trim()}
-                    className="px-3"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowReplyEmojiPicker(!showReplyEmojiPicker)}
+                    className="text-gray-500 hover:text-blue-500"
                   >
-                    <Send className="w-4 h-4" />
+                    <Smile className="w-4 h-4 mr-1" />
+                    表情
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowReplyInput(false);
-                      setReplyContent('');
-                    }}
-                    className="px-3"
-                  >
-                    取消
-                  </Button>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleReply}
+                      disabled={!replyContent.trim()}
+                      size="sm"
+                    >
+                      <Send className="w-4 h-4 mr-1" />
+                      发送
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowReplyInput(false);
+                        setReplyContent('');
+                        setShowReplyEmojiPicker(false);
+                      }}
+                    >
+                      取消
+                    </Button>
+                  </div>
                 </div>
+
+                {/* 表情选择器 */}
+                {showReplyEmojiPicker && (
+                  <div className="absolute z-50 mt-2 left-0">
+                    <EmojiPicker
+                      onEmojiClick={handleReplyEmojiClick}
+                      width={350}
+                      height={400}
+                    />
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -213,6 +268,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 获取评论列表
   const fetchComments = async () => {
@@ -287,6 +344,29 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // 处理表情选择
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    const textarea = commentTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = newComment;
+
+    setNewComment(
+      text.substring(0, start) + emojiData.emoji + text.substring(end)
+    );
+
+    // 恢复光标位置
+    setTimeout(() => {
+      textarea.selectionStart = start + emojiData.emoji.length;
+      textarea.selectionEnd = start + emojiData.emoji.length;
+      textarea.focus();
+    }, 0);
+
+    setShowEmojiPicker(false);
   };
 
   // 回复评论
@@ -434,21 +514,47 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <Textarea
-                  placeholder="写下你的评论..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="mb-3 border-gray-300 focus:border-blue-500"
-                  rows={3}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleSubmitComment}
-                    disabled={!newComment.trim() || submitting}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    {submitting ? '发送中...' : '发表评论'}
-                  </Button>
+                <div className="relative">
+                  <Textarea
+                    ref={commentTextareaRef}
+                    placeholder="写下你的评论..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="mb-2 border-gray-300 focus:border-blue-500"
+                    rows={3}
+                  />
+
+                  {/* 工具栏 */}
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="text-gray-500 hover:text-blue-500"
+                    >
+                      <Smile className="w-4 h-4 mr-1" />
+                      表情
+                    </Button>
+
+                    <Button
+                      onClick={handleSubmitComment}
+                      disabled={!newComment.trim() || submitting}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {submitting ? '发送中...' : '发表评论'}
+                    </Button>
+                  </div>
+
+                  {/* 表情选择器 */}
+                  {showEmojiPicker && (
+                    <div className="absolute z-50 mt-2 left-0">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        width={350}
+                        height={400}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
