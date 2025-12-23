@@ -33,6 +33,9 @@ public class SearchServiceImpl implements SearchService {
     private ElasticsearchOperations elasticsearchOperations;
     private boolean elasticsearchEnabled;
 
+    @Autowired(required = false)
+    private com.ryan.myblog.service.SearchDataService searchDataService;
+
     public SearchServiceImpl() {
         this.elasticsearchOperations = null;
         this.elasticsearchEnabled = false;
@@ -625,12 +628,24 @@ public class SearchServiceImpl implements SearchService {
             elasticsearchOperations.indexOps(BlogDocument.class).putMapping();
             log.info("已创建新索引");
 
+            
+            if (searchDataService == null) {
+                log.error("SearchDataService 未注入，无法重建索引");
+                throw new RuntimeException("SearchDataService 未注入");
+            }
+            
             // 3. 从数据库读取所有已发布的博客
-            // 注意：这里需要通过 ApplicationContext 获取 BlogMapper
-            // 由于 SearchServiceImpl 不应该直接依赖 BlogMapper，
-            // 实际使用时应该通过 SearchController 调用时传入数据
-            log.info("索引重建完成（需要外部提供数据源）");
-            log.warn("请使用 bulkIndexBlogs() 方法批量索引博客数据");
+            List<BlogDocument> documents = searchDataService.getAllPublishedBlogDocuments();
+            
+            if (documents == null || documents.isEmpty()) {
+                log.warn("没有找到需要索引的博客");
+                return;
+            }
+            
+            // 4. 批量索引到 ES
+            elasticsearchOperations.save(documents);
+            
+            log.info("索引重建完成，共索引 {} 篇文章", documents.size());
 
         } catch (Exception e) {
             log.error("索引重建失败", e);
