@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
@@ -43,8 +43,8 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
   };
 
   // 更新下拉框位置
-  const updateDropdownPosition = () => {
-    if (inputRef.current && isOpen) {
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownStyle({
         position: 'fixed',
@@ -54,14 +54,14 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
         zIndex: 9999,
       });
     }
-  };
+  }, [isOpen]);
 
   // 当下拉框打开或窗口调整大小时更新位置
   useEffect(() => {
     if (isOpen) {
       updateDropdownPosition();
     }
-  }, [isOpen]);
+  }, [isOpen, suggestions]);
 
   useEffect(() => {
     if (isOpen) {
