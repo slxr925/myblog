@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class SearchServiceImpl implements SearchService {
-    
+
     private ElasticsearchOperations elasticsearchOperations;
     private boolean elasticsearchEnabled;
 
@@ -48,14 +48,14 @@ public class SearchServiceImpl implements SearchService {
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchEnabled = elasticsearchEnabled;
     }
-    
+
     @Override
     public void indexBlog(BlogDocument blogDocument) {
         if (!isAvailable()) {
             log.warn("Elasticsearch被禁用，跳过索引操作");
             return;
         }
-        
+
         try {
             elasticsearchOperations.save(blogDocument);
             log.info("成功索引博客: {}", blogDocument.getTitle());
@@ -63,14 +63,14 @@ public class SearchServiceImpl implements SearchService {
             log.error("索引博客失败: {}", blogDocument.getTitle(), e);
         }
     }
-    
+
     @Override
     public void bulkIndexBlogs(List<BlogDocument> blogDocuments) {
         if (!isAvailable()) {
             log.warn("Elasticsearch被禁用，跳过批量索引操作");
             return;
         }
-        
+
         try {
             elasticsearchOperations.save(blogDocuments);
             log.info("成功批量索引 {} 篇博客", blogDocuments.size());
@@ -78,14 +78,14 @@ public class SearchServiceImpl implements SearchService {
             log.error("批量索引博客失败", e);
         }
     }
-    
+
     @Override
     public void deleteIndex(String id) {
         if (!isAvailable()) {
             log.warn("Elasticsearch被禁用，跳过删除操作");
             return;
         }
-        
+
         try {
             elasticsearchOperations.delete(id, BlogDocument.class);
             log.info("成功删除索引: {}", id);
@@ -93,13 +93,13 @@ public class SearchServiceImpl implements SearchService {
             log.error("删除索引失败: {}", id, e);
         }
     }
-    
+
     @Override
     public Page<BlogDocument> searchBlogs(String keyword, Pageable pageable) {
         if (!checkAvailability("searchBlogs")) {
             return Page.empty();
         }
-        
+
         try {
             Criteria criteria = createKeywordCriteria(keyword);
             return executeSearch(criteria, pageable);
@@ -108,24 +108,24 @@ public class SearchServiceImpl implements SearchService {
             return Page.empty();
         }
     }
-    
+
     @Override
     public Page<BlogDocument> advancedSearch(String keyword, Long categoryId, List<String> tags, Pageable pageable) {
         if (!checkAvailability("advancedSearch")) {
             return Page.empty();
         }
-        
+
         try {
             Criteria criteria = new Criteria();
-            
+
             if (keyword != null && !keyword.trim().isEmpty()) {
                 criteria = criteria.subCriteria(createKeywordCriteria(keyword));
             }
-            
+
             if (categoryId != null) {
                 criteria = criteria.and(new Criteria("categoryId").is(categoryId));
             }
-            
+
             if (tags != null && !tags.isEmpty()) {
                 Criteria tagsCriteria = new Criteria("tags");
                 for (String tag : tags) {
@@ -133,7 +133,7 @@ public class SearchServiceImpl implements SearchService {
                 }
                 criteria = criteria.and(tagsCriteria);
             }
-            
+
             return executeSearch(criteria, pageable);
         } catch (Exception e) {
             log.error("高级搜索失败", e);
@@ -167,14 +167,14 @@ public class SearchServiceImpl implements SearchService {
     private Page<BlogDocument> executeSearch(Criteria criteria, Pageable pageable) {
         Query query = new CriteriaQuery(criteria).setPageable(pageable);
         SearchHits<BlogDocument> searchHits = elasticsearchOperations.search(query, BlogDocument.class);
-        
+
         List<BlogDocument> results = searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .collect(Collectors.toList());
-        
+
         return new PageImpl<>(results, pageable, searchHits.getTotalHits());
     }
-    
+
     @Override
     public List<String> getSuggestions(String prefix) {
         if (!isAvailable()) {
@@ -295,8 +295,9 @@ public class SearchServiceImpl implements SearchService {
         result.setId(Long.valueOf(document.getId()));
         result.setTitle(document.getTitle());
         result.setSummary(document.getSummary());
-        result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200 ?
-                document.getContent().substring(0, 200) + "..." : document.getContent());
+        result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200
+                ? document.getContent().substring(0, 200) + "..."
+                : document.getContent());
         result.setAuthorNickname(document.getAuthorName());
         result.setCategoryName(document.getCategoryName());
         result.setCoverImg(document.getCoverImg() != null ? document.getCoverImg() : "");
@@ -371,8 +372,9 @@ public class SearchServiceImpl implements SearchService {
         result.setId(Long.valueOf(document.getId()));
         result.setTitle(document.getTitle());
         result.setSummary(document.getSummary());
-        result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200 ?
-                document.getContent().substring(0, 200) + "..." : document.getContent());
+        result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200
+                ? document.getContent().substring(0, 200) + "..."
+                : document.getContent());
         result.setAuthorNickname(document.getAuthorName());
         result.setCategoryName(document.getCategoryName());
         result.setCoverImg(document.getCoverImg() != null ? document.getCoverImg() : "");
@@ -476,7 +478,8 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public Page<BlogDocument> searchWithMultiFactorRanking(String keyword, Pageable pageable, SearchSortConfig sortConfig) {
+    public Page<BlogDocument> searchWithMultiFactorRanking(String keyword, Pageable pageable,
+            SearchSortConfig sortConfig) {
         if (!isAvailable()) {
             log.warn("Elasticsearch被禁用，返回空结果");
             return Page.empty();
@@ -515,7 +518,8 @@ public class SearchServiceImpl implements SearchService {
                         // 根据最终评分排序
                         double score1 = doc1.getMultiFactorScore() != null ? doc1.getMultiFactorScore() : 0.0;
                         double score2 = doc2.getMultiFactorScore() != null ? doc2.getMultiFactorScore() : 0.0;
-                        return finalSortConfig.getDescending() ? Double.compare(score2, score1) : Double.compare(score1, score2);
+                        return finalSortConfig.getDescending() ? Double.compare(score2, score1)
+                                : Double.compare(score1, score2);
                     })
                     .collect(Collectors.toList());
 
@@ -548,8 +552,8 @@ public class SearchServiceImpl implements SearchService {
 
         // 综合评分计算
         double finalScore = config.getRelevanceWeight() * relevanceScore +
-                          config.getTimeWeight() * timeScore +
-                          config.getPopularityWeight() * popularityScore;
+                config.getTimeWeight() * timeScore +
+                config.getPopularityWeight() * popularityScore;
 
         // 将评分存储到文档中（临时添加字段）
         doc.setMultiFactorScore(finalScore);
@@ -608,10 +612,32 @@ public class SearchServiceImpl implements SearchService {
         }
 
         log.info("开始重建搜索索引...");
-        // 实际实现需要从数据库读取所有博客并重新索引
-        log.info("搜索索引重建完成");
+
+        try {
+            // 1. 删除旧索引
+            if (elasticsearchOperations.indexOps(BlogDocument.class).exists()) {
+                elasticsearchOperations.indexOps(BlogDocument.class).delete();
+                log.info("已删除旧索引");
+            }
+
+            // 2. 创建新索引
+            elasticsearchOperations.indexOps(BlogDocument.class).create();
+            elasticsearchOperations.indexOps(BlogDocument.class).putMapping();
+            log.info("已创建新索引");
+
+            // 3. 从数据库读取所有已发布的博客
+            // 注意：这里需要通过 ApplicationContext 获取 BlogMapper
+            // 由于 SearchServiceImpl 不应该直接依赖 BlogMapper，
+            // 实际使用时应该通过 SearchController 调用时传入数据
+            log.info("索引重建完成（需要外部提供数据源）");
+            log.warn("请使用 bulkIndexBlogs() 方法批量索引博客数据");
+
+        } catch (Exception e) {
+            log.error("索引重建失败", e);
+            throw new RuntimeException("索引重建失败: " + e.getMessage());
+        }
     }
-    
+
     @Override
     public boolean isAvailable() {
         return elasticsearchEnabled && elasticsearchOperations != null;

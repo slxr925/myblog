@@ -39,8 +39,8 @@ services:
       REDIS_HOST: ${REDIS_HOST:-172.17.0.1}
       REDIS_PORT: ${REDIS_PORT:-26739}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      ELASTICSEARCH_ENABLED: ${ELASTICSEARCH_ENABLED:-false}
-      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-172.17.0.1}
+      ELASTICSEARCH_ENABLED: ${ELASTICSEARCH_ENABLED:-true}
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-elasticsearch}
       ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT:-9200}
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
@@ -101,6 +101,33 @@ services:
           cpus: '0.25'
           memory: 256M
 
+  # Elasticsearch 全文搜索
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: myblog-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - myblog-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
 networks:
   myblog-network:
     driver: bridge
+
+volumes:
+  es-data:
+    driver: local
