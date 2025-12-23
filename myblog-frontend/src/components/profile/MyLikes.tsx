@@ -8,8 +8,6 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import {
   Heart,
   Calendar,
-  MessageCircle,
-  Eye,
   Loader2
 } from 'lucide-react';
 import { api } from '../../utils/api';
@@ -79,7 +77,6 @@ const MyLikes: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [unlikingIds, setUnlikingIds] = useState<Set<number>>(new Set());
 
   const fetchLikedBlogs = async () => {
     try {
@@ -109,21 +106,16 @@ const MyLikes: React.FC = () => {
   }, [page]);
 
   const handleUnlike = async (blogId: number) => {
-    try {
-      setUnlikingIds(prev => new Set(prev).add(blogId));
-      await api.blog.toggleLike(blogId);
+    const previousBlogs = [...blogs];
+    setBlogs(prev => prev.filter(blog => blog.id !== blogId));
+    setTotal(prev => Math.max(0, prev - 1));
 
-      // 重新获取列表
-      await fetchLikedBlogs();
+    try {
+      await api.blog.toggleLikeWithDetails(blogId);
     } catch (err) {
       console.error('取消点赞失败:', err);
-      // 可以添加错误提示
-    } finally {
-      setUnlikingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(blogId);
-        return newSet;
-      });
+      setBlogs(previousBlogs);
+      setTotal(prev => previousBlogs.length);
     }
   };
 
@@ -186,7 +178,6 @@ const MyLikes: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {blogs.map((blog, index) => {
               const transformedBlog = transformLikedBlog(blog);
-              const isUnliking = unlikingIds.has(blog.id);
 
               return (
                 <motion.div
@@ -195,10 +186,9 @@ const MyLikes: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
-                    {/* 封面图 */}
+                  <Card className="group hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col h-full">
                     <div
-                      className="relative h-48 overflow-hidden cursor-pointer"
+                      className="relative h-36 overflow-hidden cursor-pointer shrink-0"
                       onClick={() => handleBlogClick(blog.id)}
                     >
                       <img
@@ -206,102 +196,49 @@ const MyLikes: React.FC = () => {
                         alt={blog.title}
                         className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                       />
-
-                      {/* 标签 */}
-                      {blog.tags && blog.tags.length > 0 && (
-                        <div className="absolute top-3 left-3 flex gap-2">
-                          {blog.tags.slice(0, 2).map((tag, tagIndex) => (
-                            <Badge
-                              key={tagIndex}
-                              variant="secondary"
-                              className="bg-white/90 backdrop-blur-sm"
-                            >
-                              {typeof tag === 'string' ? tag : tag.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
-                    <CardContent className="p-5">
-                      {/* 标题和摘要 */}
-                      <div className="mb-4">
-                        <h3
-                          className="text-lg font-semibold text-foreground mb-2 line-clamp-2 cursor-pointer group-hover:text-primary transition-colors"
-                          onClick={() => handleBlogClick(blog.id)}
-                        >
-                          {blog.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-3">
-                          {blog.summary || '暂无摘要'}
-                        </p>
-                      </div>
+                    <CardContent className="p-3 flex flex-col flex-grow">
+                      <h3
+                        className="text-sm font-semibold text-foreground mb-2 line-clamp-2 cursor-pointer group-hover:text-primary transition-colors"
+                        onClick={() => handleBlogClick(blog.id)}
+                      >
+                        {blog.title}
+                      </h3>
 
-                      {/* 元信息 */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          发布于 {transformedBlog.publishDate}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-3 h-3" />
-                          点赞于 {transformedBlog.likedDate}
-                        </span>
-                      </div>
-
-                      {/* 作者和统计 */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-6 h-6">
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {(blog.authorName || 'U').charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-muted-foreground">
-                            {blog.authorName || '匿名'}
-                          </span>
-                        </div>
-
+                      <div className="flex flex-col gap-2 mt-auto">
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            {blog.viewCount || 0}
+                            <Calendar className="w-3 h-3" />
+                            {transformedBlog.publishDate}
                           </span>
                           <span className="flex items-center gap-1">
                             <Heart className="w-3 h-3" />
-                            {blog.likeCount || 0}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MessageCircle className="w-3 h-3" />
-                            {blog.commentCount || 0}
+                            {transformedBlog.likedDate}
                           </span>
                         </div>
-                      </div>
 
-                      {/* 操作按钮 */}
-                      <div className="flex gap-2 mt-4 pt-4 border-t">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => handleBlogClick(blog.id)}
-                        >
-                          查看详情
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleUnlike(blog.id)}
-                          disabled={isUnliking}
-                        >
-                          {isUnliking ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Heart className="w-4 h-4 fill-current" />
-                          )}
-                          取消点赞
-                        </Button>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="w-5 h-5">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {(blog.authorName || 'U').charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-muted-foreground">
+                              {blog.authorName || '匿名'}
+                            </span>
+                          </div>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
+                            onClick={() => handleUnlike(blog.id)}
+                          >
+                            <Heart className="w-3 h-3 fill-current" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
