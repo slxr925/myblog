@@ -10,39 +10,39 @@ const About: React.FC = () => {
       category: '前端技术',
       icon: <Code2 className="w-5 h-5" />,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      technologies: ['React', 'TypeScript', 'Tailwind CSS', 'Vite', 'Framer Motion']
+      bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+      technologies: ['React 19', 'TypeScript 5.8', 'Vite 7', 'Tailwind CSS 4', 'Framer Motion']
     },
     {
       category: '后端技术',
       icon: <Server className="w-5 h-5" />,
       color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      technologies: ['Spring Boot', 'MyBatis Plus', 'MySQL', 'Redis', 'JWT']
+      bgColor: 'bg-green-50 dark:bg-green-950/30',
+      technologies: ['Spring Boot 3.5', 'MyBatis Plus', 'Spring Security', 'Spring Data JPA', 'JWT']
     },
     {
-      category: '搜索引擎',
+      category: '数据存储',
       icon: <Database className="w-5 h-5" />,
       color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      technologies: ['Elasticsearch', 'Spring Data ES']
+      bgColor: 'bg-purple-50 dark:bg-purple-950/30',
+      technologies: ['MySQL 8.0', 'Redis 7.x', 'Elasticsearch 8.11']
     },
     {
-      category: '部署运维',
+      category: 'AI & 部署',
       icon: <Rocket className="w-5 h-5" />,
       color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      technologies: ['Docker', 'Nginx', 'Linux', 'Shell Script']
+      bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+      technologies: ['Spring AI', 'Docker', 'Nginx', 'Shell Script']
     }
   ];
 
   const features = [
-    { title: '响应式设计', description: '完美适配各种设备尺寸' },
-    { title: '深色模式', description: '支持明暗主题切换' },
-    { title: '全文搜索', description: 'Elasticsearch 强力支持' },
-    { title: '实时预览', description: 'Markdown 编辑器实时渲染' },
-    { title: '代码高亮', description: '优雅的代码展示效果' },
-    { title: '评论互动', description: '支持文章评论和点赞' },
+    { title: '响应式设计', description: '完美适配移动端和桌面端' },
+    { title: '深色模式', description: '支持明暗主题自动切换' },
+    { title: 'AI智能助手', description: 'Spring AI驱动的智能问答' },
+    { title: '全文搜索', description: 'Elasticsearch实时搜索' },
+    { title: 'Markdown编辑', description: '实时预览与代码高亮' },
+    { title: '评论互动', description: '支持评论、点赞、关注' },
   ];
 
   return (
@@ -54,14 +54,14 @@ const About: React.FC = () => {
       <div className="container mx-auto px-4 max-w-6xl">
         {/* 头部介绍 */}
         <div className="text-center mb-12">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-5xl font-bold text-foreground mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600"
           >
             关于本站
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
@@ -84,12 +84,14 @@ const About: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground leading-relaxed">
-                  这是一个基于 Spring Boot + React 构建的现代化博客平台，采用前后端分离架构，
-                  提供优雅的阅读体验和强大的内容管理功能。
+                  这是一个基于 <strong>Spring Boot 3.5 + React 19</strong> 构建的现代化博客平台，
+                  采用前后端分离架构，集成 <strong>Spring AI</strong> 提供智能助手功能，
+                  提供优雅的阅读体验和强大的内容管理能力。
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  博客支持 Markdown 写作、代码高亮、全文搜索、深色模式等特性，
-                  旨在为技术爱好者提供一个简洁、高效的内容创作和分享平台。
+                  博客支持 Markdown 写作、代码高亮、全文搜索、深色模式、AI问答等特性，
+                  并针对移动端进行了深度优化（320px-375px小屏幕），
+                  旨在为技术爱好者提供一个简洁、高效、智能的内容创作和分享平台。
                 </p>
                 <div className="pt-4 border-t border-border">
                   <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -191,9 +193,9 @@ const About: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <a 
-                  href="https://github.com/slxr925" 
-                  target="_blank" 
+                <a
+                  href="https://github.com/slxr925"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
                 >
@@ -206,7 +208,7 @@ const About: React.FC = () => {
                   </div>
                 </a>
 
-                <a 
+                <a
                   href="mailto:contact@example.com"
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
                 >

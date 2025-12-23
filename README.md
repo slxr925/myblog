@@ -21,11 +21,13 @@ MyBlog 是一个基于 Spring Boot + React 构建的现代化博客系统，采�
 
 ### ✨ 核心亮点
 
-- 🎨 **现代化设计** - 响应式布局，支持暗黑模式
-- 🚀 **高性能** - Redis缓存 + Elasticsearch全文搜索
-- 🔐 **安全可靠** - JWT认证 + Spring Security
-- 🐳 **易于部署** - Docker容器化，一键部署
-- 📱 **移动友好** - 完美适配各种设备
+- 🎨 **现代化设计** - 响应式布局，完美适配移动端，支持暗黑模式
+- 🚀 **高性能架构** - Redis缓存 + Elasticsearch全文搜索 + 前后端分离
+- 🤖 **AI智能助手** - Spring AI集成，支持智能问答和内容优化
+- 🔐 **安全可靠** - JWT认证 + Spring Security + 数据加密
+- 🐳 **一键部署** - Docker容器化，3分钟完成部署更新
+- 📱 **移动优先** - 针对320px-375px小屏幕优化，完美适配各种设备
+- 🎯 **开发友好** - TypeScript类型安全 + 完整API文档 + 自动化脚本
 
 ## 🎯 功能特性
 
@@ -33,9 +35,11 @@ MyBlog 是一个基于 Spring Boot + React 构建的现代化博客系统，采�
 - ✅ 用户注册、登录、个人资料管理
 - ✅ Markdown编辑器，支持实时预览
 - ✅ 文章发布、草稿保存、分类标签
-- ✅ 评论互动、点赞功能
+- ✅ 评论互动、点赞、关注功能
 - ✅ 全文搜索、高级筛选
 - ✅ 个人文章管理面板
+- ✅ AI智能助手（问答、内容优化）
+- ✅ 实时搜索建议
 
 ### 管理功能
 - ✅ 用户管理（查看、编辑、禁用）
@@ -43,6 +47,7 @@ MyBlog 是一个基于 Spring Boot + React 构建的现代化博客系统，采�
 - ✅ 评论管理（审核、删除）
 - ✅ 分类标签管理
 - ✅ 数据统计分析
+- ✅ AI辅助写作（标题生成、内容润色、关键词提取）
 
 ## 🚀 快速开始
 
@@ -206,25 +211,42 @@ cd deploy && ./backup.sh
 
 ## 🛠️ 技术栈
 
-### 后端
-- **Spring Boot 3.5** - Java应用框架
-- **Spring Security** - 安全认证
-- **MyBatis Plus** - 数据库ORM
-- **MySQL** - 关系型数据库
-- **Redis** - 缓存系统
-- **Elasticsearch** - 全文搜索引擎
+### 后端技术
+- **Spring Boot 3.5.5** - 企业级Java应用框架
+- **Spring Security** - 安全认证与授权
+- **Spring Data JPA** - 数据持久化
+- **MyBatis Plus 3.5.9** - 增强型ORM框架
+- **MySQL 8.0** - 关系型数据库
+- **Redis 7.x** - 高性能缓存系统
+- **Elasticsearch 8.11** - 全文搜索引擎
+- **Spring AI 1.1.2** - AI集成框架（支持智能助手功能）
+- **JWT 0.12.3** - 无状态身份认证
+- **Knife4j 4.3.0** - API文档工具
 
-### 前端
-- **React 19** - UI框架
-- **TypeScript** - 类型系统
-- **Vite** - 构建工具
-- **Tailwind CSS** - CSS框架
-- **Radix UI** - 组件库
+### 前端技术
+- **React 19.1** - 最新版UI框架
+- **TypeScript 5.8** - 类型安全的JavaScript
+- **Vite 7.1** - 新一代前端构建工具
+- **Tailwind CSS 4.1** - 原子化CSS框架
+- **Radix UI** - 无障碍组件库
+- **Framer Motion 12** - 流畅动画库
+- **React Router 7.9** - 路由管理
+- **Axios 1.12** - HTTP客户端
+- **React Markdown** - Markdown渲染
+- **Recharts** - 数据可视化
 
-### 部署
-- **Docker** - 容器化
+### 基础设施
+- **Docker** - 容器化部署
 - **Docker Compose** - 服务编排
-- **Nginx** - 反向代理
+- **Nginx 1.27** - 反向代理与负载均衡
+- **Java 21** - LTS版本运行时
+- **Node.js 18+** - 前端开发环境
+
+### 开发工具
+- **Maven** - 后端依赖管理
+- **npm** - 前端包管理
+- **Git** - 版本控制
+- **Shell Script** - 自动化部署脚本
 
 ## 📸 界面预览
 
