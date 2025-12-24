@@ -55,11 +55,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户名已存在");
         }
 
-        // 检查昵称是否已存在
-        existUser = userMapper.selectByNickname(userRegisterDTO.getNickname());
-        if (existUser != null) {
-            throw new RuntimeException("昵称已存在");
-        }
+        // 昵称不进行唯一性校验
 
         // 检查邮箱是否已存在
         existUser = userMapper.selectByEmail(userRegisterDTO.getEmail());
