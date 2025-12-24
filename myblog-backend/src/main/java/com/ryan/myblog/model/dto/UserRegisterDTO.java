@@ -20,7 +20,7 @@ import java.lang.annotation.*;
 public class UserRegisterDTO {
 
     @NotBlank(message = "用户名不能为空")
-    @Size(min = 3, max = 20, message = "用户名长度必须在3-20位之间")
+    @Size(min = 3, max = 12, message = "用户名长度必须在3-12位之间")
     private String username;
 
     @NotBlank(message = "密码不能为空")
@@ -32,7 +32,8 @@ public class UserRegisterDTO {
     @Email(message = "邮箱格式不正确")
     private String email;
 
-    @Size(max = 50, message = "昵称长度不能超过50位")
+    @NotBlank(message = "昵称不能为空")
+    @Size(max = 12, message = "昵称长度不能超过12位")
     private String nickname;
 
     /**

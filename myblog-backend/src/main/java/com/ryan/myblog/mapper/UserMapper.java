@@ -20,4 +20,9 @@ public interface UserMapper extends BaseMapper<User> {
      * 根据邮箱查询用户
      */
     User selectByEmail(@Param("email") String email);
+
+    /**
+     * 根据昵称查询用户
+     */
+    User selectByNickname(@Param("nickname") String nickname);
 }

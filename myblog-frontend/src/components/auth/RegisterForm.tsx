@@ -31,8 +31,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     // 用户名验证
     if (!formData.username.trim()) {
       newErrors.username = '用户名不能为空';
-    } else if (formData.username.length < 3 || formData.username.length > 20) {
-      newErrors.username = '用户名长度必须在3-20位之间';
+    } else if (formData.username.length < 3 || formData.username.length > 12) {
+      newErrors.username = '用户名长度必须在3-12位之间';
     }
 
     // 密码验证
@@ -57,8 +57,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     }
 
     // 昵称验证
-    if (formData.nickname && formData.nickname.length > 50) {
-      newErrors.nickname = '昵称长度不能超过50位';
+    const nickname = formData.nickname || '';
+    if (!nickname.trim()) {
+      newErrors.nickname = '昵称不能为空';
+    } else if (nickname.length > 12) {
+      newErrors.nickname = '昵称长度不能超过12位';
     }
 
     setErrors(newErrors);
@@ -187,7 +190,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
                   id="username"
                   name="username"
                   type="text"
-                  placeholder="请输入用户名（3-20位）"
+                  placeholder="请输入用户名（3-12位）"
                   value={formData.username}
                   onChange={handleInputChange}
                   className={errors.username ? 'border-red-500' : ''}
@@ -206,7 +209,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="请输入邮箱地址"
+                  placeholder="请输入邮箱"
                   value={formData.email}
                   onChange={handleInputChange}
                   className={errors.email ? 'border-red-500' : ''}
@@ -219,13 +222,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
               <div className="space-y-2">
                 <label htmlFor="nickname" className="text-sm font-medium">
-                  昵称
+                  昵称 <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="nickname"
                   name="nickname"
                   type="text"
-                  placeholder="请输入昵称（可选）"
+                  placeholder="请输入昵称（最多12位）"
                   value={formData.nickname}
                   onChange={handleInputChange}
                   className={errors.nickname ? 'border-red-500' : ''}
