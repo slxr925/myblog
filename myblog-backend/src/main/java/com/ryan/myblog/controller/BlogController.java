@@ -37,10 +37,10 @@ import com.ryan.myblog.mapper.BlogMapper;
 public class BlogController {
 
     private final BlogService blogService;
-    private final SecurityUtils securityUtils;
     private final com.ryan.myblog.service.RedisLikeService redisLikeService;
     private final com.ryan.myblog.service.CacheService cacheService;
     private final BlogMapper blogMapper;
+    private final com.ryan.myblog.service.BrowseHistoryService browseHistoryService;
 
     // 注入 Spring 管理的线程池（避免内存泄漏）
     // 原来使用 Executors.newFixedThreadPool(4) 创建的线程池不会被Spring管理
@@ -79,6 +79,10 @@ public class BlogController {
             BlogDetailVO blog = blogService.getBlogDetail(id, userId);
             // 增加阅读量
             blogService.incrementViewCount(id);
+            // 记录浏览历史（仅登录用户）
+            if (userId != null) {
+                browseHistoryService.recordBrowse(userId, id);
+            }
             return Result.success(blog);
         } catch (Exception e) {
             // 如果用户未登录，使用普通查询

@@ -26,7 +26,8 @@ import type {
   CollectResultDTO,
   UserCollectionVO,
   UserFollowVO,
-  FollowPageResponse
+  FollowPageResponse,
+  BrowseHistoryVO
 } from '../types/api';
 
 // 创建axios实例
@@ -820,6 +821,14 @@ export const api = {
     // 获取token
     getToken: (): string | null => {
       return localStorage.getItem('token');
+    },
+  },
+
+  // 浏览记录相关API
+  browseHistory: {
+    // 获取用户浏览记录
+    getUserHistory: async (days = 3): Promise<BrowseHistoryVO[]> => {
+      return apiClient.get('/browse-history', { params: { days } }) as Promise<BrowseHistoryVO[]>;
     },
   },
 

@@ -371,3 +371,20 @@ export interface FollowPageResponse {
   size: number;
   pages?: number;
 }
+
+// ========== 浏览记录相关类型定义 ==========
+
+// 浏览记录VO
+export interface BrowseHistoryVO {
+  id: number;
+  blogId: number;
+  title: string;
+  summary: string;
+  coverImg?: string;
+  categoryName?: string;
+  tags: string[];
+  browseTime: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+}

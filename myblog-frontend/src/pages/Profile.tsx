@@ -13,6 +13,7 @@ import MyCollections from '../components/profile/MyCollections';
 import CollectionsManager from '../components/profile/CollectionsManager';
 import MyFollowers from '../components/profile/MyFollowers';
 import MyFollowing from '../components/profile/MyFollowing';
+import MyBrowseHistory from '../components/profile/MyBrowseHistory';
 import { useAuth } from '../contexts/AuthContext';
 import { Role } from '../types/api';
 import { api } from '../utils/api';
@@ -248,11 +249,12 @@ const Profile: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="account" className="w-full">
-                  <TabsList className="grid w-full grid-cols-6">
+                  <TabsList className="grid w-full grid-cols-7">
                     <TabsTrigger value="account">账户状态</TabsTrigger>
                     <TabsTrigger value="comments">我的评论</TabsTrigger>
                     <TabsTrigger value="likes">我的喜爱</TabsTrigger>
                     <TabsTrigger value="collections">我的收藏</TabsTrigger>
+                    <TabsTrigger value="browse-history">浏览记录</TabsTrigger>
                     <TabsTrigger value="followers">我的粉丝</TabsTrigger>
                     <TabsTrigger value="following">我关注的</TabsTrigger>
                   </TabsList>
@@ -307,6 +309,10 @@ const Profile: React.FC = () => {
 
                   <TabsContent value="collections">
                     <CollectionsManager />
+                  </TabsContent>
+
+                  <TabsContent value="browse-history">
+                    <MyBrowseHistory />
                   </TabsContent>
 
                   <TabsContent value="followers">
