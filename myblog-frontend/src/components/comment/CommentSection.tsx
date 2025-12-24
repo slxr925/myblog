@@ -166,7 +166,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               <Reply className="w-4 h-4 mr-1" />
               回复
             </Button>
-            {comment.replyCount > 0 && (
+            {comment.replyCount !== undefined && comment.replyCount > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {comment.replyCount} 条回复
               </Badge>
@@ -280,14 +280,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       if (response && response.records) {
         setComments(response.records);
         // 通知父组件更新评论计数
-        if (onCommentCountChange) {
-          onCommentCountChange(response.records.length);
-        }
-      } else {
-        setComments([]);
-        if (onCommentCountChange) {
-          onCommentCountChange(0);
-        }
+        onCommentCountChange?.(0);
+        onCommentCountChange?.(response.records.length);
       }
     } catch (error: any) {
       console.error('获取评论失败:', error);
@@ -302,6 +296,18 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
     if (blogId) {
       fetchComments();
     }
+  }, [blogId]);
+
+  // 监听登录成功事件，登录后重新获取评论列表
+  useEffect(() => {
+    const handleLoginSuccess = () => {
+      fetchComments();
+    };
+
+    window.addEventListener('auth:loginSuccess', handleLoginSuccess);
+    return () => {
+      window.removeEventListener('auth:loginSuccess', handleLoginSuccess);
+    };
   }, [blogId]);
 
   // 提交新评论
@@ -617,9 +623,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   );
 };
 
-// 使用 React.memo 优化组件，只有当 blogId 变化时才重新渲染
-export default React.memo(CommentSection, (prevProps, nextProps) => {
-  // 返回 true 表示不需要重新渲染，返回 false 表示需要重新渲染
-  return prevProps.blogId === nextProps.blogId &&
-    prevProps.className === nextProps.className;
-});
+// 导出组件 - 不使用 React.memo 的自定义比较函数
+// 因为组件内部依赖 AuthContext 的 user 状态，自定义比较函数会阻止 Context 变化触发的重新渲染
+export default CommentSection;

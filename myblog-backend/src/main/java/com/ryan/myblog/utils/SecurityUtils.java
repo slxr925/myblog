@@ -21,14 +21,14 @@ public class SecurityUtils {
     private final UserService userService;
 
     /**
-     * 获取当前用户ID
+     * 获取当前用户ID，如果未登录则返回null
      */
     public static Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Long) {
             return (Long) authentication.getPrincipal();
         }
-        throw new RuntimeException("用户未登录");
+        return null;
     }
 
     /**
@@ -60,13 +60,12 @@ public class SecurityUtils {
             return false;
         }
 
-        try {
-            Long currentUserId = getCurrentUserId();
-            return currentUserId.equals(resourceOwnerId) || isAdmin();
-        } catch (Exception e) {
-            log.error("检查资源所有权失败: {}", e.getMessage());
+        Long currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
             return false;
         }
+
+        return currentUserId.equals(resourceOwnerId) || isAdmin();
     }
 
     /**

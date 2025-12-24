@@ -181,7 +181,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           type: 'LOGIN_SUCCESS',
           payload: { user, token },
         });
-        
+
+        window.dispatchEvent(new CustomEvent('auth:loginSuccess', {
+          detail: { user, token }
+        }));
+
         console.log('登录成功，用户信息:', user);
         
       } catch (userError) {

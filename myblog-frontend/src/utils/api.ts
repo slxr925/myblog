@@ -470,7 +470,7 @@ export const api = {
     },
 
     // 创建评论
-    create: async (commentData: CommentCreateDTO): Promise<ProcessedResponse<void>> => {
+    create: async (commentData: CommentCreateDTO): Promise<ProcessedResponse<CommentVO>> => {
       return apiClient.post('/comment', commentData);
     },
 
