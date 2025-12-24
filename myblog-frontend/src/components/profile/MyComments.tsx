@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Trash2, User, AlertCircle, ExternalLink, Clock } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
@@ -31,7 +30,7 @@ export const MyComments: React.FC = () => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const pageSize = 10;
+  const pageSize = 6;
   const { user } = useAuth();
   const { openAuthModal } = useAuthModal();
 
@@ -154,61 +153,52 @@ export const MyComments: React.FC = () => {
 
       {/* 数据列表 - 加载完成前不显示任何内容 */}
       {!hasLoaded ? null : comments.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {comments.map((comment) => (
-            <Card key={comment.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={comment.userAvatar} alt={comment.username} />
-                      <AvatarFallback className="text-lg">
-                        {comment.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-medium text-gray-800">{comment.username}</span>
-                        <span className="text-sm text-gray-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDistanceToNow(new Date(comment.createTime), {
-                            addSuffix: true,
-                            locale: zhCN,
-                          })}
-                        </span>
-                      </div>
-                      <div className="text-gray-700 mb-3 leading-relaxed">
-                        {comment.content}
-                      </div>
-                      {comment.blogTitle && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            评论于：{comment.blogTitle}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleNavigateToBlog(comment.blogId)}
-                            className="text-blue-600 hover:text-blue-700 p-0 h-auto"
-                          >
-                            查看博客
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </Button>
+            <Card key={comment.id} className="hover:shadow-md transition-shadow py-0">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />
+                            {formatDistanceToNow(new Date(comment.createTime), {
+                              addSuffix: true,
+                              locale: zhCN,
+                            })}
+                          </span>
                         </div>
-                      )}
+                        <div className="text-sm text-gray-700 line-clamp-2">
+                          {comment.content}
+                        </div>
+                        {comment.blogTitle && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                              {comment.blogTitle}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleNavigateToBlog(comment.blogId)}
+                              className="text-blue-600 hover:text-blue-700 p-0 h-auto text-xs"
+                            >
+                              查看
+                              <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 ml-2"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
           ))}
         </div>
       ) : (

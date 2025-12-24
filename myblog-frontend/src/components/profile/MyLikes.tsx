@@ -13,7 +13,7 @@ import {
 import { api } from '../../utils/api';
 import type { BlogDetailVO } from '../../types/api';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 // 扩展类型，添加点赞时间
 interface LikedBlogVO extends BlogDetailVO {
@@ -175,68 +175,66 @@ const MyLikes: React.FC = () => {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-3">
             {blogs.map((blog, index) => {
               const transformedBlog = transformLikedBlog(blog);
 
               return (
                 <motion.div
                   key={blog.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
                 >
-                  <Card className="group hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col h-full">
-                    <div
-                      className="relative h-36 overflow-hidden cursor-pointer shrink-0"
-                      onClick={() => handleBlogClick(blog.id)}
-                    >
-                      <img
-                        src={blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/800/400.jpg`}
-                        alt={blog.title}
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-
-                    <CardContent className="p-3 flex flex-col flex-grow">
-                      <h3
-                        className="text-sm font-semibold text-foreground mb-2 line-clamp-2 cursor-pointer group-hover:text-primary transition-colors"
-                        onClick={() => handleBlogClick(blog.id)}
-                      >
-                        {blog.title}
-                      </h3>
-
-                      <div className="flex flex-col gap-2 mt-auto">
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {transformedBlog.publishDate}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" />
-                            {transformedBlog.likedDate}
-                          </span>
+                  <Card 
+                    className="group hover:shadow-md transition-all duration-200 cursor-pointer py-0"
+                    onClick={() => handleBlogClick(blog.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                          <img
+                            src={blog.coverImg || `https://picsum.photos/seed/blog${blog.id}/400/300.jpg`}
+                            alt={blog.title}
+                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                          />
                         </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="w-5 h-5">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-foreground mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">
+                            {blog.title}
+                          </h3>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {transformedBlog.publishDate}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-3 h-3 fill-red-500 text-red-500" />
+                              {transformedBlog.likedDate}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1.5">
+                            <Avatar className="w-6 h-6">
                               <AvatarFallback className="text-xs bg-primary/10 text-primary">
                                 {(blog.authorName || 'U').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground max-w-[80px] truncate">
                               {blog.authorName || '匿名'}
                             </span>
                           </div>
-
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
-                            onClick={() => handleUnlike(blog.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlike(blog.id);
+                            }}
                           >
-                            <Heart className="w-3 h-3 fill-current" />
+                            <Heart className="w-4 h-4 fill-current" />
                           </Button>
                         </div>
                       </div>

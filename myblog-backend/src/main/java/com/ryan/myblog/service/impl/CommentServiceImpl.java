@@ -238,7 +238,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public IPage<CommentVO> getCommentsByUser(PageRequest pageRequest, Long userId) {
         Page<Comment> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
-        IPage<Comment> commentPage = commentMapper.selectCommentsByUser(userId, page);
+        IPage<Comment> commentPage = commentMapper.selectCommentsByUser(page, userId);
 
         if (CollectionUtils.isEmpty(commentPage.getRecords())) {
             return new Page<>(pageRequest.getPage(), pageRequest.getSize());

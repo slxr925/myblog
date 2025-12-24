@@ -24,8 +24,8 @@ public interface CommentMapper extends BaseMapper<Comment> {
         /**
          * 根据用户ID分页查询评论列表（包含博客标题）
          */
-        IPage<Comment> selectCommentsByUser(@Param("userId") Long userId,
-                        @Param("page") IPage<Comment> page);
+        IPage<Comment> selectCommentsByUser(IPage<Comment> page,
+                        @Param("userId") Long userId);
 
         /**
          * 统计博客的评论数

@@ -134,22 +134,22 @@ export const MyFollowing: React.FC = () => {
 
             {/* 数据列表 - 加载完成前不显示任何内容 */}
             {!hasLoaded ? null : following.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                     {following.map((followedUser) => (
-                        <Card key={followedUser.userId} className="hover:shadow-md transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start space-x-4 flex-1">
-                                        <Avatar className="w-12 h-12">
+                        <Card key={followedUser.userId} className="hover:shadow-md transition-shadow py-0">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                        <Avatar className="w-10 h-10">
                                             <AvatarImage src={followedUser.avatar} alt={followedUser.nickname || followedUser.username} />
-                                            <AvatarFallback className="text-lg bg-indigo-100 text-indigo-600">
+                                            <AvatarFallback className="text-base bg-indigo-100 text-indigo-600">
                                                 {(followedUser.nickname || followedUser.username).charAt(0).toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className="font-medium text-gray-800">{followedUser.nickname || followedUser.username}</span>
-                                                <span className="text-sm text-gray-500">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-medium text-sm text-gray-800 truncate">{followedUser.nickname || followedUser.username}</span>
+                                                <span className="text-xs text-gray-500 whitespace-nowrap">
                                                     {formatDistanceToNow(new Date(followedUser.followTime), {
                                                         addSuffix: true,
                                                         locale: zhCN,
@@ -157,7 +157,7 @@ export const MyFollowing: React.FC = () => {
                                                 </span>
                                             </div>
                                             {followedUser.bio && (
-                                                <div className="text-sm text-gray-600 mb-2">
+                                                <div className="text-xs text-gray-600 line-clamp-1">
                                                     {followedUser.bio}
                                                 </div>
                                             )}

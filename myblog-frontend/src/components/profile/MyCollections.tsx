@@ -30,7 +30,7 @@ const MyCollections: React.FC = () => {
   const [folders, setFolders] = useState<CollectionFolderVO[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(6);
   const [total, setTotal] = useState(0);
   const [selectedFolder, setSelectedFolder] = useState<number | undefined>();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -39,10 +39,8 @@ const MyCollections: React.FC = () => {
     loadData();
   }, [selectedFolder, page, refreshKey]);
 
-  // Listen for folder data changes
   React.useEffect(() => {
     const handleFolderDataChanged = () => {
-      // Refresh folder data by clearing the cached folders
       setFolders([]);
       setRefreshKey(prev => prev + 1);
     };
@@ -63,11 +61,9 @@ const MyCollections: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Always load fresh folder data to ensure counts are up to date
       const foldersData = await api.collection.getFolders();
       setFolders(foldersData);
 
-      // 加载收藏列表
       const params: any = {
         page,
         pageSize,
@@ -95,8 +91,6 @@ const MyCollections: React.FC = () => {
       await api.collection.delete(id);
       toast.success('已取消收藏');
       setRefreshKey(prev => prev + 1);
-
-      // Emit collection removed event
       eventEmitter.emit(EVENTS.COLLECTION_REMOVED, { folderId: selectedFolder });
       eventEmitter.emit(EVENTS.FOLDER_DATA_CHANGED);
     } catch (error: any) {
@@ -111,7 +105,6 @@ const MyCollections: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* 筛选栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-muted-foreground">筛选：</span>
@@ -141,7 +134,6 @@ const MyCollections: React.FC = () => {
         </div>
       </div>
 
-      {/* 收藏列表 */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -159,78 +151,79 @@ const MyCollections: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {collections.map(item => (
-            <Card key={item.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0 pr-4">
+            <Card key={item.id} className="hover:shadow-md transition-shadow py-0">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => openBlog(item.blogId)}>
+                    <img
+                      src={`https://picsum.photos/seed/collect${item.id}/400/300.jpg`}
+                      alt={item.blogTitle}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
                     <h3
-                      className="font-medium text-foreground hover:text-primary transition-colors cursor-pointer truncate"
+                      className="font-medium text-foreground mb-1.5 line-clamp-1 hover:text-primary transition-colors cursor-pointer"
                       onClick={() => openBlog(item.blogId)}
                     >
                       {item.blogTitle}
                     </h3>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{item.authorName}</span>
                       <span>{item.viewCount} 阅读</span>
                       <span>
-                        {formatDistanceToNow(new Date(item.createTime), {
+                        {formatDistanceToNow(new Date(item.createTime || ''), {
                           addSuffix: true,
                           locale: zhCN
                         })}
                       </span>
                     </div>
+                    {item.blogSummary && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                        {item.blogSummary}
+                      </p>
+                    )}
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openBlog(item.blogId)}>
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        查看原文
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => window.open(`/user/collections?folder=${item.folderId}`, '_blank')}
-                      >
-                        <FolderOpen className="w-4 h-4 mr-2" />
-                        管理收藏夹
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        取消收藏
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {item.folderName && (
+                      <Badge variant="secondary" className="text-xs">
+                        {item.folderName}
+                      </Badge>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openBlog(item.blogId)}>
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          查看原文
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => window.open(`/user/collections?folder=${item.folderId}`, '_blank')}
+                        >
+                          <FolderOpen className="w-4 h-4 mr-2" />
+                          管理收藏夹
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          取消收藏
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {item.blogSummary && (
-                  <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                    {item.blogSummary}
-                  </p>
-                )}
-                {item.note && (
-                  <p className="text-sm bg-blue-50 dark:bg-blue-950 p-2 rounded mb-2">
-                    备注：{item.note}
-                  </p>
-                )}
-                {item.folderName && (
-                  <Badge variant="secondary" className="text-xs">
-                    {item.folderName}
-                  </Badge>
-                )}
               </CardContent>
             </Card>
           ))}
 
-          {/* 分页 */}
           {total > pageSize && (
             <div className="flex justify-center pt-4">
               <div className="flex items-center space-x-2">
