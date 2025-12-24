@@ -81,6 +81,7 @@ export interface BlogDetailVO {
   isTop: number;
   viewCount: number;
   likeCount: number;
+  isLiked?: boolean; // Added isLiked field
   commentCount: number;
   publishTime?: string;
   createTime?: string;

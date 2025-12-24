@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Heart, Share2, MessageCircle, FileText, Tag, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -21,7 +21,6 @@ const BlogDetail: React.FC = () => {
   const [blog, setBlog] = useState<BlogDetailVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiking, setIsLiking] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const { openAuthModal } = useAuthModal();
@@ -73,7 +72,7 @@ const BlogDetail: React.FC = () => {
         setLoading(true);
         const response = await api.blog.getDetail(Number(id));
         setBlog(response);
-        setLikeCount(response.likeCount || 0);
+
         setIsLiked(response.isLiked || false);
         setCommentCount(response.commentCount || 0);
 
@@ -104,7 +103,7 @@ const BlogDetail: React.FC = () => {
       const result: LikeResultDTO = await api.blog.toggleLikeWithDetails(blog.id);
       // 只更新点赞相关的状态，不更新整个 blog 对象，避免触发子组件重新渲染
       setIsLiked(result.isLiked);
-      setLikeCount(result.likeCount);
+
     } catch (error) {
       console.error('点赞失败:', error);
     } finally {
@@ -210,146 +209,155 @@ const BlogDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-12 max-w-4xl grid grid-cols-1 md:grid-cols-[1fr_250px] gap-12">
-        {/* Main Content */}
-        <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
-          {blogData.coverImg && (
-            <img
-              src={blogData.coverImg}
-              alt={blogData.title}
-              className="w-full aspect-video object-cover mb-10 rounded-2xl"
-            />
-          )}
+      {/* Main Content Layout */}
+      {/* Main Content Layout */}
+      <div className="container mx-auto px-4 py-12 max-w-4xl relative">
 
-          {blogData.content ? (
-            <MarkdownRenderer content={blogData.content} />
-          ) : (
-            <p className="text-muted-foreground">暂无内容</p>
-          )}
-          {/* AI功能区 */}
-          <div className="mt-10 pt-8 border-t border-border">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <span className="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">AI 助手</span>
-            </h3>
+        {/* Main Column: Content */}
+        <main className="w-full">
+          <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
+            {blogData.coverImg && (
+              <img
+                src={blogData.coverImg}
+                alt={blogData.title}
+                className="w-full aspect-video object-cover mb-10 rounded-2xl"
+              />
+            )}
 
-            <div className="flex gap-3 mb-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateSummary}
-                disabled={isGeneratingSummary}
-              >
-                {isGeneratingSummary ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    生成中
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    生成摘要
-                  </>
-                )}
-              </Button>
+            {/* AI功能区 - 移至上方 */}
+            <div className="mb-8 p-6 bg-muted/30 rounded-2xl border border-border">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <span className="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">AI 助手</span>
+              </h3>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExtractKeywords}
-                disabled={isExtractingKeywords}
-              >
-                {isExtractingKeywords ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    提取中
-                  </>
-                ) : (
-                  <>
-                    <Tag className="w-4 h-4 mr-2" />
-                    提取关键词
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-3 mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateSummary}
+                  disabled={isGeneratingSummary}
+                  className="bg-background"
+                >
+                  {isGeneratingSummary ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      生成中
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      生成摘要
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExtractKeywords}
+                  disabled={isExtractingKeywords}
+                  className="bg-background"
+                >
+                  {isExtractingKeywords ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      提取中
+                    </>
+                  ) : (
+                    <>
+                      <Tag className="w-4 h-4 mr-2" />
+                      提取关键词
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* 摘要显示 */}
+              {aiSummary && (
+                <Card className="mb-6 bg-background/50 border-0 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-indigo-500" />
+                      文章摘要
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {aiSummary}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 关键词显示 */}
+              {aiKeywords.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-purple-500" />
+                    智能关键词
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {aiKeywords.map((keyword, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="bg-background text-indigo-700 hover:bg-indigo-50 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800"
+                      >
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* 摘要显示 */}
-            {aiSummary && (
-              <Card className="mb-6 bg-muted/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-indigo-500" />
-                    文章摘要
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {aiSummary}
-                  </p>
-                </CardContent>
-              </Card>
+            {blogData.content ? (
+              <MarkdownRenderer content={blogData.content} />
+            ) : (
+              <p className="text-muted-foreground">暂无内容</p>
             )}
+          </article>
 
-            {/* 关键词显示 */}
-            {aiKeywords.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-purple-500" />
-                  智能关键词
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {aiKeywords.map((keyword, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
-                    >
-                      {keyword}
-                    </Badge>
-                  ))}
-                </div>
+          {/* Comments Section */}
+          <div className="border-t border-border mt-16 pt-10">
+            <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
+              <MessageCircle className="w-6 h-6" /> 评论 ({commentCount})
+            </h3>
+            <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
+          </div>
+        </main>
+
+        {/* Right Sidebar: Absolute Positioned */}
+        <aside className="hidden 2xl:block w-[300px] absolute top-12 left-full ml-12 h-full">
+          <div className="sticky top-24 space-y-8">
+            {/* Table of Contents */}
+            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+              <h3 className="font-bold text-foreground mb-4">目录</h3>
+              {/* TODO: Implement dynamic TOC based on markdown content */}
+              <p className="text-sm text-muted-foreground">目录生成功能开发中...</p>
+            </div>
+
+            {/* Subscribe Box */}
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
+              <h3 className="font-bold text-lg mb-2">订阅更新</h3>
+              <p className="text-indigo-100 text-sm mb-4">每周精选技术文章，直接发送到你的邮箱。</p>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                />
+                <Button className="w-full bg-white text-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-50 border-none">
+                  订阅
+                </Button>
               </div>
-            )}
-          </div>
-        </article>
-
-        {/* Sidebar */}
-        <aside className="hidden md:block space-y-8 sticky top-24 h-fit">
-          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-            <h3 className="font-bold text-foreground mb-4">目录</h3>
-            {/* TODO: Implement dynamic TOC based on markdown content */}
-            <p className="text-sm text-muted-foreground">目录生成功能开发中...</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
-            <h3 className="font-bold text-lg mb-2">订阅更新</h3>
-            <p className="text-indigo-100 text-sm mb-4">每周精选技术文章，直接发送到你的邮箱。</p>
-            <div className="space-y-3">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
-              />
-              <Button className="w-full bg-white text-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-50 border-none">
-                订阅
-              </Button>
             </div>
           </div>
         </aside>
-      </div>
 
-      {/* Comments Section */}
-      <div className="container mx-auto px-4 max-w-4xl pb-20">
-        <div className="border-t border-border pt-10">
-          <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
-            <MessageCircle className="w-6 h-6" /> 评论 ({commentCount})
-          </h3>
-          <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
-        </div>
       </div>
     </div>
   );
 };
 
-// 使用React.memo优化组件，避免不必要的重渲染
 export default React.memo(BlogDetail);
