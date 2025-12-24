@@ -1,11 +1,18 @@
--- 博客系统数据库初始化脚本
--- 基于实际数据库结构生成
--- 创建时间: 2025-10-19
+-- ============================================
+-- MyBlog 数据库完整初始化脚本
+-- 包含：表结构 + 默认数据 + 示例文章
+-- 创建时间: 2025-12-23
+-- 使用方法: mysql -u root -p < all-in-one.sql
+-- ============================================
 
 -- 创建数据库（如果不存在）
 CREATE DATABASE IF NOT EXISTS myblog DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE myblog;
+
+-- ============================================
+-- 第一部分：表结构定义
+-- ============================================
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS tb_user (
@@ -117,7 +124,6 @@ CREATE TABLE IF NOT EXISTS tb_comment (
     INDEX idx_deleted (deleted),
     FOREIGN KEY (blog_id) REFERENCES tb_blog(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES tb_user(id) ON DELETE CASCADE
-    -- 注意：parent_id 不设置外键约束，因为前端使用 0 表示顶级评论，后端会将其转换为 NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论表';
 
 -- 用户点赞表
@@ -154,70 +160,6 @@ CREATE TABLE IF NOT EXISTS tb_visit_log (
     INDEX idx_deleted (deleted),
     FOREIGN KEY (user_id) REFERENCES tb_user(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='访问日志表';
-
--- 插入默认数据
-
--- 插入默认管理员用户（密码：admin123）
-INSERT INTO tb_user (username, password, email, nickname, role, status) VALUES
-('admin', '$2a$10$7JB720yubVSOfvVWbfXCOOxjTOQcQjmrJF1ZM4nAVccp/.rkMlDWy', 'admin@example.com', '管理员', 1, 0)
-ON DUPLICATE KEY UPDATE password = VALUES(password);
-
--- 插入默认分类
-INSERT INTO tb_category (name, description, icon, sort) VALUES
-('技术分享', 'Java、Spring、数据库等技术文章', 'tech', 1),
-('项目实战', '实际项目开发过程和经验', 'project', 2),
-('生活随笔', '日常生活感悟和随想', 'life', 3),
-('学习笔记', '学习过程中的笔记和总结', 'study', 4)
-ON DUPLICATE KEY UPDATE description = VALUES(description);
-
--- 插入默认标签
-INSERT INTO tb_tag (name, color) VALUES
-('Java', '#f56a00'),
-('Spring Boot', '#722ed1'),
-('MySQL', '#1890ff'),
-('Redis', '#eb2f96'),
-('Vue.js', '#52c41a'),
-('React', '#13c2c2'),
-('Python', '#2f54eb'),
-('Docker', '#fa8c16'),
-('微服务', '#722ed1'),
-('算法', '#fa541c'),
-('前端', '#13c2c2'),
-('后端', '#1890ff'),
-('人工智能', '#52c41a'),
-('AI Agent', '#ff6b35'),
-('LangChain', '#4a90e2'),
-('大语言模型', '#7b68ee'),
-('企业级应用', '#32cd32')
-ON DUPLICATE KEY UPDATE color = VALUES(color);
-
--- 插入示例博客文章
-INSERT INTO tb_blog (title, summary, content, author_id, category_id, status, visibility, is_top, publish_time, status_changed_time) VALUES
-('Spring Boot 3.x 新特性详解', 'Spring Boot 3.x 版本带来了很多令人兴奋的新特性，本文将详细介绍这些新特性的使用方法和最佳实践。', '# Spring Boot 3.x 新特性详解\n\nSpring Boot 3.x 是一个重要的版本升级，带来了许多令人兴奋的新特性。\n\n## 主要特性\n\n1. **基于 Jakarta EE 9+**\n2. **原生镜像支持**\n3. **性能优化**\n4. **新的配置属性**\n\n...', 1, 1, 1, 1, 1, NOW(), NOW()),
-('Docker 容器化部署实践', '详细介绍如何使用 Docker 容器化部署 Spring Boot 应用，包括 Dockerfile 编写和容器编排。', '# Docker 容器化部署实践\n\n本文将详细介绍如何使用 Docker 来容器化部署 Spring Boot 应用。\n\n## Dockerfile 示例\n\n```dockerfile\nFROM openjdk:17-jdk-slim\nCOPY target/app.jar /app.jar\nENTRYPOINT ["java", "-jar", "/app.jar"]\n```\n\n## 部署步骤\n\n1. 构建镜像\n2. 运行容器\n3. 配置网络\n4. 数据持久化\n\n...', 1, 2, 1, 1, 0, NOW(), NOW()),
-('Redis 缓存设计与优化', '分享 Redis 在项目中的缓存设计模式和性能优化技巧，包括缓存穿透、雪崩等问题的解决方案。', '# Redis 缓存设计与优化\n\nRedis 作为高性能的内存数据库，在缓存设计中有很多最佳实践。\n\n## 缓存模式\n\n1. **Cache-Aside**\n2. **Write-Through**\n3. **Write-Behind**\n\n## 常见问题\n\n- 缓存穿透\n- 缓存雪崩\n- 缓存击穿\n\n...', 1, 1, 1, 1, 0, NOW(), NOW())
-ON DUPLICATE KEY UPDATE content = VALUES(content), update_time = NOW();
-
--- 插入博客标签关联
--- 需要先获取插入的文章ID，这里使用假设的ID（实际使用时需要动态获取）
--- 假设文章ID为1, 2, 3
-INSERT INTO tb_blog_tag (blog_id, tag_id) VALUES
-(1, 1), (1, 2), (1, 9),
-(2, 8), (2, 9),
-(3, 4), (3, 9)
-ON DUPLICATE KEY UPDATE create_time = NOW();
-
--- 创建数据库用户并授权（生产环境使用）
--- CREATE USER 'myblog_user'@'localhost' IDENTIFIED BY 'your_password';
--- GRANT SELECT, INSERT, UPDATE, DELETE ON myblog.* TO 'myblog_user'@'localhost';
--- FLUSH PRIVILEGES;
-
--- 设置数据库字符集
-ALTER DATABASE myblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- ============================================
--- 扩展功能表：收藏和用户关注
--- ============================================
 
 -- 收藏夹分类表
 CREATE TABLE IF NOT EXISTS tb_collection_folder (
@@ -268,23 +210,78 @@ CREATE TABLE IF NOT EXISTS tb_user_follow (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
-    
-    -- 唯一索引：防止重复关注
     UNIQUE KEY uk_follower_followee (follower_id, followee_id, deleted),
-    
-    -- 索引：优化查询粉丝列表（谁关注了我）
     INDEX idx_followee_id (followee_id, deleted, create_time),
-    
-    -- 索引：优化查询关注列表（我关注了谁）
     INDEX idx_follower_id (follower_id, deleted, create_time),
-    
-    -- 索引：优化按时间查询
     INDEX idx_create_time (create_time),
-    
-    -- 外键约束：确保数据一致性
     FOREIGN KEY (follower_id) REFERENCES tb_user(id) ON DELETE CASCADE,
     FOREIGN KEY (followee_id) REFERENCES tb_user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户关注关系表';
+
+-- 用户浏览记录表
+CREATE TABLE IF NOT EXISTS tb_browse_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '浏览记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    blog_id BIGINT NOT NULL COMMENT '文章ID',
+    browse_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '浏览时间（最新浏览时间）',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    
+    -- 唯一键：确保同一用户对同一文章只有一条记录
+    UNIQUE KEY uk_user_blog (user_id, blog_id, deleted),
+    
+    -- 复合索引：优化查询用户浏览记录的性能
+    INDEX idx_user_browse_time (user_id, browse_time DESC, deleted),
+    
+    -- 单列索引：支持按文章查询
+    INDEX idx_blog_id (blog_id),
+    
+    -- 单列索引：支持按时间清理过期数据
+    INDEX idx_browse_time (browse_time),
+    
+    -- 外键约束
+    FOREIGN KEY (user_id) REFERENCES tb_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (blog_id) REFERENCES tb_blog(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户浏览记录表';
+
+-- ============================================
+-- 第二部分：默认数据
+-- ============================================
+
+-- 插入默认管理员用户（密码：admin123）
+INSERT INTO tb_user (username, password, email, nickname, role, status) VALUES
+('admin', '$2a$10$7JB720yubVSOfvVWbfXCOOxjTOQcQjmrJF1ZM4nAVccp/.rkMlDWy', 'admin@example.com', '管理员', 1, 0)
+ON DUPLICATE KEY UPDATE password = VALUES(password);
+
+-- 插入默认分类
+INSERT INTO tb_category (name, description, icon, sort) VALUES
+('技术分享', 'Java、Spring、数据库等技术文章', 'tech', 1),
+('项目实战', '实际项目开发过程和经验', 'project', 2),
+('生活随笔', '日常生活感悟和随想', 'life', 3),
+('学习笔记', '学习过程中的笔记和总结', 'study', 4)
+ON DUPLICATE KEY UPDATE description = VALUES(description);
+
+-- 插入默认标签
+INSERT INTO tb_tag (name, color) VALUES
+('Java', '#f56a00'),
+('Spring Boot', '#722ed1'),
+('MySQL', '#1890ff'),
+('Redis', '#eb2f96'),
+('Vue.js', '#52c41a'),
+('React', '#13c2c2'),
+('Python', '#2f54eb'),
+('Docker', '#fa8c16'),
+('微服务', '#722ed1'),
+('算法', '#fa541c'),
+('前端', '#13c2c2'),
+('后端', '#1890ff'),
+('人工智能', '#52c41a'),
+('AI Agent', '#ff6b35'),
+('LangChain', '#4a90e2'),
+('大语言模型', '#7b68ee'),
+('企业级应用', '#32cd32')
+ON DUPLICATE KEY UPDATE color = VALUES(color);
 
 -- 为所有现有用户创建默认收藏夹
 INSERT INTO tb_collection_folder (user_id, name, is_default, sort_order)
@@ -301,13 +298,26 @@ WHERE id NOT IN (
 );
 
 -- ============================================
--- 数据库迁移说明
+-- 第三部分：示例文章（可选）
+-- 说明：生产环境可以跳过这部分
 -- ============================================
--- 注意：此初始化脚本已经移除了 like_count 和 comment_count 冗余字段
--- 所有点赞数通过 tb_user_like 表实时查询
--- 所有评论数通过 tb_comment 表实时查询
--- 
--- 如果从旧版本升级，需要手动执行以下迁移：
--- ALTER TABLE tb_blog DROP COLUMN IF EXISTS like_count;
--- ALTER TABLE tb_blog DROP COLUMN IF EXISTS comment_count;
--- ALTER TABLE tb_comment DROP COLUMN IF EXISTS like_count;
+
+-- 插入示例博客文章
+INSERT INTO tb_blog (title, summary, content, author_id, category_id, status, visibility, is_top, publish_time, status_changed_time) VALUES
+('Spring Boot 3.x 新特性详解', 'Spring Boot 3.x 版本带来了很多令人兴奋的新特性，本文将详细介绍这些新特性的使用方法和最佳实践。', '# Spring Boot 3.x 新特性详解\n\nSpring Boot 3.x 是一个重要的版本升级，带来了许多令人兴奋的新特性。\n\n## 主要特性\n\n1. **基于 Jakarta EE 9+**\n2. **原生镜像支持**\n3. **性能优化**\n4. **新的配置属性**\n\n...', 1, 1, 1, 1, 1, NOW(), NOW()),
+('Docker 容器化部署实践', '详细介绍如何使用 Docker 容器化部署 Spring Boot 应用，包括 Dockerfile 编写和容器编排。', '# Docker 容器化部署实践\n\n本文将详细介绍如何使用 Docker 来容器化部署 Spring Boot 应用。\n\n## Dockerfile 示例\n\n```dockerfile\nFROM openjdk:17-jdk-slim\nCOPY target/app.jar /app.jar\nENTRYPOINT [\"java\", \"-jar\", \"/app.jar\"]\n```\n\n## 部署步骤\n\n1. 构建镜像\n2. 运行容器\n3. 配置网络\n4. 数据持久化\n\n...', 1, 2, 1, 1, 0, NOW(), NOW()),
+('Redis 缓存设计与优化', '分享 Redis 在项目中的缓存设计模式和性能优化技巧，包括缓存穿透、雪崩等问题的解决方案。', '# Redis 缓存设计与优化\n\nRedis 作为高性能的内存数据库，在缓存设计中有很多最佳实践。\n\n## 缓存模式\n\n1. **Cache-Aside**\n2. **Write-Through**\n3. **Write-Behind**\n\n## 常见问题\n\n- 缓存穿透\n- 缓存雪崩\n- 缓存击穿\n\n...', 1, 1, 1, 1, 0, NOW(), NOW())
+ON DUPLICATE KEY UPDATE content = VALUES(content), update_time = NOW();
+
+-- 插入博客标签关联
+INSERT INTO tb_blog_tag (blog_id, tag_id) VALUES
+(1, 1), (1, 2), (1, 9),
+(2, 8), (2, 9),
+(3, 4), (3, 9)
+ON DUPLICATE KEY UPDATE create_time = NOW();
+
+-- ============================================
+-- 完成提示
+-- ============================================
+SELECT '数据库初始化完成！' as status;
+SELECT '默认管理员账号: admin / admin123' as info;
