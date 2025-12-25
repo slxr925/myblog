@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import { Save, Eye, ArrowLeft, Upload, Image as ImageIcon, ClipboardList, Loader2, Sparkles, Wand2 } from 'lucide-react';
+import { Save, Eye, ArrowLeft, Upload, ClipboardList, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { api } from '../../utils/api';
 import type { BlogDetailVO, Category, Tag } from '../../types/api';
 import { BlogStatus } from '../../types/api';
@@ -148,28 +148,34 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
     }
   }, [mode, id, navigate]);
 
-  // 表单字段更新
-  const handleInputChange = (field: keyof BlogFormData, value: any) => {
+  // 表单字段更新 - 使用 useCallback 确保函数引用稳定
+  const handleInputChange = useCallback((field: keyof BlogFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  // 标签管理
-  const addTag = (tagName: string) => {
-    if (tagName && !formData.tags.includes(tagName)) {
-      setFormData(prev => ({
+  // 标签管理 - 使用 useCallback 并修复依赖
+  const addTag = useCallback((tagName: string) => {
+    if (!tagName) return;
+
+    setFormData(prev => {
+      // 检查标签是否已存在
+      if (prev.tags.includes(tagName)) {
+        return prev;
+      }
+      return {
         ...prev,
         tags: [...prev.tags, tagName]
-      }));
-      setTagInput('');
-    }
-  };
+      };
+    });
+    setTagInput('');
+  }, []);
 
-  const removeTag = (tagToRemove: string) => {
+  const removeTag = useCallback((tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
-  };
+  }, []);
 
   // 图片上传
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,8 +189,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsUploading(true);
     try {
-      const response = await api.upload.editorImage(file);
-      handleInputChange('coverImg', response.url);
+      const response = await api.upload.uploadEditorImage(file);
+      handleInputChange('coverImg', response.data.url);
       toast.success('图片上传成功');
     } catch (error) {
       console.error('图片上传失败:', error);
@@ -476,7 +482,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                       value={formData.title}
                       onChange={(e) => handleInputChange('title', e.target.value)}
                       placeholder="请输入文章标题"
-                      className="text-lg font-medium flex-1"
+                      className="text-xl font-bold flex-1"
                     />
                     <Button
                       variant="outline"
@@ -506,19 +512,19 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                     value={formData.summary}
                     onChange={(e) => handleInputChange('summary', e.target.value)}
                     placeholder="请输入文章摘要"
+                    className="text-base"
                   />
                 </div>
 
                 {/* Markdown编辑器 */}
                 <div>
                   <Label>文章内容 *</Label>
-                  <div className="mt-2">
+                  <div className="mt-2 [&_.w-md-editor-text-input]:text-base [&_.w-md-editor-text-input]:font-normal">
                     <MDEditor
                       value={formData.content}
                       onChange={(value) => handleInputChange('content', value || '')}
                       preview={previewMode ? 'preview' : 'edit'}
                       height={400}
-                      data-color-mode="auto"
                     />
                   </div>
                 </div>
@@ -559,13 +565,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                       className="hidden"
                       disabled={isUploading}
                     />
-                    <label htmlFor="coverImage">
-                      <Button
-                        variant="outline"
-                        className="w-full flex items-center gap-2 cursor-pointer"
-                        disabled={isUploading}
-                        as="span"
-                      >
+                    <label htmlFor="coverImage" className="cursor-pointer">
+                      <div className="w-full flex h-10 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50">
                         {isUploading ? (
                           '上传中...'
                         ) : (
@@ -574,7 +575,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                             上传封面图片
                           </>
                         )}
-                      </Button>
+                      </div>
                     </label>
                   </div>
                 )}
@@ -674,40 +675,24 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
               </CardContent>
             </Card>
 
-            {/* 文章状态 */}
+            {/* 可见性 */}
             <Card>
               <CardHeader>
-                <CardTitle>文章状态</CardTitle>
+                <CardTitle>可见性</CardTitle>
               </CardHeader>
               <CardContent>
                 <Select
-                  value={formData.status.toString()}
-                  onValueChange={(value) => handleInputChange('status', Number(value))}
+                  value={formData.visibility.toString()}
+                  onValueChange={(value) => handleInputChange('visibility', Number(value))}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">草稿</SelectItem>
-                    <SelectItem value="1">已发布</SelectItem>
-                    <SelectItem value="2">已下线</SelectItem>
+                    <SelectItem value="1">公开</SelectItem>
+                    <SelectItem value="0">仅自己可见</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="mt-4 space-y-2">
-                  <Label>可见性</Label>
-                  <Select
-                    value={formData.visibility.toString()}
-                    onValueChange={(value) => handleInputChange('visibility', Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">公开</SelectItem>
-                      <SelectItem value="0">仅自己可见</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardContent>
             </Card>
 

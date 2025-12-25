@@ -125,7 +125,6 @@ export const CommentManagement: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
             <div>
-          <h2 className="text-2xl font-bold tracking-tight">评论管理</h2>
               <p className="text-muted-foreground">管理系统中的所有用户评论</p>
         </div>
 

@@ -155,7 +155,6 @@ export const UserManagement: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
             <div>
-            <h2 className="text-2xl font-bold tracking-tight">用户管理</h2>
               <p className="text-muted-foreground">管理系统中的所有用户账户</p>
           </div>
         </div>

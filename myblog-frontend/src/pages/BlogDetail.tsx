@@ -210,12 +210,10 @@ const BlogDetail: React.FC = () => {
       </div>
 
       {/* Main Content Layout */}
-      {/* Main Content Layout */}
-      <div className="container mx-auto px-4 py-12 max-w-4xl relative">
-
-        {/* Main Column: Content */}
-        <main className="w-full">
-          <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+          {/* Main Column: Content */}
+          <main className="flex-1 min-w-0">
+            <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
             {blogData.coverImg && (
               <img
                 src={blogData.coverImg}
@@ -326,35 +324,6 @@ const BlogDetail: React.FC = () => {
             <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
           </div>
         </main>
-
-        {/* Right Sidebar: Absolute Positioned */}
-        <aside className="hidden 2xl:block w-[300px] absolute top-12 left-full ml-12 h-full">
-          <div className="sticky top-24 space-y-8">
-            {/* Table of Contents */}
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-              <h3 className="font-bold text-foreground mb-4">目录</h3>
-              {/* TODO: Implement dynamic TOC based on markdown content */}
-              <p className="text-sm text-muted-foreground">目录生成功能开发中...</p>
-            </div>
-
-            {/* Subscribe Box */}
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
-              <h3 className="font-bold text-lg mb-2">订阅更新</h3>
-              <p className="text-indigo-100 text-sm mb-4">每周精选技术文章，直接发送到你的邮箱。</p>
-              <div className="space-y-3">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
-                />
-                <Button className="w-full bg-white text-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-50 border-none">
-                  订阅
-                </Button>
-              </div>
-            </div>
-          </div>
-        </aside>
-
       </div>
     </div>
   );

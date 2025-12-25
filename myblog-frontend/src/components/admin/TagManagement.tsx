@@ -154,7 +154,6 @@ export const TagManagement: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
             <div>
-            <h2 className="text-2xl font-bold tracking-tight">标签管理</h2>
               <p className="text-muted-foreground">管理博客标签</p>
           </div>
           <Button onClick={handleCreate} className="flex items-center gap-2">

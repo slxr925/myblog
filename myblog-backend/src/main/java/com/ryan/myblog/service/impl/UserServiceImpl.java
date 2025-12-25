@@ -10,6 +10,8 @@ import com.ryan.myblog.model.dto.UserLoginDTO;
 import com.ryan.myblog.model.dto.UserRegisterDTO;
 import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.mapper.UserMapper;
+import com.ryan.myblog.service.CacheConsistencyService;
+import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.SessionService;
 import com.ryan.myblog.service.UserService;
 import com.ryan.myblog.utils.JwtUtils;
@@ -39,6 +41,8 @@ public class UserServiceImpl implements UserService {
     private final SessionService sessionService;
     private final JwtProperties jwtProperties;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final CacheService cacheService;
+    private final CacheConsistencyService cacheConsistencyService;
     
     // 登录失败限制配置
     private static final int MAX_LOGIN_ATTEMPTS = 5; // 最大失败次数
@@ -271,8 +275,25 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void updateUser(User user) {
+        User existingUser = userMapper.selectById(user.getId());
+        if (existingUser == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        boolean nicknameChanged = StringUtils.isNotBlank(user.getNickname()) 
+                && !user.getNickname().equals(existingUser.getNickname());
+        
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
+        
+        if (nicknameChanged) {
+            cacheService.deleteByPattern("blog:detail:*");
+            cacheService.deleteByPattern("blog:hot:*");
+            cacheService.deleteByPattern("blog:latest:*");
+            cacheService.deleteByPattern("blog:page:*");
+            cacheConsistencyService.publishCacheInvalidation("blog:*", "用户昵称更新");
+            log.info("用户昵称更新，已清除相关博客缓存：userId={}", user.getId());
+        }
     }
     
     @Override

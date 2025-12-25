@@ -56,8 +56,9 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
         status: statusFilter
       });
 
-      const blogData = Array.isArray(response?.records) ? response.records : [];
-      const totalCount = response?.total ?? blogData.length;
+      const responseData = response as { records?: any[]; total?: number; content?: any[]; totalElements?: number };
+      const blogData = Array.isArray(responseData?.records) ? responseData.records : (Array.isArray(responseData?.content) ? responseData.content : []);
+      const totalCount = responseData?.total ?? responseData?.totalElements ?? blogData.length;
 
       setBlogs(blogData);
       setTotalBlogs(totalCount);
@@ -192,7 +193,6 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">文章管理</h2>
             <p className="text-muted-foreground">管理系统中的所有博客文章</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -347,8 +347,8 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
           </CardContent>
         </Card>
 
-        {/* Blogs Grid */}
-        <div>
+        {/* Blogs List - Vertical */}
+        <div className="space-y-4">
           {filteredBlogs.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
@@ -362,134 +362,119 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="space-y-4">
               {filteredBlogs.map((blog) => {
                 const isLoading = loadingBlogId === blog.id;
                 return (
-                <motion.div
-                  key={blog.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="group h-full"
-                >
-                  <Card className="hover:shadow-md transition-all duration-200 h-full flex flex-col">
-                    <CardContent className="p-6 flex flex-col flex-1">
-                      {/* Blog Header - 固定高度 */}
-                      <div className="mb-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-lg line-clamp-2 flex-1 min-h-[3.5rem]">
-                            {blog.title || '无标题'}
-                          </h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1">
+                  <motion.div
+                    key={blog.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ scale: 1.01 }}
+                  >
+                    <Card className="hover:shadow-md transition-all duration-200">
+                      <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2 gap-2">
+                            <h3 className="font-semibold text-base line-clamp-1 flex-1">
+                              {blog.title || '无标题'}
+                            </h3>
+                            <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1 shrink-0">
                               {getStatusIcon(blog.status || 1)}
                               {getStatusText(blog.status || 1)}
                             </Badge>
+                          </div>
+                          <div className="h-10 mb-2">
+                            {blog.summary && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {blog.summary}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                <span className="text-xs">{blog.authorName || '未知作者'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span className="text-xs">
+                                  {blog.publishTime ?
+                                    new Date(blog.publishTime).toLocaleDateString('zh-CN') :
+                                    '未发布'
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span>ID: {blog.id}</span>
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {blog.viewCount || 0}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                {blog.likeCount || 0}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            {blog.categoryName && (
+                              <Badge variant="outline" className="text-xs">
+                                📁 {blog.categoryName}
+                              </Badge>
+                            )}
                             {blog.isTop === 1 && (
                               <Badge variant="outline" className="text-xs">
                                 置顶
                               </Badge>
                             )}
-                        </div>
-                      </div>
-
-                      {/* Blog Summary - 固定高度 */}
-                      <div className="h-16 mb-4">
-                      {blog.summary && (
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                          {blog.summary}
-                        </p>
-                      )}
-                      </div>
-
-                      {/* Blog Metadata */}
-                      <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <User className="w-3 h-3" />
-                            <span className="truncate">{blog.authorName || '未知作者'}</span>
-                          </div>
-                          <span className="text-xs">ID: {blog.id}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span className="text-xs">
-                            {blog.publishTime ?
-                              new Date(blog.publishTime).toLocaleDateString('zh-CN') :
-                              '未发布'
-                            }
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs">
-                            <div className="flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              {blog.viewCount || 0}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <TrendingUp className="w-3 h-3" />
-                              {blog.likeCount || 0}
-                            </div>
+                            {Array.isArray(blog.tags) &&
+                              blog.tags.slice(0, 2).map((tag: any, index) => (
+                                <Badge key={index} variant="secondary" className="text-xs">
+                                  #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
+                                </Badge>
+                              ))}
                           </div>
                         </div>
-                      </div>
 
-                      {/* Blog Categories and Tags - 固定高度 */}
-                      <div className="h-8 mb-3 flex items-center flex-wrap gap-1">
-                          {blog.categoryName && (
-                          <Badge variant="outline" className="text-xs">
-                              📁 {blog.categoryName}
-                            </Badge>
-                          )}
-                          {Array.isArray(blog.tags) &&
-                          blog.tags.slice(0, 2).map((tag: any, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                                #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
-                              </Badge>
-                            ))}
+                        <div className="flex sm:flex-col gap-2 shrink-0 sm:self-center">
+                          <motion.div whileTap={{ scale: 0.95 }}>
+                            <Button
+                              variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
+                              size="sm"
+                              onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
+                              disabled={isLoading}
+                              className="w-full text-xs"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                blog.status === BlogStatus.PUBLISHED ? '下线' : '发布'
+                              )}
+                            </Button>
+                          </motion.div>
+                          <motion.div whileTap={{ scale: 0.95 }}>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
+                              disabled={isLoading}
+                              className="text-xs"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </motion.div>
                         </div>
-
-                      {/* Spacer to push buttons to bottom */}
-                      <div className="flex-1"></div>
-
-                      {/* Actions - 固定在底部 */}
-                      <div className="flex gap-2 mt-auto">
-                        <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
-                        <Button
-                          variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
-                          size="sm"
-                          onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
-                            disabled={isLoading}
-                            className="w-full"
-                        >
-                            {isLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              blog.status === BlogStatus.PUBLISHED ? '下线' : '发布'
-                            )}
-                        </Button>
-                        </motion.div>
-                        <motion.div whileTap={{ scale: 0.95 }}>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                          <Trash2 className="w-4 h-4" />
-                            )}
-                        </Button>
-                        </motion.div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
               })}
             </div>
           )}
