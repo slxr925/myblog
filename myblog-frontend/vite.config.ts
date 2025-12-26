@@ -23,15 +23,57 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // React 核心库
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // UI 和动画库
-          'ui-vendor': ['framer-motion', 'lucide-react', 'date-fns'],
+          if (id.includes('node_modules/react') ||
+            id.includes('node_modules/react-dom') ||
+            id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor';
+          }
+
+          // Radix UI 组件库
+          if (id.includes('node_modules/@radix-ui')) {
+            return 'radix-ui-vendor';
+          }
+
+          // Markdown 编辑器和相关库
+          if (id.includes('node_modules/@uiw/react-md-editor') ||
+            id.includes('node_modules/@uiw/react-markdown-preview') ||
+            id.includes('node_modules/react-markdown') ||
+            id.includes('node_modules/remark-') ||
+            id.includes('node_modules/rehype-') ||
+            id.includes('node_modules/react-syntax-highlighter')) {
+            return 'markdown-editor';
+          }
+
+          // 图表库
+          if (id.includes('node_modules/recharts')) {
+            return 'charts-vendor';
+          }
+
+          // 其他UI库和工具
+          if (id.includes('node_modules/framer-motion') ||
+            id.includes('node_modules/lucide-react') ||
+            id.includes('node_modules/sonner') ||
+            id.includes('node_modules/emoji-picker-react')) {
+            return 'ui-vendor';
+          }
+
+          // axios 和工具库
+          if (id.includes('node_modules/axios') ||
+            id.includes('node_modules/date-fns') ||
+            id.includes('node_modules/clsx') ||
+            id.includes('node_modules/class-variance-authority')) {
+            return 'utils-vendor';
+          }
         }
       }
     },
     // 提高 chunk 大小警告阈值（单位：KB）
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    // 启用源码映射（可选，用于调试）
+    sourcemap: false,
+    // 使用 esbuild 进行压缩（更快）
+    minify: 'esbuild'
   }
 })
