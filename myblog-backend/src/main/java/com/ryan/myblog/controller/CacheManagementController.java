@@ -73,23 +73,6 @@ public class CacheManagementController {
     }
 
     /**
-     * 数据同步后清理缓存（解决SQL导入后数据不一致问题）
-     * 清理：最新博客、热门博客、分类下博客、标签下博客
-     */
-    @DeleteMapping("/sync-clean")
-    public Result<Void> cleanAfterSync() {
-        // 清除缓存
-        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
-        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
-        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_CATEGORY_LIST);
-        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_TAG_LIST);
-        cacheConsistencyService.updateCacheVersion("blog:*");
-
-        log.info("手动执行了同步后缓存清理");
-        return Result.success();
-    }
-
-    /**
      * 手动触发缓存预热
      */
     @PostMapping("/warmup")

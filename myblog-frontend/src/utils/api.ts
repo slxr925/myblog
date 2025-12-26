@@ -623,10 +623,7 @@ export const api = {
       return apiClient.post('/admin/track-visit', { page });
     },
 
-    // 同步后清理缓存
-    syncCleanCache: async (): Promise<ApiResponse<void>> => {
-      return apiClient.delete('/cache/sync-clean');
-    },
+
   },
 
   upload: {

@@ -228,27 +228,7 @@ export const Admin: React.FC = () => {
             <p className="text-muted-foreground text-sm mt-1">欢迎回来，{user?.nickname || '管理员'}</p>
           </div>
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={async () => {
-                const btn = document.getElementById('refresh-cache-btn');
-                if (btn) btn.classList.add('animate-spin');
-                try {
-                  await api.admin.syncCleanCache();
-                  alert('缓存清理成功！数据同步已生效。');
-                } catch (error) {
-                  console.error('清理缓存失败:', error);
-                  alert('清理缓存失败，请检查网络或控制台日志');
-                } finally {
-                  if (btn) btn.classList.remove('animate-spin');
-                }
-              }}
-              className="gap-2"
-              title="同步数据后清理缓存"
-            >
-              <RefreshCcw id="refresh-cache-btn" className="w-4 h-4" />
-              刷新缓存
-            </Button>
+
             <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
               返回前台
             </Button>
