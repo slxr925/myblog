@@ -3,6 +3,8 @@ package com.ryan.myblog.controller;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.CacheService;
+import com.ryan.myblog.service.UnifiedCacheService;
+import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.service.CacheWarmupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ public class CacheManagementController {
 
     private final CacheService cacheService;
     private final CacheWarmupService cacheWarmupService;
+    private final UnifiedCacheService unifiedCacheService;
     private final CacheConsistencyService cacheConsistencyService;
 
     /**
@@ -75,14 +78,11 @@ public class CacheManagementController {
      */
     @DeleteMapping("/sync-clean")
     public Result<Void> cleanAfterSync() {
-        // 1. 清理最新博客列表
-        cacheService.deleteByPattern("blog:latest:*");
-        // 2. 清理热门博客列表
-        cacheService.deleteByPattern("blog:hot:*");
-        // 3. 清理博客归档/分类/标签列表缓存
-        cacheService.deleteByPattern("blog:category:*");
-        cacheService.deleteByPattern("blog:tag:*");
-        // 4. 更新缓存版本，使客户端感知变化
+        // 清除缓存
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_CATEGORY_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_TAG_LIST);
         cacheConsistencyService.updateCacheVersion("blog:*");
 
         log.info("手动执行了同步后缓存清理");

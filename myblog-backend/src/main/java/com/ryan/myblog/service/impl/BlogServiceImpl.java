@@ -19,9 +19,11 @@ import com.ryan.myblog.mapper.TagMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.mapper.CategoryMapper;
+import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
+import com.ryan.myblog.service.UnifiedCacheService;
 import com.ryan.myblog.service.CommentCountService;
 import com.ryan.myblog.service.RedisLikeService;
 import com.ryan.myblog.service.SearchService;
@@ -61,6 +63,7 @@ public class BlogServiceImpl implements BlogService {
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
     private final CacheService cacheService;
+    private final UnifiedCacheService unifiedCacheService;
     private final CacheConsistencyService cacheConsistencyService;
     private final RedisLikeService redisLikeService;
     private final CommentCountService commentCountService;
@@ -248,9 +251,8 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public BlogDetailVO getBlogDetail(Long id, Long userId) {
-        // 先从缓存中获取
-        String cacheKey = "blog:detail:" + id;
-        BlogDetailVO blog = cacheService.get(cacheKey, BlogDetailVO.class);
+        // 先从缓存中获取 - 使用统一缓存服务
+        BlogDetailVO blog = unifiedCacheService.get(RedisKeyFactory.BLOG_DETAIL, BlogDetailVO.class, id);
 
         if (blog == null) {
             // 缓存中没有，从数据库查询
@@ -262,8 +264,8 @@ public class BlogServiceImpl implements BlogService {
             // 设置标签信息
             blog.setTags(tagMapper.selectTagsByBlogId(id));
 
-            // 存入缓存，设置30分钟过期
-            cacheService.set(cacheKey, blog, 1800);
+            // 存入缓存，使用RedisKeyFactory定义的TTL (30分钟)
+            unifiedCacheService.set(RedisKeyFactory.BLOG_DETAIL, blog, id);
         }
 
         // 查询用户点赞状态
@@ -280,7 +282,7 @@ public class BlogServiceImpl implements BlogService {
     @Override
     public void incrementViewCount(Long id) {
         // 使用Redis进行浏览量去重，防止同一用户短时间内重复计数
-        String viewKey = "blog:view:" + id;
+        String viewKey = RedisKeyFactory.BLOG_VIEW.getKey(id);
         String today = LocalDateTime.now().toLocalDate().toString();
 
         try {
@@ -344,8 +346,8 @@ public class BlogServiceImpl implements BlogService {
             }
         }
 
-        // 清除相关缓存
-        cacheService.delete("blog:detail:" + id);
+        // 清除相关缓存 - 使用统一缓存服务
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
         cacheService.deleteByPattern("blog:page:*");
 
         // 返回操作后的点赞状态
@@ -403,11 +405,11 @@ public class BlogServiceImpl implements BlogService {
             finalIsLiked = newStatus == 1;
         }
 
-        // 清除相关缓存
-        cacheService.delete("blog:detail:" + id);
+        // 清除相关缓存 - 使用统一缓存服务
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
         cacheService.deleteByPattern("blog:page:*");
-        cacheService.deleteByPattern("blog:hot:*");
-        cacheService.deleteByPattern("blog:latest:*");
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
 
         // 获取更新后的博客数据（需要重新查询才能获得实时的 likeCount）
         BlogDetailVO updatedBlog = blogMapper.selectBlogDetail(id);
@@ -546,16 +548,16 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public List<BlogDetailVO> getHotBlogs(int limit) {
-        String cacheKey = "blog:hot:" + limit;
-        // 使用getList正确处理泛型列表的反序列化
-        List<BlogDetailVO> hotBlogs = cacheService.getList(cacheKey, BlogDetailVO.class);
+        // 使用统一缓存服务和RedisKeyFactory
+        List<BlogDetailVO> hotBlogs = unifiedCacheService.getList(RedisKeyFactory.BLOG_HOT_LIST, BlogDetailVO.class,
+                limit);
 
         if (hotBlogs == null) {
             // 使用新的查询方法，已经包含标签信息
             hotBlogs = blogMapper.selectHotBlogsWithTags(limit);
 
-            // 缓存热门博客，设置30分钟过期
-            cacheService.set(cacheKey, hotBlogs, 1800);
+            // 缓存热门博客，使用RedisKeyFactory定义的TTL (10分钟)
+            unifiedCacheService.set(RedisKeyFactory.BLOG_HOT_LIST, hotBlogs, limit);
         }
 
         return hotBlogs;
@@ -563,16 +565,16 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public List<BlogDetailVO> getLatestBlogs(int limit) {
-        String cacheKey = "blog:latest:" + limit;
-        // 使用getList正确处理泛型列表的反序列化
-        List<BlogDetailVO> latestBlogs = cacheService.getList(cacheKey, BlogDetailVO.class);
+        // 使用统一缓存服务和RedisKeyFactory
+        List<BlogDetailVO> latestBlogs = unifiedCacheService.getList(RedisKeyFactory.BLOG_LATEST_LIST,
+                BlogDetailVO.class, limit);
 
         if (latestBlogs == null) {
             // 使用新的查询方法，已经包含标签信息
             latestBlogs = blogMapper.selectLatestBlogsWithTags(limit);
 
-            // 缓存最新博客，设置10分钟过期
-            cacheService.set(cacheKey, latestBlogs, 600);
+            // 缓存最新博客，使用RedisKeyFactory定义的TTL (10分钟)
+            unifiedCacheService.set(RedisKeyFactory.BLOG_LATEST_LIST, latestBlogs, limit);
         }
 
         return latestBlogs;
@@ -1006,21 +1008,18 @@ public class BlogServiceImpl implements BlogService {
      * 清除单个博客缓存
      */
     private void clearBlogCache(Long blogId) {
-        cacheService.delete("blog:detail:" + blogId);
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, blogId);
     }
 
     /**
      * 清除博客相关缓存
      */
     private void clearBlogCaches() {
-        // 清除热门博客缓存
-        cacheService.deleteByPattern("blog:hot:*");
-        // 清除最新博客缓存
-        cacheService.deleteByPattern("blog:latest:*");
-        // 清除分类相关缓存
-        cacheService.deleteByPattern("blog:category:*");
-        // 清除标签相关缓存
-        cacheService.deleteByPattern("blog:tags:*");
+        // 使用统一缓存服务清除所有相关缓存
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_CATEGORY_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_TAG_LIST);
     }
 
     /**

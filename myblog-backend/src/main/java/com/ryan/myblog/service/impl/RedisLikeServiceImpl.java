@@ -1,13 +1,14 @@
 package com.ryan.myblog.service.impl;
 
+import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.event.LikeEvent;
 import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.model.entity.UserLike;
 import com.ryan.myblog.service.RedisLikeService;
+import com.ryan.myblog.service.UnifiedCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -50,13 +51,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RedisLikeServiceImpl implements RedisLikeService {
 
+    // StringRedisTemplate 保留，以防未来特殊操作需要
+    @SuppressWarnings("unused")
     private final StringRedisTemplate redisTemplate;
+    private final UnifiedCacheService unifiedCacheService;
     private final ApplicationEventPublisher eventPublisher;
     private final UserLikeMapper userLikeMapper;
-
-    // Redis Key前缀
-    private static final String LIKE_SET_PREFIX = "blog:likes:"; // ZSet: 点赞用户集合
-    private static final String LIKE_COUNT_PREFIX = "blog:like:count:"; // String: 点赞数
 
     /**
      * 切换点赞状态
@@ -69,21 +69,18 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      */
     @Override
     public Boolean toggleLike(Long blogId, Long userId) {
-        String likeKey = LIKE_SET_PREFIX + blogId;
-        String countKey = LIKE_COUNT_PREFIX + blogId;
-
-        // 检查用户是否已点赞
-        Double score = redisTemplate.opsForZSet().score(likeKey, userId.toString());
+        // 检查用户是否已点赞 - 使用统一缓存服务
+        Double score = unifiedCacheService.getZSetScore(RedisKeyFactory.BLOG_LIKES_SET, userId.toString(), blogId);
 
         if (score == null) {
             // 未点赞 -> 执行点赞操作
 
             // 1. 添加到ZSet，score为当前时间戳
             long timestamp = System.currentTimeMillis();
-            redisTemplate.opsForZSet().add(likeKey, userId.toString(), timestamp);
+            unifiedCacheService.addToZSet(RedisKeyFactory.BLOG_LIKES_SET, userId.toString(), timestamp, blogId);
 
             // 2. 点赞数+1
-            redisTemplate.opsForValue().increment(countKey);
+            unifiedCacheService.increment(RedisKeyFactory.BLOG_LIKE_COUNT, 1L, blogId);
 
             // 3. 发布点赞事件（异步持久化）
             publishLikeEvent(blogId, userId, true);
@@ -95,14 +92,15 @@ public class RedisLikeServiceImpl implements RedisLikeService {
             // 已点赞 -> 执行取消点赞操作
 
             // 1. 从ZSet中移除
-            redisTemplate.opsForZSet().remove(likeKey, userId.toString());
+            unifiedCacheService.removeFromZSet(RedisKeyFactory.BLOG_LIKES_SET, new Object[] { userId.toString() },
+                    blogId);
 
             // 2. 点赞数-1
-            Long count = redisTemplate.opsForValue().decrement(countKey);
+            Long count = unifiedCacheService.decrement(RedisKeyFactory.BLOG_LIKE_COUNT, 1L, blogId);
 
             // 防止计数器变成负数
             if (count != null && count < 0) {
-                redisTemplate.opsForValue().set(countKey, "0");
+                unifiedCacheService.set(RedisKeyFactory.BLOG_LIKE_COUNT, 0L, blogId);
             }
 
             // 3. 发布取消点赞事件
@@ -119,8 +117,8 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      */
     @Override
     public Long getLikeCount(Long blogId) {
-        String countKey = LIKE_COUNT_PREFIX + blogId;
-        String count = redisTemplate.opsForValue().get(countKey);
+        // 使用统一缓存服务获取计数
+        Long count = unifiedCacheService.get(RedisKeyFactory.BLOG_LIKE_COUNT, Long.class, blogId);
 
         if (count == null) {
             // 缓存未命中，从数据库加载并初始化
@@ -128,12 +126,7 @@ public class RedisLikeServiceImpl implements RedisLikeService {
             return 0L;
         }
 
-        try {
-            return Long.parseLong(count);
-        } catch (NumberFormatException e) {
-            log.error("点赞数格式错误: blogId={}, value={}", blogId, count);
-            return 0L;
-        }
+        return count;
     }
 
     /**
@@ -142,8 +135,7 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      */
     @Override
     public Boolean isUserLiked(Long blogId, Long userId) {
-        String likeKey = LIKE_SET_PREFIX + blogId;
-        Double score = redisTemplate.opsForZSet().score(likeKey, userId.toString());
+        Double score = unifiedCacheService.getZSetScore(RedisKeyFactory.BLOG_LIKES_SET, userId.toString(), blogId);
         return score != null;
     }
 
@@ -153,10 +145,10 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      */
     @Override
     public Set<Long> getLikedUsers(Long blogId) {
-        String likeKey = LIKE_SET_PREFIX + blogId;
-        Set<String> userIdStrings = redisTemplate.opsForZSet().range(likeKey, 0, -1);
+        Set<String> userIdStrings = unifiedCacheService.getZSetRange(
+                RedisKeyFactory.BLOG_LIKES_SET, 0, -1, String.class, blogId);
 
-        if (userIdStrings == null) {
+        if (userIdStrings == null || userIdStrings.isEmpty()) {
             return Set.of();
         }
 
@@ -181,9 +173,6 @@ public class RedisLikeServiceImpl implements RedisLikeService {
     @Override
     public void initBlogLikes(Long blogId) {
         try {
-            String likeKey = LIKE_SET_PREFIX + blogId;
-            String countKey = LIKE_COUNT_PREFIX + blogId;
-
             // 查询所有点赞记录
             List<UserLike> likes = userLikeMapper.selectByBlogId(blogId);
 
@@ -202,22 +191,22 @@ public class RedisLikeServiceImpl implements RedisLikeService {
                 return;
             }
 
-            // 批量添加到Redis ZSet
+            // 批量添加到Redis ZSet - 使用统一缓存服务
             for (UserLike like : activeLikes) {
                 long timestamp = like.getCreateTime() != null
                         ? like.getCreateTime().toEpochSecond(java.time.ZoneOffset.of("+8"))
                         : System.currentTimeMillis();
 
-                redisTemplate.opsForZSet().add(
-                        likeKey,
+                unifiedCacheService.addToZSet(RedisKeyFactory.BLOG_LIKES_SET,
                         like.getUserId().toString(),
-                        timestamp);
+                        timestamp,
+                        blogId);
             }
 
-            // 设置点赞总数
-            redisTemplate.opsForValue().set(
-                    countKey,
-                    String.valueOf(activeLikes.size()));
+            // 设置点赞总数 - 使用统一缓存服务
+            unifiedCacheService.set(RedisKeyFactory.BLOG_LIKE_COUNT,
+                    (long) activeLikes.size(),
+                    blogId);
 
             log.info("初始化博客 {} 的点赞数据到Redis: count={}",
                     blogId, activeLikes.size());
@@ -253,41 +242,36 @@ public class RedisLikeServiceImpl implements RedisLikeService {
             return Collections.emptyMap();
         }
         Map<Long, Long> result = new HashMap<>();
-        try {
-            List<Object> values = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-                for (Long blogId : blogIds) {
-                    byte[] key = (LIKE_COUNT_PREFIX + blogId).getBytes();
-                    connection.stringCommands().get(key);
-                }
-                return null;
-            });
-            for (int i = 0; i < blogIds.size(); i++) {
-                Long blogId = blogIds.get(i);
-                Object value = values.get(i);
-                if (value != null) {
-                    result.put(blogId, Long.parseLong(value.toString()));
+
+        // 使用统一缓存服务逐个获取（简化实现）
+        for (Long blogId : blogIds) {
+            try {
+                Long count = unifiedCacheService.get(RedisKeyFactory.BLOG_LIKE_COUNT, Long.class, blogId);
+                if (count != null) {
+                    result.put(blogId, count);
                 } else {
                     recoverFromDatabase(blogId);
                     result.put(blogId, getLikeCount(blogId));
                 }
-            }
-        } catch (Exception e) {
-            log.error("批量获取点赞数失败", e);
-            for (Long blogId : blogIds) {
+            } catch (Exception e) {
+                log.warn("获取点赞数失败，从数据库查询: blogId={}", blogId);
                 Long count = userLikeMapper.countByTarget("blog", blogId);
                 result.put(blogId, count != null ? count : 0L);
             }
         }
+
         return result;
     }
 
     @Override
     public void recoverFromDatabase(Long blogId) {
-        String countKey = LIKE_COUNT_PREFIX + blogId;
         try {
             Long dbCount = userLikeMapper.countByTarget("blog", blogId);
             Long count = dbCount != null ? dbCount : 0L;
-            redisTemplate.opsForValue().set(countKey, count.toString());
+
+            // 使用统一缓存服务设置
+            unifiedCacheService.set(RedisKeyFactory.BLOG_LIKE_COUNT, count, blogId);
+
             log.info("从数据库恢复点赞数: blogId={}, count={}", blogId, count);
         } catch (Exception e) {
             log.error("从数据库恢复点赞数失败: blogId={}", blogId, e);

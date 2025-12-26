@@ -6,6 +6,8 @@ import com.ryan.myblog.common.Result;
 import com.ryan.myblog.model.dto.BlogSaveDTO;
 import com.ryan.myblog.model.dto.LikeResultDTO;
 import com.ryan.myblog.service.BlogService;
+import com.ryan.myblog.service.UnifiedCacheService;
+import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogDetailEnhancedVO;
@@ -39,6 +41,7 @@ public class BlogController {
     private final BlogService blogService;
     private final com.ryan.myblog.service.RedisLikeService redisLikeService;
     private final com.ryan.myblog.service.CacheService cacheService;
+    private final UnifiedCacheService unifiedCacheService;
     private final BlogMapper blogMapper;
     private final com.ryan.myblog.service.BrowseHistoryService browseHistoryService;
 
@@ -243,7 +246,7 @@ public class BlogController {
         Boolean isLiked = redisLikeService.toggleLike(id, userId);
 
         // 清除相关缓存（保持原有逻辑）
-        cacheService.delete("blog:detail:" + id);
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
         cacheService.deleteByPattern("blog:page:*");
 
         return Result.success(isLiked);
@@ -272,7 +275,7 @@ public class BlogController {
         Integer viewCount = blog != null ? blog.getViewCount() : 0;
 
         // 4. 清除相关缓存
-        cacheService.delete("blog:detail:" + id);
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
         cacheService.deleteByPattern("blog:page:*");
 
         return Result.success(new LikeResultDTO(isLiked, likeCount.intValue(), viewCount));

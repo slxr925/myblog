@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryan.myblog.common.PageRequest;
+import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.model.dto.CommentSaveDTO;
 import com.ryan.myblog.model.entity.Comment;
 import com.ryan.myblog.model.entity.User;
@@ -12,9 +13,12 @@ import com.ryan.myblog.mapper.CommentMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.mapper.BlogMapper;
+import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CommentService;
 import com.ryan.myblog.service.CommentCountService;
 import com.ryan.myblog.service.CacheService;
+import com.ryan.myblog.service.UserService;
+import com.ryan.myblog.service.UnifiedCacheService;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +47,10 @@ public class CommentServiceImpl implements CommentService {
     private final CommentCountService commentCountService;
     private final CacheService cacheService;
     private final SecurityUtils securityUtils;
+    private final BlogMapper blogMapper;
+    private final UnifiedCacheService unifiedCacheService;
+    private final UserService userService;
+    private final BlogService blogService;
 
     @Override
     @Transactional
@@ -345,8 +353,8 @@ public class CommentServiceImpl implements CommentService {
      * 清除博客列表相关缓存
      */
     private void clearBlogCaches() {
-        cacheService.deleteByPattern("blog:latest:*");
-        cacheService.deleteByPattern("blog:hot:*");
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
+        unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
         cacheService.deleteByPattern("blog:page:*");
     }
 }

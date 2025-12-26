@@ -1,6 +1,7 @@
 package com.ryan.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.model.entity.Category;
 import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.mapper.CategoryMapper;
@@ -8,6 +9,7 @@ import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.CategoryService;
+import com.ryan.myblog.service.UnifiedCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryMapper categoryMapper;
     private final BlogMapper blogMapper;
     private final CacheService cacheService;
+    private final UnifiedCacheService unifiedCacheService;
     private final CacheConsistencyService cacheConsistencyService;
 
     private static final String CATEGORY_LIST_KEY = "category:list";
