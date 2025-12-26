@@ -267,6 +267,7 @@ public class SearchServiceImpl implements SearchService {
         }
 
         try {
+            // 使用基础搜索，然后手动高亮
             Criteria criteria = new Criteria("title").contains(keyword)
                     .or("content").contains(keyword)
                     .or("summary").contains(keyword);
@@ -276,21 +277,23 @@ public class SearchServiceImpl implements SearchService {
 
             SearchHits<BlogDocument> searchHits = elasticsearchOperations.search(query, BlogDocument.class);
 
+            // 转换结果并手动添加高亮
             List<SearchResultVO> results = searchHits.getSearchHits().stream()
-                    .map(hit -> convertToSearchResultVOWithHighlight(hit, keyword))
+                    .map(hit -> convertToSearchResultVOWithManualHighlight(hit, keyword))
                     .collect(Collectors.toList());
 
             return new PageImpl<>(results, pageable, searchHits.getTotalHits());
         } catch (Exception e) {
             log.error("高亮搜索博客失败，关键词: {}", keyword, e);
+            // 降级策略：如果搜索失败，返回空结果
             return Page.empty();
         }
     }
 
     /**
-     * 将SearchHit转换为SearchResultVO（带高亮）
+     * 将SearchHit转换为SearchResultVO（手动高亮）
      */
-    private SearchResultVO convertToSearchResultVOWithHighlight(SearchHit<BlogDocument> hit, String keyword) {
+    private SearchResultVO convertToSearchResultVOWithManualHighlight(SearchHit<BlogDocument> hit, String keyword) {
         BlogDocument document = hit.getContent();
         SearchResultVO result = new SearchResultVO();
 
@@ -311,57 +314,134 @@ public class SearchServiceImpl implements SearchService {
         result.setScore(hit.getScore());
 
         // 手动实现高亮
-        result.setHighlightedTitle(highlightText(document.getTitle(), keyword));
-        result.setHighlightedSummary(highlightText(document.getSummary(), keyword));
-        result.setHighlightedContent(highlightText(result.getContentSnippet(), keyword));
+        result.setHighlightedTitle(manualHighlight(document.getTitle(), keyword));
+        result.setHighlightedSummary(manualHighlight(document.getSummary(), keyword));
 
-        // 如果没有高亮信息，使用原始内容
-        if (result.getHighlightedTitle() == null) {
-            result.setHighlightedTitle(result.getTitle());
-        }
-        if (result.getHighlightedSummary() == null) {
-            result.setHighlightedSummary(result.getSummary());
-        }
-        if (result.getHighlightedContent() == null) {
-            result.setHighlightedContent(result.getContentSnippet());
-        }
+        // 对于内容，找到包含关键词的片段
+        String contentWithKeyword = extractSnippetWithKeyword(document.getContent(), keyword, 150);
+        result.setHighlightedContent(manualHighlight(contentWithKeyword, keyword));
 
         return result;
     }
 
     /**
-     * 手动实现文本高亮
+     * 手动高亮文本
      */
-    private String highlightText(String text, String keyword) {
+    private String manualHighlight(String text, String keyword) {
         if (text == null || keyword == null || keyword.trim().isEmpty()) {
             return text;
         }
 
-        // 转换为小写进行匹配，保留原始大小写
         String lowerText = text.toLowerCase();
         String lowerKeyword = keyword.toLowerCase();
-
         StringBuilder highlighted = new StringBuilder();
         int lastIndex = 0;
         int index = lowerText.indexOf(lowerKeyword);
 
         while (index != -1) {
-            // 添加关键词之前的内容
-            highlighted.append(text.substring(lastIndex, index));
-
-            // 添加高亮的关键词
-            highlighted.append("<em>").append(text.substring(index, index + keyword.length())).append("</em>");
-
+            highlighted.append(text, lastIndex, index);
+            highlighted.append("<span class='search-highlight'>");
+            highlighted.append(text, index, index + keyword.length());
+            highlighted.append("</span>");
             lastIndex = index + keyword.length();
             index = lowerText.indexOf(lowerKeyword, lastIndex);
         }
 
-        // 添加剩余的内容
         if (lastIndex < text.length()) {
             highlighted.append(text.substring(lastIndex));
         }
 
         return highlighted.toString();
+    }
+
+    /**
+     * 提取包含关键词的文本片段
+     */
+    private String extractSnippetWithKeyword(String content, String keyword, int snippetLength) {
+        if (content == null || content.isEmpty()) {
+            return "";
+        }
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return content.length() > snippetLength ? content.substring(0, snippetLength) + "..." : content;
+        }
+
+        String lowerContent = content.toLowerCase();
+        String lowerKeyword = keyword.toLowerCase();
+        int keywordIndex = lowerContent.indexOf(lowerKeyword);
+
+        if (keywordIndex == -1) {
+            // 关键词不在内容中，返回开头
+            return content.length() > snippetLength ? content.substring(0, snippetLength) + "..." : content;
+        }
+
+        // 计算片段起始位置（关键词前后各一半）
+        int startIndex = Math.max(0, keywordIndex - snippetLength / 2);
+        int endIndex = Math.min(content.length(), startIndex + snippetLength);
+
+        // 调整起始位置以填满片段长度
+        if (endIndex - startIndex < snippetLength && startIndex > 0) {
+            startIndex = Math.max(0, endIndex - snippetLength);
+        }
+
+        String snippet = content.substring(startIndex, endIndex);
+
+        // 添加省略号
+        if (startIndex > 0)
+            snippet = "..." + snippet;
+        if (endIndex < content.length())
+            snippet = snippet + "...";
+
+        return snippet;
+    }
+
+    /**
+     * 将SearchHit转换为SearchResultVO（带ES原生高亮）
+     */
+    private SearchResultVO convertToSearchResultVOWithHighlight(SearchHit<BlogDocument> hit) {
+        BlogDocument document = hit.getContent();
+        SearchResultVO result = new SearchResultVO();
+
+        // 设置基本信息
+        result.setId(Long.valueOf(document.getId()));
+        result.setTitle(document.getTitle());
+        result.setSummary(document.getSummary());
+        result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200
+                ? document.getContent().substring(0, 200) + "..."
+                : document.getContent());
+        result.setAuthorNickname(document.getAuthorName());
+        result.setCategoryName(document.getCategoryName());
+        result.setCoverImg(document.getCoverImg() != null ? document.getCoverImg() : "");
+        result.setViewCount(document.getViewCount());
+        result.setLikeCount(document.getLikeCount());
+        result.setCommentCount(document.getCommentCount());
+        result.setPublishTime(document.getPublishTime());
+        result.setScore(hit.getScore());
+
+        // 获取ES返回的高亮字段
+        Map<String, List<String>> highlightFields = hit.getHighlightFields();
+
+        // 处理标题高亮
+        if (highlightFields.containsKey("title") && !highlightFields.get("title").isEmpty()) {
+            result.setHighlightedTitle(highlightFields.get("title").get(0));
+        } else {
+            result.setHighlightedTitle(document.getTitle());
+        }
+
+        // 处理摘要高亮
+        if (highlightFields.containsKey("summary") && !highlightFields.get("summary").isEmpty()) {
+            result.setHighlightedSummary(highlightFields.get("summary").get(0));
+        } else {
+            result.setHighlightedSummary(document.getSummary());
+        }
+
+        // 处理内容高亮
+        if (highlightFields.containsKey("content") && !highlightFields.get("content").isEmpty()) {
+            result.setHighlightedContent(highlightFields.get("content").get(0));
+        } else {
+            result.setHighlightedContent(result.getContentSnippet());
+        }
+
+        return result;
     }
 
     /**
@@ -628,23 +708,22 @@ public class SearchServiceImpl implements SearchService {
             elasticsearchOperations.indexOps(BlogDocument.class).putMapping();
             log.info("已创建新索引");
 
-            
             if (searchDataService == null) {
                 log.error("SearchDataService 未注入，无法重建索引");
                 throw new RuntimeException("SearchDataService 未注入");
             }
-            
+
             // 3. 从数据库读取所有已发布的博客
             List<BlogDocument> documents = searchDataService.getAllPublishedBlogDocuments();
-            
+
             if (documents == null || documents.isEmpty()) {
                 log.warn("没有找到需要索引的博客");
                 return;
             }
-            
+
             // 4. 批量索引到 ES
             elasticsearchOperations.save(documents);
-            
+
             log.info("索引重建完成，共索引 {} 篇文章", documents.size());
 
         } catch (Exception e) {

@@ -22,6 +22,8 @@ interface BlogPost {
   featured: boolean;
   categoryId: number;
   categoryName: string;
+  highlightedTitle?: string;
+  highlightedExcerpt?: string;
 }
 
 const SearchResultsPage: React.FC = () => {
@@ -101,6 +103,8 @@ const SearchResultsPage: React.FC = () => {
       featured: blog.isTop === 1,
       categoryId: blog.categoryId,
       categoryName: blog.categoryName,
+      highlightedTitle: blog.highlightedTitle,
+      highlightedExcerpt: blog.highlightedSummary,
     };
   };
 
@@ -192,13 +196,17 @@ const SearchResultsPage: React.FC = () => {
                     <span>{post.readTime}</span>
                   </div>
 
-                  <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                    {post.title}
-                  </h3>
+                  <h3
+                    className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2"
+                    dangerouslySetInnerHTML={{ __html: post.highlightedTitle || post.title }}
+                  />
 
-                  <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
-                    {post.excerpt}
-                  </p>
+                  <p
+                    className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1"
+                    dangerouslySetInnerHTML={{ __html: post.highlightedExcerpt || post.excerpt }}
+                  />
+
+
 
                   <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
                     <div className="flex items-center gap-2">

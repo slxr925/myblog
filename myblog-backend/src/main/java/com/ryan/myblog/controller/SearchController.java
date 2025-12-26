@@ -25,10 +25,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
 public class SearchController {
-    
+
     private final SearchService searchService;
     private final BlogService blogService;
-    
+
     /**
      * 搜索博客
      * ES可用时使用ES搜索，否则降级到MySQL搜索
@@ -38,12 +38,14 @@ public class SearchController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         // 尝试ES搜索
         if (searchService.isAvailable()) {
             try {
                 Pageable pageable = PageRequest.of(page, size);
-                Page<BlogDocument> result = searchService.searchBlogs(keyword, pageable);
+                // 使用带高亮的搜索服务
+                org.springframework.data.domain.Page<com.ryan.myblog.model.vo.SearchResultVO> result = searchService
+                        .searchBlogsWithHighlight(keyword, pageable);
                 if (result.getTotalElements() > 0) {
                     log.debug("使用ES搜索 - 关键词: '{}', 结果数: {}", keyword, result.getTotalElements());
                     return Result.success(result);
@@ -52,12 +54,12 @@ public class SearchController {
                 log.warn("ES搜索失败，降级到MySQL搜索: {}", e.getMessage());
             }
         }
-        
+
         // 降级到MySQL搜索
         log.debug("使用MySQL搜索 - 关键词: '{}'", keyword);
         return Result.success(fallbackToMySQLSearch(keyword, page, size));
     }
-    
+
     /**
      * 高级搜索
      */
@@ -68,7 +70,7 @@ public class SearchController {
             @RequestParam(required = false) List<String> tags,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         // 尝试ES搜索
         if (searchService.isAvailable()) {
             try {
@@ -81,29 +83,29 @@ public class SearchController {
                 log.warn("ES高级搜索失败，降级到MySQL搜索: {}", e.getMessage());
             }
         }
-        
+
         // 降级到MySQL搜索
         if (keyword != null && !keyword.trim().isEmpty()) {
             return Result.success(fallbackToMySQLSearch(keyword, page, size));
         }
-        
+
         return Result.success(Page.empty());
     }
-    
+
     /**
      * MySQL降级搜索（带分页）
      */
     private Page<BlogListVO> fallbackToMySQLSearch(String keyword, int page, int size) {
         int mysqlLimit = page * size + size;
         List<BlogListVO> mysqlResults = blogService.searchBlogs(keyword, mysqlLimit);
-        
+
         int fromIndex = Math.min(page * size, mysqlResults.size());
         int toIndex = Math.min(fromIndex + size, mysqlResults.size());
         List<BlogListVO> pagedResults = mysqlResults.subList(fromIndex, toIndex);
-        
+
         return new PageImpl<>(pagedResults, PageRequest.of(page, size), mysqlResults.size());
     }
-    
+
     /**
      * 获取搜索建议
      */
@@ -112,7 +114,7 @@ public class SearchController {
         List<String> suggestions = searchService.getSuggestions(prefix);
         return Result.success(suggestions);
     }
-    
+
     /**
      * 重建索引（管理员功能）
      */
@@ -121,7 +123,7 @@ public class SearchController {
         searchService.rebuildIndex();
         return Result.success();
     }
-    
+
     /**
      * 检查搜索服务状态
      */
