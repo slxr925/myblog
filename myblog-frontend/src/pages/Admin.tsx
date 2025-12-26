@@ -11,9 +11,9 @@ import { CommentManagement } from '../components/admin/CommentManagement';
 import { CategoryManagement } from '../components/admin/CategoryManagement';
 import { TagManagement } from '../components/admin/TagManagement';
 import { ActivityChart } from '../components/charts/ActivityChart';
-import { 
-  Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp, 
-  Calendar, FolderOpen, Hash, LogOut, LayoutDashboard
+import {
+  Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp,
+  Calendar, FolderOpen, Hash, LogOut, LayoutDashboard, RefreshCcw
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -141,22 +141,22 @@ export const Admin: React.FC = () => {
             <div className="text-muted-foreground text-sm">{stat.label}</div>
           </div>
         ))}
-        </div>
+      </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ActivityChart data={stats.weeklyStats} title="最近7天活跃度" showLegend={true} />
         <ActivityChart data={stats.monthlyStats} title="最近30天活跃度" showLegend={true} />
-        </div>
+      </div>
 
       {/* Detailed Stats */}
-          <Card>
-            <CardHeader>
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" /> 数据概览
           </CardTitle>
-            </CardHeader>
-            <CardContent>
+        </CardHeader>
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-muted/30 rounded-xl">
               <div className="flex items-center justify-center mb-2 text-indigo-600">
@@ -164,11 +164,11 @@ export const Admin: React.FC = () => {
                 <span className="text-3xl font-bold">{stats.todayViews}</span>
               </div>
               <div className="text-sm text-muted-foreground">今日访问量</div>
-                    </div>
+            </div>
             {/* More detailed stats can be added here */}
-              </div>
-            </CardContent>
-          </Card>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
@@ -183,23 +183,22 @@ export const Admin: React.FC = () => {
 
         <div className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
-            <button 
+            <button
               key={item.id}
               onClick={() => {
                 setCurrentView(item.id as AdminView);
                 navigate(`/dashboard?tab=${item.id}`);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
-                currentView === item.id 
-                  ? "bg-sidebar-accent text-sidebar-primary font-medium shadow-sm" 
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === item.id
+                ? "bg-sidebar-accent text-sidebar-primary font-medium shadow-sm"
+                : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                }`}
             >
               <item.icon className="w-5 h-5" />
               {item.label}
             </button>
           ))}
-          
+
           <div className="pt-4 mt-4 border-t border-sidebar-border">
             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground cursor-not-allowed hover:bg-sidebar-accent/50">
               <Settings className="w-5 h-5" />
@@ -209,15 +208,15 @@ export const Admin: React.FC = () => {
         </div>
 
         <div className="p-4 border-t border-sidebar-border">
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <LogOut className="w-5 h-5" />
             退出登录
           </button>
-                  </div>
-                </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-64 p-8">
@@ -227,15 +226,36 @@ export const Admin: React.FC = () => {
               {menuItems.find(i => i.id === currentView)?.label}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">欢迎回来，{user?.nickname || '管理员'}</p>
-                  </div>
+          </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const btn = document.getElementById('refresh-cache-btn');
+                if (btn) btn.classList.add('animate-spin');
+                try {
+                  await api.admin.syncCleanCache();
+                  alert('缓存清理成功！数据同步已生效。');
+                } catch (error) {
+                  console.error('清理缓存失败:', error);
+                  alert('清理缓存失败，请检查网络或控制台日志');
+                } finally {
+                  if (btn) btn.classList.remove('animate-spin');
+                }
+              }}
+              className="gap-2"
+              title="同步数据后清理缓存"
+            >
+              <RefreshCcw id="refresh-cache-btn" className="w-4 h-4" />
+              刷新缓存
+            </Button>
             <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
               返回前台
             </Button>
             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
               {(user?.nickname || 'A').charAt(0).toUpperCase()}
-                </div>
-              </div>
+            </div>
+          </div>
         </header>
 
         <motion.div
@@ -246,7 +266,7 @@ export const Admin: React.FC = () => {
         >
           {renderContent()}
         </motion.div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };

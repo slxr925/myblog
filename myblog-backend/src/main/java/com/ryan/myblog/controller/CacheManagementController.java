@@ -19,11 +19,11 @@ import java.util.Map;
 @RequestMapping("/api/cache")
 @RequiredArgsConstructor
 public class CacheManagementController {
-    
+
     private final CacheService cacheService;
     private final CacheWarmupService cacheWarmupService;
     private final CacheConsistencyService cacheConsistencyService;
-    
+
     /**
      * 获取缓存统计信息
      */
@@ -32,7 +32,7 @@ public class CacheManagementController {
         Map<String, Object> stats = cacheService.getCacheStats();
         return Result.success(stats);
     }
-    
+
     /**
      * 获取缓存一致性统计信息
      */
@@ -41,7 +41,7 @@ public class CacheManagementController {
         CacheConsistencyService.CacheConsistencyStats stats = cacheConsistencyService.getCacheConsistencyStats();
         return Result.success(stats);
     }
-    
+
     /**
      * 手动清除指定键的缓存
      */
@@ -50,7 +50,7 @@ public class CacheManagementController {
         cacheService.delete(key);
         return Result.success();
     }
-    
+
     /**
      * 根据模式清除缓存
      */
@@ -59,7 +59,7 @@ public class CacheManagementController {
         cacheService.deleteByPattern(pattern);
         return Result.success();
     }
-    
+
     /**
      * 清除所有缓存
      */
@@ -68,7 +68,27 @@ public class CacheManagementController {
         cacheService.clear();
         return Result.success();
     }
-    
+
+    /**
+     * 数据同步后清理缓存（解决SQL导入后数据不一致问题）
+     * 清理：最新博客、热门博客、分类下博客、标签下博客
+     */
+    @DeleteMapping("/sync-clean")
+    public Result<Void> cleanAfterSync() {
+        // 1. 清理最新博客列表
+        cacheService.deleteByPattern("blog:latest:*");
+        // 2. 清理热门博客列表
+        cacheService.deleteByPattern("blog:hot:*");
+        // 3. 清理博客归档/分类/标签列表缓存
+        cacheService.deleteByPattern("blog:category:*");
+        cacheService.deleteByPattern("blog:tag:*");
+        // 4. 更新缓存版本，使客户端感知变化
+        cacheConsistencyService.updateCacheVersion("blog:*");
+
+        log.info("手动执行了同步后缓存清理");
+        return Result.success();
+    }
+
     /**
      * 手动触发缓存预热
      */
@@ -82,7 +102,7 @@ public class CacheManagementController {
             return Result.error("缓存预热失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取预热进度
      */
@@ -94,7 +114,7 @@ public class CacheManagementController {
             return Result.success("预热中: " + cacheWarmupService.getWarmupProgress());
         }
     }
-    
+
     /**
      * 发布缓存失效通知
      */
@@ -105,17 +125,17 @@ public class CacheManagementController {
         cacheConsistencyService.publishCacheInvalidation(pattern, reason);
         return Result.success();
     }
-    
+
     /**
      * 批量失效缓存
      */
     @PostMapping("/invalidation/batch")
     public Result<Void> batchInvalidateCache(@RequestBody String[] patterns,
-                                           @RequestParam String reason) {
+            @RequestParam String reason) {
         cacheConsistencyService.batchInvalidateCache(patterns, reason);
         return Result.success();
     }
-    
+
     /**
      * 获取缓存版本
      */
@@ -124,7 +144,7 @@ public class CacheManagementController {
         Long version = cacheConsistencyService.getCacheVersion(key);
         return Result.success(version);
     }
-    
+
     /**
      * 更新缓存版本
      */
