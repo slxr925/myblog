@@ -12,6 +12,7 @@ import { Save, Eye, ArrowLeft, Upload, ClipboardList, Loader2, Sparkles, Wand2 }
 import { api } from '../../utils/api';
 import type { BlogDetailVO, Category, Tag } from '../../types/api';
 import { BlogStatus } from '../../types/api';
+import { MarkdownShortcutsDialog } from './MarkdownShortcutsDialog';
 
 interface BlogEditorProps {
   mode?: 'create' | 'edit';
@@ -518,7 +519,10 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
                 {/* Markdown编辑器 */}
                 <div>
-                  <Label>文章内容 *</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>文章内容 *</Label>
+                    <MarkdownShortcutsDialog />
+                  </div>
                   <div className="mt-2 [&_.w-md-editor-text-input]:text-base [&_.w-md-editor-text-input]:font-normal">
                     <MDEditor
                       value={formData.content}
