@@ -247,7 +247,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                 key={suggestion.id}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className={`w-full text-left p-3 rounded-md transition-colors duration-200 ${index === selectedIndex
+                className={`w-full text-left p-3 rounded-md transition-colors duration-200 [&>*]:pointer-events-none ${index === selectedIndex
                   ? 'bg-accent text-foreground'
                   : 'hover:bg-muted text-foreground'
                   }`}
