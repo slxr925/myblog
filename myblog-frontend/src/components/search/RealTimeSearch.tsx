@@ -248,15 +248,15 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
                 className={`w-full text-left p-3 rounded-md transition-colors duration-200 ${index === selectedIndex
-                    ? 'bg-accent text-foreground'
-                    : 'hover:bg-muted text-foreground'
+                  ? 'bg-accent text-foreground'
+                  : 'hover:bg-muted text-foreground'
                   }`}
               >
                 <div className="space-y-2">
                   {/* 标题 */}
                   <div className="flex items-center justify-between">
                     <h4
-                      className="font-medium text-sm line-clamp-1 flex-1"
+                      className="font-medium text-sm line-clamp-1 flex-1 pointer-events-none"
                       dangerouslySetInnerHTML={{ __html: suggestion.highlightedTitle || suggestion.title }}
                     />
                     <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 ml-2" />
@@ -264,7 +264,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
                   {/* 摘要 */}
                   <p
-                    className="text-xs text-muted-foreground line-clamp-2"
+                    className="text-xs text-muted-foreground line-clamp-2 pointer-events-none"
                     dangerouslySetInnerHTML={{ __html: suggestion.highlightedSummary || suggestion.summary }}
                   />
 

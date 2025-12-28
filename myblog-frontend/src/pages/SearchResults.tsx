@@ -197,12 +197,12 @@ const SearchResultsPage: React.FC = () => {
                   </div>
 
                   <h3
-                    className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2"
+                    className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2 pointer-events-none"
                     dangerouslySetInnerHTML={{ __html: post.highlightedTitle || post.title }}
                   />
 
                   <p
-                    className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1"
+                    className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1 pointer-events-none"
                     dangerouslySetInnerHTML={{ __html: post.highlightedExcerpt || post.excerpt }}
                   />
 
