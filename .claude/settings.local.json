@@ -12,7 +12,19 @@
       "Bash(./deploy/deploy-update.sh:*)",
       "Bash(git -C /Users/xuran/Dev/myblog commit -m \"$\\(cat <<''EOF''\nfix: ES索引创建添加重试机制\n\n解决应用启动时ES容器未完全就绪导致索引创建失败的问题。\n添加最多5次重试，每次间隔3秒。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git -C /Users/xuran/Dev/myblog commit -m \"$\\(cat <<''EOF''\nfix: 修复搜索建议下拉框UI错乱问题\n\n使用 React Portal 将搜索建议下拉框渲染到 body，\n避免被父容器的 z-index 限制，并设置固定定位\n确保下拉框始终显示在最上层。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git -C /Users/xuran/Dev/myblog commit -m \"$\\(cat <<''EOF''\nfix: 优化搜索下拉框位置更新逻辑\n\n使用 useCallback 包裹 updateDropdownPosition，\n并在 suggestions 变化时重新计算位置。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git -C /Users/xuran/Dev/myblog commit -m \"$\\(cat <<''EOF''\nfix: 优化搜索下拉框位置更新逻辑\n\n使用 useCallback 包裹 updateDropdownPosition，\n并在 suggestions 变化时重新计算位置。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(docker ps:*)",
+      "Bash(cat:*)",
+      "Bash(brew services start:*)",
+      "Bash(mysql.server start:*)",
+      "Bash(redis-server:*)",
+      "Bash(docker run:*)",
+      "Bash(pkill:*)",
+      "Bash(git -C /Users/xuran/Dev/myblog diff myblog-frontend/src/components/search/RealTimeSearch.tsx)",
+      "Bash(git -C /Users/xuran/Dev/myblog add myblog-frontend/src/components/search/RealTimeSearch.tsx)",
+      "Bash(git -C /Users/xuran/Dev/myblog commit -m \"$\\(cat <<''EOF''\nfix: 修复搜索建议点击跳转问题和添加前端高亮功能\n\n- 修复搜索建议下拉框点击无法跳转的问题，原因是 handleClickOutside \n  逻辑与 Portal 渲染冲突，导致点击按钮前下拉框就被关闭\n- 添加前端搜索关键字高亮功能，使用 highlightText 函数在数据格式化时自动生成高亮\n- 给 Portal 下拉框容器添加 data-search-dropdown 属性以便正确识别点击区域\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

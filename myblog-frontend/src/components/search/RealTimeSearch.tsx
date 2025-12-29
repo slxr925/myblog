@@ -4,6 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { api } from '../../utils/api';
 
+// 高亮搜索关键字的辅助函数
+const highlightText = (text: string, keyword: string): string => {
+  if (!text || !keyword) return text;
+  const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+};
+
 interface SearchSuggestion {
   id: number;
   title: string;
@@ -99,14 +106,18 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
         }).filter(Boolean);
 
         const numericId = Number(doc.id);
+        // 如果后端没有返回高亮数据，在前端生成
+        const highlightedTitle = doc.highlightedTitle || highlightText(doc.title, term);
+        const highlightedSummary = doc.highlightedSummary || highlightText(doc.summary, term);
+
         return {
           id: Number.isNaN(numericId) ? doc.id : numericId,
           title: doc.title,
           summary: doc.summary,
           categoryName: doc.categoryName,
           tags: parsedTags,
-          highlightedTitle: doc.highlightedTitle,
-          highlightedSummary: doc.highlightedSummary,
+          highlightedTitle,
+          highlightedSummary,
           highlightedContent: doc.highlightedContent
         };
       });
@@ -190,9 +201,18 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
   // 点击外部关闭下拉
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      // 检查点击是否在搜索框内
+      if (searchRef.current && searchRef.current.contains(target)) {
+        return;
       }
+      // 检查点击是否在搜索建议下拉框（Portal渲染的）内
+      const dropdown = document.querySelector('[data-search-dropdown]');
+      if (dropdown && dropdown.contains(target)) {
+        return;
+      }
+      // 否则关闭下拉框
+      setIsOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -241,23 +261,23 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
       {/* 搜索建议下拉框 - 使用 Portal 渲染到 body */}
       {isOpen && suggestions.length > 0 && createPortal(
-        <div style={dropdownStyle} className="bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div data-search-dropdown="true" style={dropdownStyle} className="bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto">
           <div className="p-2">
             {suggestions.map((suggestion, index) => (
               <button
                 key={suggestion.id}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className={`w-full text-left p-3 rounded-md transition-colors duration-200 [&>*]:pointer-events-none ${index === selectedIndex
+                className={`w-full text-left p-3 rounded-md transition-colors duration-200 ${index === selectedIndex
                   ? 'bg-accent text-foreground'
                   : 'hover:bg-muted text-foreground'
                   }`}
               >
-                <div className="space-y-2">
+                <div className="space-y-2 pointer-events-none">
                   {/* 标题 */}
                   <div className="flex items-center justify-between">
                     <h4
-                      className="font-medium text-sm line-clamp-1 flex-1 pointer-events-none"
+                      className="font-medium text-sm line-clamp-1 flex-1"
                       dangerouslySetInnerHTML={{ __html: suggestion.highlightedTitle || suggestion.title }}
                     />
                     <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 ml-2" />
@@ -265,7 +285,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
                   {/* 摘要 */}
                   <p
-                    className="text-xs text-muted-foreground line-clamp-2 pointer-events-none"
+                    className="text-xs text-muted-foreground line-clamp-2"
                     dangerouslySetInnerHTML={{
                       __html: (suggestion.highlightedSummary && suggestion.highlightedSummary.includes('search-highlight'))
                         ? suggestion.highlightedSummary
