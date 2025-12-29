@@ -266,7 +266,13 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                   {/* 摘要 */}
                   <p
                     className="text-xs text-muted-foreground line-clamp-2 pointer-events-none"
-                    dangerouslySetInnerHTML={{ __html: suggestion.highlightedSummary || suggestion.summary }}
+                    dangerouslySetInnerHTML={{
+                      __html: (suggestion.highlightedSummary && suggestion.highlightedSummary.includes('search-highlight'))
+                        ? '[S] ' + suggestion.highlightedSummary
+                        : (suggestion.highlightedContent && suggestion.highlightedContent.includes('search-highlight'))
+                          ? '[C] ' + suggestion.highlightedContent
+                          : suggestion.summary
+                    }}
                   />
 
                   {/* 分类和标签 */}
