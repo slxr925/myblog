@@ -395,56 +395,6 @@ public class SearchServiceImpl implements SearchService {
     }
 
     /**
-     * 将SearchHit转换为SearchResultVO（带ES原生高亮）
-     */
-    private SearchResultVO convertToSearchResultVOWithHighlight(SearchHit<BlogDocument> hit) {
-        BlogDocument document = hit.getContent();
-        SearchResultVO result = new SearchResultVO();
-
-        // 设置基本信息
-        result.setId(Long.valueOf(document.getId()));
-        result.setTitle(document.getTitle());
-        result.setSummary(document.getSummary());
-        result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200
-                ? document.getContent().substring(0, 200) + "..."
-                : document.getContent());
-        result.setAuthorNickname(document.getAuthorName());
-        result.setCategoryName(document.getCategoryName());
-        result.setCoverImg(document.getCoverImg() != null ? document.getCoverImg() : "");
-        result.setViewCount(document.getViewCount());
-        result.setLikeCount(document.getLikeCount());
-        result.setCommentCount(document.getCommentCount());
-        result.setPublishTime(document.getPublishTime());
-        result.setScore(hit.getScore());
-
-        // 获取ES返回的高亮字段
-        Map<String, List<String>> highlightFields = hit.getHighlightFields();
-
-        // 处理标题高亮
-        if (highlightFields.containsKey("title") && !highlightFields.get("title").isEmpty()) {
-            result.setHighlightedTitle(highlightFields.get("title").get(0));
-        } else {
-            result.setHighlightedTitle(document.getTitle());
-        }
-
-        // 处理摘要高亮
-        if (highlightFields.containsKey("summary") && !highlightFields.get("summary").isEmpty()) {
-            result.setHighlightedSummary(highlightFields.get("summary").get(0));
-        } else {
-            result.setHighlightedSummary(document.getSummary());
-        }
-
-        // 处理内容高亮
-        if (highlightFields.containsKey("content") && !highlightFields.get("content").isEmpty()) {
-            result.setHighlightedContent(highlightFields.get("content").get(0));
-        } else {
-            result.setHighlightedContent(result.getContentSnippet());
-        }
-
-        return result;
-    }
-
-    /**
      * 将SearchHit转换为SearchResultVO
      */
     private SearchResultVO convertToSearchResultVO(SearchHit<BlogDocument> hit) {
