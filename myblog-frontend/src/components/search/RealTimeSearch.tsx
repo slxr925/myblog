@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { api } from '../../utils/api';
 
 // 高亮搜索关键字的辅助函数
@@ -38,6 +39,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const [clickedSuggestion, setClickedSuggestion] = useState<number | null>(null);
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -186,7 +188,10 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
   };
 
   // 处理建议点击
-  const handleSuggestionClick = (suggestion: SearchSuggestion) => {
+  const handleSuggestionClick = async (suggestion: SearchSuggestion) => {
+    setClickedSuggestion(suggestion.id);
+    // 添加延迟让点击动画显示
+    await new Promise(resolve => setTimeout(resolve, 150));
     navigate(`/blog/${suggestion.id}`);
     setIsOpen(false);
     setSearchTerm('');
@@ -261,13 +266,23 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
       {/* 搜索建议下拉框 - 使用 Portal 渲染到 body */}
       {isOpen && suggestions.length > 0 && createPortal(
-        <div data-search-dropdown="true" style={dropdownStyle} className="bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <motion.div
+          data-search-dropdown="true"
+          style={dropdownStyle}
+          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto"
+        >
           <div className="p-2">
             {suggestions.map((suggestion, index) => (
-              <button
+              <motion.button
                 key={suggestion.id}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.15 }}
                 className={`w-full text-left p-3 rounded-md transition-colors duration-200 ${index === selectedIndex
                   ? 'bg-accent text-foreground'
                   : 'hover:bg-muted text-foreground'
@@ -316,21 +331,24 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                     </div>
                   </div>
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
 
           {/* 查看更多结果 */}
           <div className="border-t border-border p-2">
-            <button
+            <motion.button
               type="button"
               onClick={handleSearchSubmit}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.15 }}
               className="w-full text-left p-2 text-sm text-primary hover:text-primary/80 transition-colors duration-200"
             >
               查看更多关于 "{searchTerm}" 的搜索结果
-            </button>
+            </motion.button>
           </div>
-        </div>,
+        </motion.div>,
         document.body
       )}
     </div>

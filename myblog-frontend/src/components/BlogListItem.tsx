@@ -1,5 +1,4 @@
-import React, { memo } from 'react';
-import { motion } from 'framer-motion';
+import { memo } from 'react';
 import { Calendar, Clock, Heart, MessageCircle } from 'lucide-react';
 import type { BlogPost } from '../types/api';
 
@@ -15,11 +14,7 @@ const BlogListItem = memo(({ post, index, onClick }: BlogListItemProps) => {
     };
 
     return (
-        <motion.div
-            key={post.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+        <div
             onClick={handleClick}
             className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col md:flex-row h-full md:h-52 cursor-pointer mb-6"
         >
@@ -81,7 +76,7 @@ const BlogListItem = memo(({ post, index, onClick }: BlogListItemProps) => {
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 });
 

@@ -7,6 +7,7 @@ import { FollowProvider } from './contexts/FollowContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import AuthErrorHandler from './components/auth/AuthErrorHandler'
+import { PageTransition } from './components/animation'
 import Profile from './pages/Profile'
 import About from './pages/About'
 import BlogDetail from './pages/BlogDetail'
@@ -32,16 +33,38 @@ const AppWrapper = () => {
                 <Routes>
                   {/* 前台布局路由 */}
                   <Route element={<ModernLayout />}>
-                    <Route path="/" element={<EnhancedBlog />} />
-                    <Route path="/blog/:id" element={<BlogDetail />} />
-                    <Route path="/blog" element={<SearchPage />} />
-                    <Route path="/search" element={<SearchResultsPage />} />
-                    <Route path="/about" element={<About />} />
+                    <Route path="/" element={
+                      <PageTransition>
+                        <EnhancedBlog />
+                      </PageTransition>
+                    } />
+                    <Route path="/blog/:id" element={
+                      <PageTransition>
+                        <BlogDetail />
+                      </PageTransition>
+                    } />
+                    <Route path="/blog" element={
+                      <PageTransition>
+                        <SearchPage />
+                      </PageTransition>
+                    } />
+                    <Route path="/search" element={
+                      <PageTransition>
+                        <SearchResultsPage />
+                      </PageTransition>
+                    } />
+                    <Route path="/about" element={
+                      <PageTransition>
+                        <About />
+                      </PageTransition>
+                    } />
                     <Route
                       path="/profile"
                       element={
                         <ProtectedRoute>
-                          <Profile />
+                          <PageTransition>
+                            <Profile />
+                          </PageTransition>
                         </ProtectedRoute>
                       }
                     />
@@ -49,7 +72,9 @@ const AppWrapper = () => {
                       path="/user/collections"
                       element={
                         <ProtectedRoute>
-                          <Collections />
+                          <PageTransition>
+                            <Collections />
+                          </PageTransition>
                         </ProtectedRoute>
                       }
                     />
@@ -60,7 +85,9 @@ const AppWrapper = () => {
                     path="/blog/new"
                     element={
                       <ProtectedRoute requiredRole={Role.ADMIN}>
-                        <BlogEditor mode="create" />
+                        <PageTransition>
+                          <BlogEditor mode="create" />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
@@ -68,7 +95,9 @@ const AppWrapper = () => {
                     path="/blog/edit/:id"
                     element={
                       <ProtectedRoute requiredRole={Role.ADMIN}>
-                        <BlogEditor mode="edit" />
+                        <PageTransition>
+                          <BlogEditor mode="edit" />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
@@ -76,7 +105,9 @@ const AppWrapper = () => {
                     path="/blog/drafts"
                     element={
                       <ProtectedRoute requiredRole={Role.ADMIN}>
-                        <MyDrafts />
+                        <PageTransition>
+                          <MyDrafts />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
@@ -85,7 +116,9 @@ const AppWrapper = () => {
                     path="/dashboard"
                     element={
                       <ProtectedRoute requiredRole={Role.ADMIN}>
-                        <Admin />
+                        <PageTransition>
+                          <Admin />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />

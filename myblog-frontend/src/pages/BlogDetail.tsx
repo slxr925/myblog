@@ -322,7 +322,7 @@ const BlogDetail: React.FC = () => {
               <MessageCircle className="w-6 h-6" /> 评论 ({commentCount})
             </h3>
             <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
-          </div>
+            </div>
         </main>
       </div>
     </div>
