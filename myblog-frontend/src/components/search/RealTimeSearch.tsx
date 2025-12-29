@@ -268,9 +268,9 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                     className="text-xs text-muted-foreground line-clamp-2 pointer-events-none"
                     dangerouslySetInnerHTML={{
                       __html: (suggestion.highlightedSummary && suggestion.highlightedSummary.includes('search-highlight'))
-                        ? '[S] ' + suggestion.highlightedSummary
+                        ? suggestion.highlightedSummary
                         : (suggestion.highlightedContent && suggestion.highlightedContent.includes('search-highlight'))
-                          ? '[C] ' + suggestion.highlightedContent
+                          ? suggestion.highlightedContent
                           : suggestion.summary
                     }}
                   />
