@@ -106,7 +106,8 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
           categoryName: doc.categoryName,
           tags: parsedTags,
           highlightedTitle: doc.highlightedTitle,
-          highlightedSummary: doc.highlightedSummary
+          highlightedSummary: doc.highlightedSummary,
+          highlightedContent: doc.highlightedContent
         };
       });
 
