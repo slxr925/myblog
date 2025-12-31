@@ -67,15 +67,15 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     const getIcon = () => {
         switch (notification.type) {
             case NotificationType.LIKE:
-                return <Heart className="w-5 h-5 text-red-500 dark:text-red-400 fill-red-500 dark:fill-red-400" />;
+                return <Heart className="w-5 h-5 text-red-500 dark:text-red-500 fill-red-500 dark:fill-red-500" />;
             case NotificationType.COMMENT:
-                return <MessageSquare className="w-5 h-5 text-blue-500 dark:text-blue-400 fill-blue-500 dark:fill-blue-400" />;
+                return <MessageSquare className="w-5 h-5 text-blue-500 dark:text-blue-500 fill-blue-500 dark:fill-blue-500" />;
             case NotificationType.FOLLOW:
-                return <UserPlus className="w-5 h-5 text-green-500 dark:text-green-400" />;
+                return <UserPlus className="w-5 h-5 text-green-500 dark:text-green-500" />;
             case NotificationType.MENTION:
-                return <AtSign className="w-5 h-5 text-purple-500 dark:text-purple-400" />;
+                return <AtSign className="w-5 h-5 text-purple-500 dark:text-purple-500" />;
             default:
-                return <Bell className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />;
+                return <Bell className="w-5 h-5 text-yellow-500 dark:text-yellow-500" />;
         }
     };
 

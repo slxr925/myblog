@@ -48,7 +48,7 @@ const Notifications: React.FC = () => {
         try {
             await api.notification.markAsRead(id);
             setNotifications(prev => prev.map(n =>
-                n.id === id ? { ...n, status: NotificationStatus.READ } : n
+                n.id === id ? { ...n, status: NotificationStatus.READ, isRead: true } : n
             ));
         } catch (error) {
             console.error('标记已读失败', error);
@@ -66,11 +66,12 @@ const Notifications: React.FC = () => {
     };
 
     const handleMarkAllRead = async () => {
-        if (!notifications.some(n => n.status === NotificationStatus.UNREAD)) return;
+        // 只要有未读状态或者是 false 的都可以点
+        if (!notifications.some(n => n.status === NotificationStatus.UNREAD || n.isRead === false)) return;
 
         try {
             await api.notification.markAllAsRead();
-            setNotifications(prev => prev.map(n => ({ ...n, status: NotificationStatus.READ })));
+            setNotifications(prev => prev.map(n => ({ ...n, status: NotificationStatus.READ, isRead: true })));
         } catch (error) {
             console.error('标记全部已读失败', error);
         }
@@ -111,7 +112,7 @@ const Notifications: React.FC = () => {
                             variant="outline"
                             onClick={handleMarkAllRead}
                             className="bg-card hover:bg-muted text-muted-foreground border-border shadow-sm transition-all hover:shadow"
-                            disabled={!notifications.some(n => n.status === NotificationStatus.UNREAD)}
+                            disabled={!notifications.some(n => n.status === NotificationStatus.UNREAD || n.isRead === false)}
                         >
                             <Check className="w-4 h-4 mr-2" />
                             全部已读
