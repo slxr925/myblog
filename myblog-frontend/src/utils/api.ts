@@ -840,34 +840,44 @@ export const api = {
 
   // AI助手相关API
   ai: {
-    // AI聊天
-    chat: (request: { question: string; conversationId?: string; history?: { role: string; content: string }[] }) => {
-      return apiClient.post('/ai/chat', request);
-    },
-
-    // 获取AI助手介绍
+    // 获取 AI助手 介绍
     getIntroduction: (): Promise<string> => {
       return apiClient.get('/ai/introduction');
     },
 
-    // 生成文章标题
+    // AI聊天（需要更长超时时间）
+    chat: (params: { question: string; conversationId?: string; history?: any[] }): Promise<any> => {
+      return apiClient.post('/ai/chat', params, {
+        timeout: 60000, // 60秒超时，因为AI响应较慢
+      });
+    },
+
+    // 生成文章标题（需要更长超时时间）
     generateTitle: (content: string): Promise<{ title: string }> => {
-      return apiClient.post('/ai/generate-title', { content });
+      return apiClient.post('/ai/generate-title', { content }, {
+        timeout: 60000,
+      });
     },
 
-    // 润色文章内容
+    // 润色文章内容（需要更长超时时间）
     polishContent: (content: string): Promise<{ polishedContent: string }> => {
-      return apiClient.post('/ai/polish-content', { content });
+      return apiClient.post('/ai/polish-content', { content }, {
+        timeout: 60000,
+      });
     },
 
-    // 生成文章摘要
+    // 生成文章摘要（需要更长超时时间）
     generateSummary: (content: string): Promise<{ summary: string }> => {
-      return apiClient.post('/ai/generate-summary', { content });
+      return apiClient.post('/ai/generate-summary', { content }, {
+        timeout: 60000,
+      });
     },
 
-    // 提取文章关键词
+    // 提取文章关键词（需要更长超时时间）
     extractKeywords: (content: string): Promise<{ keywords: string[] }> => {
-      return apiClient.post('/ai/extract-keywords', { content });
+      return apiClient.post('/ai/extract-keywords', { content }, {
+        timeout: 60000,
+      });
     },
   },
 
