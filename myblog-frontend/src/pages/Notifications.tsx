@@ -48,7 +48,7 @@ const Notifications: React.FC = () => {
         try {
             await api.notification.markAsRead(id);
             setNotifications(prev => prev.map(n =>
-                n.id === id ? { ...n, status: NotificationStatus.READ, isRead: true } : n
+                String(n.id) === String(id) ? { ...n, isRead: true } : n
             ));
         } catch (error) {
             console.error('标记已读失败', error);
@@ -66,14 +66,14 @@ const Notifications: React.FC = () => {
     };
 
     const handleMarkAllRead = async () => {
-        // 只要有未读状态或者是 false 的都可以点
-        if (!notifications.some(n => n.status === NotificationStatus.UNREAD || n.isRead === false)) return;
-
         try {
             await api.notification.markAllAsRead();
-            setNotifications(prev => prev.map(n => ({ ...n, status: NotificationStatus.READ, isRead: true })));
+            setNotifications(prev => prev.map(n => ({
+                ...n,
+                isRead: true
+            })));
         } catch (error) {
-            console.error('标记全部已读失败', error);
+            console.error('全部已读失败', error);
         }
     };
 
