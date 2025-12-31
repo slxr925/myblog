@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
-import { NotificationVO, NotificationType, NotificationStatus } from '../types/api';
+import { NotificationVO, NotificationType } from '../types/api';
 import NotificationItem from '../components/notification/NotificationItem';
 import { Button } from '../components/ui/button';
 import { Bell, Check } from 'lucide-react';
