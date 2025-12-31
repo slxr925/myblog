@@ -44,6 +44,17 @@ spring:
           min-idle: 2
           max-wait: -1ms
 
+  # Kafka配置 - 通知消息队列
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: notification-consumer-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    producer:
+      retries: 3
+      acks: all
+
   # JPA配置
   jpa:
     hibernate:

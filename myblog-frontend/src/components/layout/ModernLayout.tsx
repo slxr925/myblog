@@ -9,6 +9,7 @@ import RealTimeSearch from '../search/RealTimeSearch';
 import { AIAssistant } from '../ai/AIAssistant';
 import { Menu, X, Home, FileText, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationBadge from '../notification/NotificationBadge';
 
 export const ModernLayout = () => {
   const { isAuthenticated } = useAuth();
@@ -68,6 +69,8 @@ export const ModernLayout = () => {
 
             <ThemeToggle />
 
+            {isAuthenticated && <NotificationBadge />}
+
             {isAuthenticated ? (
               <UserMenu />
             ) : (
@@ -117,6 +120,13 @@ export const ModernLayout = () => {
                 <span className="text-sm text-slate-500 dark:text-slate-400">切换主题</span>
                 <ThemeToggle />
               </div>
+
+              {isAuthenticated && (
+                <div className="flex items-center justify-between px-2 mt-2">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">通知</span>
+                  <NotificationBadge />
+                </div>
+              )}
 
               {!isAuthenticated && (
                 <Button onClick={openAuthModal} className="w-full mt-4">

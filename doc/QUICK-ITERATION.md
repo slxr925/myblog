@@ -1,14 +1,48 @@
 # 🚀 快速迭代部署指南
 
-> 日常开发中最常用的部署流程，3分钟完成版本更新
+> 涵盖本地 Docker 开发和生产环境部署的完整流程
 
 ## 📋 快速导航
 
-- [前置准备（只需一次）](#前置准备)
-- [日常迭代流程](#日常迭代流程)
-- [部署场景选择](#部署场景选择)
+- [本地 Docker 开发](#本地-docker-开发)
+- [生产环境部署](#生产环境部署)
+  - [前置准备（只需一次）](#前置准备)
+  - [日常迭代流程](#日常迭代流程)
+  - [部署场景选择](#部署场景选择)
 
 ---
+
+## 💻 本地 Docker 开发
+
+### 快速开始
+
+```bash
+# 一键部署完整本地环境（Backend + Frontend + MySQL + Redis + Kafka + ES）
+./deploy/local/quick-deploy.sh
+
+# 或完整更新流程（构建镜像 + 部署）
+./deploy/local/deploy-update.sh
+```
+
+### 访问地址
+
+- **前端**: http://localhost:3000
+- **后端 API**: http://localhost:8081
+- **API 文档**: http://localhost:8081/doc.html
+- **Kafka UI**: http://localhost:8088
+
+### 默认账号
+
+- 用户名: `admin`
+- 密码: `admin123`
+
+### 详细文档
+
+完整的本地 Docker 使用指南请查看：[LOCAL-DOCKER-GUIDE.md](./LOCAL-DOCKER-GUIDE.md)
+
+---
+
+## ☁️ 生产环境部署
 
 ## ⚡ 前置准备（只需一次）
 

@@ -1,56 +1,51 @@
-# 多阶段构建 - 构建阶段
-FROM maven:3.9-eclipse-temurin-21 AS builder
-
-# 设置工作目录
+# 基础构建阶段
+FROM maven:3.9-eclipse-temurin-21 AS base
 WORKDIR /app
-
-# 复制pom.xml文件
 COPY pom.xml .
-
-# 下载依赖（利用Docker缓存层）
 RUN mvn dependency:go-offline -B
-
-# 复制源代码
 COPY src ./src
 
-# 构建应用
+# 开发阶段 (Local Development)
+# 使用方法: docker build --target dev -t myblog-backend:dev .
+FROM base AS dev
+ENV SPRING_PROFILES_ACTIVE=docker-local
+CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.profiles=docker-local", "-Dspring-boot.run.jvmArguments=-Xms512m -Xmx1g"]
+
+# 构建阶段 (Production Build)
+FROM base AS builder
 RUN mvn clean package -DskipTests
 
-# 生产阶段
-FROM eclipse-temurin:21-jre-alpine
+# 生产阶段 (Production Runtime)
+# 使用方法: docker build --target prod -t myblog-backend:prod .
+FROM eclipse-temurin:21-jre-alpine AS prod
 
-# 安装必要的工具
+# 安装必要工具
 RUN apk add --no-cache curl
 
-# 创建应用目录
 WORKDIR /app
 
 # 创建非root用户
 RUN addgroup -g 1000 spring && adduser -D -s /bin/sh -u 1000 -G spring spring
 
-# 复制JAR文件
+# 复制JAR
 COPY --from=builder /app/target/*.jar app.jar
 
-# 创建日志目录
-RUN mkdir -p /app/logs && \
+# 创建相关目录
+RUN mkdir -p /app/logs /app/uploads && \
     chown -R spring:spring /app
 
-# 设置JVM参数 - 优化内存使用
+# JVM参数
 ENV JAVA_OPTS="-Xms768m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0"
+ENV TZ=Asia/Shanghai
 
 # 设置时区
-ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 暴露端口
 EXPOSE 8081
 
-# 健康检查 - 增加启动等待时间
-HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
     CMD curl -f http://localhost:8081/actuator/health || exit 1
 
-# 切换到非root用户
 USER spring
 
-# 启动应用
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

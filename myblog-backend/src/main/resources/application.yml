@@ -21,6 +21,10 @@ app:
     max-image-size: ${UPLOAD_MAX_IMAGE_SIZE_MB:5}
     secure-mode: ${UPLOAD_SECURE_MODE:true}
 
+# 通知系统 - 基于Kafka
+# 本地开发：直接安装Kafka KRaft模式 (brew install kafka)
+# 生产环境：Docker部署Kafka
+
 spring:
   profiles:
     active: local  # 默认激活本地开发配置

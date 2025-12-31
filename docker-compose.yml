@@ -1,0 +1,197 @@
+# MyBlog 本地全栈开发环境
+# 包含: Backend, Frontend, MySQL, Redis, Kafka, Elasticsearch
+#
+# 快速开始:
+#   docker-compose up -d
+#
+# 服务访问:
+#   前端 (Dev): http://localhost:3000
+#   后端 (API): http://localhost:8081
+#   Kafka UI: http://localhost:8088
+#   数据库: localhost:3307 (避免端口冲突)
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: myblog-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: xr123321
+      MYSQL_DATABASE: myblog
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # 自动数据库初始化 (挂载文件而非目录)
+      - ./myblog-backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - myblog-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: myblog-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - myblog-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch搜索
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: myblog-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - myblog-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Kafka消息队列
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: myblog-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: "-Xmx512M -Xms512M"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - myblog-network
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Kafka UI管理界面
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: myblog-kafka-ui
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - myblog-network
+
+  # 后端服务
+  backend:
+    build:
+      context: ./myblog-backend
+      dockerfile: Dockerfile
+      target: dev # 使用开发阶段构建
+    container_name: myblog-backend
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker-local
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_HOST: elasticsearch
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # JWT配置
+      JWT_SECRET: myBlogSecretKeyForJWTTokenGeneration2024!@#$%
+      # AI配置
+      AI_ENABLED: "true"
+      OPENAI_API_KEY: 78c617eb96904306975a7a9317a37e8e.whZoxTQSTy81AQb6
+      OPENAI_BASE_URL: https://open.bigmodel.cn/api/coding/paas/v4
+      OPENAI_MODEL: GLM-4.7
+      OPENAI_COMPLETIONS_PATH: /chat/completions
+    volumes:
+      - ./myblog-backend:/app:rw
+      - ~/.m2:/root/.m2:rw # 缓存Maven依赖
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - myblog-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./myblog-frontend
+      dockerfile: Dockerfile
+      target: dev # 使用开发阶段构建
+    container_name: myblog-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8081
+    volumes:
+      - ./myblog-frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - myblog-network
+
+networks:
+  myblog-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  es_data:
+  kafka_data:

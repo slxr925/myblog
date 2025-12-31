@@ -1,0 +1,74 @@
+# Docker本地开发环境配置
+# 用于 docker-compose.local.yml 全Docker化本地开发
+
+spring:
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:myblog}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:xr123321}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 5000
+  
+  # Kafka配置
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: notification-consumer-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    producer:
+      retries: 3
+      acks: all
+  
+  # AI配置
+  ai:
+    enabled: ${AI_ENABLED:true}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://open.bigmodel.cn/api/coding/paas/v4}
+      chat:
+        enabled: ${AI_ENABLED:true}
+        options:
+          model: ${OPENAI_MODEL:GLM-4.7}
+          temperature: 0.7
+        completions-path: ${OPENAI_COMPLETIONS_PATH:/chat/completions}
+
+# Elasticsearch配置
+app:
+  elasticsearch:
+    enabled: ${ELASTICSEARCH_ENABLED:true}
+    uris: http://${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:myBlogSecretKeyForJWTTokenGeneration2024!@#$%}
+
+# 日志配置
+logging:
+  level:
+    com.ryan.myblog: debug
+    org.springframework.kafka: info
+
+# 禁用Elasticsearch健康检查
+management:
+  health:
+    elasticsearch:
+      enabled: false
