@@ -18,40 +18,44 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 }) => {
     const navigate = useNavigate();
 
-    // 解析 extraData
-    const extra = notification.parsedExtraData || notification.extraData || {};
+    // 解析 extraData (增强稳健性：处理可能的 JSON 字符串)
+    let extra = notification.parsedExtraData || notification.extraData || {};
+    if (typeof extra === 'string') {
+        try {
+            extra = JSON.parse(extra);
+        } catch (e) {
+            extra = {};
+        }
+    }
 
     const handleClick = () => {
-        // 标记为已读
-        if (notification.status === NotificationStatus.UNREAD && !notification.isRead) {
+        // 标记为已读 (以后端确定的 isRead 为准)
+        if (!notification.isRead) {
             onRead(notification.id);
         }
 
         // 根据 type 和 resource 跳转
         const { resourceType, resourceId, type, senderId } = notification;
+        const normalizedResourceType = resourceType?.toUpperCase();
 
         // 优先处理资源跳转
-        if (resourceType && resourceId) {
-            if (resourceType === 'BLOG') {
+        if (normalizedResourceType && resourceId) {
+            if (normalizedResourceType === 'BLOG') {
                 navigate(`/blog/${resourceId}`);
                 return;
             }
-            if (resourceType === 'COMMENT') {
-                const blogId = extra.blogId || (type === 'LIKE' ? null : null);
-                // 对于点赞评论，如果没有 extraData，我们真的不知道 blogId 是多少
-                // 除非后端在 resourceId 里直接给的是 blogId (显然不是)
-
+            if (normalizedResourceType === 'COMMENT') {
+                // 优先从 extra 中取 blogId
+                const blogId = extra.blogId || extra.blog_id;
                 if (blogId) {
                     navigate(`/blog/${blogId}#comment-${resourceId}`);
                 } else {
-                    // 尝试退避：如果是评论相关的通知但没blogId，看有没有 senderId
-                    console.warn('跳转失败: 缺少 blogId');
-                    // 这里可以加一个 toast 提示用户
+                    // Fallback: 如果是评论但没拿到blogId，尝试直接跳转(虽然可能不带锚点)
+                    navigate(`/blog/${resourceId}`);
                 }
                 return;
             }
-            if (resourceType === 'USER') {
-                // 确保 resourceId 是数字或字符串，并且是绝对路径
+            if (normalizedResourceType === 'USER') {
                 navigate(`/profile/${resourceId}`);
                 return;
             }
