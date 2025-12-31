@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 
 interface NotificationItemProps {
     notification: NotificationVO;
-    onRead: (id: number) => void;
-    onDelete: (id: number) => void;
+    onRead: (id: any) => void;
+    onDelete: (id: any) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
@@ -31,63 +31,58 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         // 防止点击删除按钮触发整行点击
         if ((e.target as HTMLElement).closest('button')) return;
 
-        console.log('[Notification] Clicked notification ID:', notification.id);
+        console.log('[Notification] Click processing:', notification);
 
-        // 1. 立即触发标记已读 (即使没跳转也应起效)
+        // 1. 触发已读 (标记同步)
         if (!notification.isRead) {
             onRead(notification.id);
         }
 
-        // 2. 跳转逻辑
-        const { resourceType, resourceId, type, senderId } = notification;
-        const resType = resourceType?.toUpperCase();
+        // 2. 跳转逻辑 - 强制大小写不敏感
+        const typeStr = (notification.type || '').toUpperCase();
+        const resType = (notification.resourceType || '').toUpperCase();
+        const resId = notification.resourceId;
 
-        // 处理逻辑优先级
-
-        // 如果是系统通知且没资源，不跳转
-        if (type === NotificationType.SYSTEM && !resType) {
+        // 2.1 博客相关 (点赞、收藏、顶级评论)
+        if ((resType === 'BLOG' || resType === 'ARTICLE') && resId) {
+            navigate(`/blog/${resId}`);
             return;
         }
 
-        // 2.1 博客详情跳转 (文章、点赞、顶级评论)
-        if ((resType === 'BLOG' || resType === 'ARTICLE') && resourceId) {
-            navigate(`/blog/${resourceId}`);
-            return;
-        }
-
-        // 2.2 评论回复跳转
-        if (resType === 'COMMENT' && resourceId) {
-            // 后端保证在 extraData 里放了 blogId
+        // 2.2 评论回复相关
+        if (resType === 'COMMENT' && resId) {
             const bId = extra.blogId || extra.blog_id || extra.articleId;
             if (bId) {
-                navigate(`/blog/${bId}#comment-${resourceId}`);
+                navigate(`/blog/${bId}#comment-${resId}`);
             } else {
-                // 如果实在没找到 blogId，有些旧通知可能把 blogId 放在了 resourceId 里
-                // (这是一个猜测，但为了增强跳转率可以尝试)
-                console.warn('Comment type notice missing blogId, resourceId is:', resourceId);
-                // 暂时不盲目跳，以免 404
+                // 如果是顶级评论，有时候 resourceType 可能是 COMMENT 但此时 resId 可能就是 blogId
+                // 此时尝试直接跳转
+                navigate(`/blog/${resId}`);
             }
             return;
         }
 
-        // 2.3 用户个人中心跳转
-        if (resType === 'USER' || type === NotificationType.FOLLOW) {
-            const uId = resourceId || senderId;
+        // 2.3 用户相关
+        if (resType === 'USER' || typeStr === 'FOLLOW') {
+            const uId = resId || notification.senderId;
             if (uId) navigate(`/profile/${uId}`);
             return;
         }
+
+        console.log('[Notification] No specific jump path found');
     };
 
     const getIcon = () => {
         const iconClass = "w-5 h-5";
-        switch (notification.type) {
-            case NotificationType.LIKE:
+        const typeStr = (notification.type || '').toUpperCase();
+        switch (typeStr) {
+            case 'LIKE':
                 return <Heart className={`${iconClass} text-red-500 fill-red-500`} />;
-            case NotificationType.COMMENT:
+            case 'COMMENT':
                 return <MessageSquare className={`${iconClass} text-blue-500 fill-blue-500`} />;
-            case NotificationType.FOLLOW:
+            case 'FOLLOW':
                 return <UserPlus className={`${iconClass} text-green-500`} />;
-            case NotificationType.MENTION:
+            case 'MENTION':
                 return <AtSign className={`${iconClass} text-purple-500`} />;
             default:
                 return <Bell className={`${iconClass} text-yellow-500`} />;
@@ -107,42 +102,39 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         }
     };
 
-    // 重点：使用更宽松的未读判断
-    const isUnread = notification.isRead === false || (notification as any).isRead === 0;
+    // 状态判定：增加 status/isRead 的多重检查
+    const isActuallyRead = notification.isRead === true || (notification as any).status === 1;
+    const isUnread = !isActuallyRead;
 
     return (
         <div
-            className={`p-4 border-b border-border hover:bg-muted/50 transition-all duration-200 cursor-pointer relative group ${isUnread ? 'bg-blue-500/5 dark:bg-blue-500/10' : 'bg-transparent'
+            className={`p-4 border-b border-border hover:bg-muted/50 transition-all duration-200 cursor-pointer relative group ${isUnread ? 'bg-blue-500/[0.04] dark:bg-blue-500/[0.08]' : 'bg-transparent'
                 }`}
             onClick={handleClick}
         >
             <div className="flex gap-4 pr-10">
-                {/* 左侧头像或图标 */}
                 <div className="flex-shrink-0">
                     <div className="relative">
                         {notification.senderAvatar ? (
                             <img
                                 src={notification.senderAvatar}
-                                alt={notification.senderName || 'Sender'}
+                                alt="Avatar"
                                 className="w-10 h-10 rounded-full object-cover border border-border"
                             />
                         ) : (
-                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border">
-                                {getIcon()}
+                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border text-muted-foreground uppercase text-xs">
+                                {notification.senderName?.charAt(0) || 'U'}
                             </div>
                         )}
-                        {notification.senderAvatar && (
-                            <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm border border-border">
-                                {getIcon()}
-                            </div>
-                        )}
+                        <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm border border-border scale-75">
+                            {getIcon()}
+                        </div>
                     </div>
                 </div>
 
-                {/* 中间内容 */}
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                     <div className="flex justify-between items-start">
-                        <span className="font-semibold text-foreground text-sm truncate">
+                        <span className={`text-sm truncate ${isUnread ? 'font-bold text-foreground' : 'font-medium text-muted-foreground'}`}>
                             {notification.senderName || '系统通知'}
                         </span>
                         <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
@@ -150,38 +142,38 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                         </span>
                     </div>
 
-                    <div className="text-sm font-medium text-foreground">
+                    <div className={`text-sm ${isUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                         {notification.title}
                     </div>
 
                     {notification.content && (
-                        <div className="text-sm text-muted-foreground line-clamp-2 mt-1 px-3 py-2 bg-muted/40 rounded border border-border/30">
+                        <div className="text-sm text-muted-foreground line-clamp-2 mt-1 px-3 py-2 bg-muted/40 rounded border border-border/30 italic">
                             {notification.content}
                         </div>
                     )}
 
                     {(extra.blogTitle || extra.title) && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 italic overflow-hidden text-ellipsis whitespace-nowrap">
-                            原文: {extra.blogTitle || extra.title}
+                        <div className="text-xs text-blue-500/80 mt-1 truncate">
+                            相关文章: {extra.blogTitle || extra.title}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* 未读指示点 - 显眼的蓝色点（呼应用户说的黑点，但在颜色上做差异化确保由我控制） */}
+            {/* 未读指示点 - 显著的蓝色圆点 (如果未读则显示，点击后应立即消失) */}
             {isUnread && (
-                <div className="absolute top-1/2 -translate-y-1/2 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse" />
+                <div className="absolute top-[22px] right-3 w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
             )}
 
-            {/* 删除按钮 */}
             <button
                 className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                title="删除"
                 onClick={(e) => {
                     e.stopPropagation();
                     onDelete(notification.id);
                 }}
             >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
             </button>
         </div>
     );

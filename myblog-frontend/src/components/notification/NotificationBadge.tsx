@@ -84,12 +84,14 @@ const NotificationBadge: React.FC = () => {
     };
 
     const handleRead = async (id: number) => {
+        // 乐观更新
+        setNotifications(prev => prev.map(n =>
+            String(n.id) === String(id) ? { ...n, isRead: true } : n
+        ));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+
         try {
             await api.notification.markAsRead(id);
-            setNotifications(prev => prev.map(n =>
-                String(n.id) === String(id) ? { ...n, isRead: true } : n
-            ));
-            setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
             console.error('标记已读失败', error);
         }

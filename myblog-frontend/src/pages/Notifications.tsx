@@ -45,13 +45,16 @@ const Notifications: React.FC = () => {
     }, [filter]);
 
     const handleRead = async (id: number) => {
+        // 乐观更新：立即在 UI 上置为已读
+        setNotifications(prev => prev.map(n =>
+            String(n.id) === String(id) ? { ...n, isRead: true } : n
+        ));
+
         try {
             await api.notification.markAsRead(id);
-            setNotifications(prev => prev.map(n =>
-                String(n.id) === String(id) ? { ...n, isRead: true } : n
-            ));
         } catch (error) {
             console.error('标记已读失败', error);
+            // 这里暂不回滚，因为即便失败，本地保持已读通常对用户体验更好，下次刷新会纠正
         }
     };
 
@@ -112,7 +115,7 @@ const Notifications: React.FC = () => {
                             variant="outline"
                             onClick={handleMarkAllRead}
                             className="bg-card hover:bg-muted text-muted-foreground border-border shadow-sm transition-all hover:shadow"
-                            disabled={!notifications.some(n => n.status === NotificationStatus.UNREAD || n.isRead === false)}
+                            disabled={!notifications.some(n => n.isRead === false)}
                         >
                             <Check className="w-4 h-4 mr-2" />
                             全部已读
