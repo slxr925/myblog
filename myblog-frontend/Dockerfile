@@ -1,45 +1,38 @@
-# 多阶段构建 - 构建阶段
-FROM node:18-alpine AS builder
-
-# 设置工作目录
+# 基础阶段
+FROM node:20-alpine AS base
 WORKDIR /app
-
-# 复制package.json和package-lock.json
 COPY package*.json ./
+RUN npm install
 
-# 安装依赖
-RUN npm ci --only=production
-
-# 复制源代码
+# 开发阶段 (Local Development)
+# 使用方法: docker build --target dev -t myblog-frontend:dev .
+FROM base AS dev
 COPY . .
+ENV VITE_API_BASE_URL=http://localhost:8081
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
-# 构建应用
+# 构建阶段 (Production Build)
+FROM base AS builder
+COPY . .
 RUN npm run build
 
-# 生产阶段 - 使用Nginx托管静态文件
-FROM nginx:alpine
+# 生产阶段 (Production Runtime with Nginx)
+FROM nginx:alpine AS prod
 
-# 复制自定义Nginx配置
+# 复制Nginx配置
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# 复制构建产物到Nginx目录
+# 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 创建非root用户
+# 权限设置和用户创建
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S nextjs -u 1001 && \
+    chown -R nextjs:nodejs /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d
 
-# 设置正确的权限
-RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
-    chown -R nextjs:nodejs /var/cache/nginx && \
-    chown -R nextjs:nodejs /var/log/nginx && \
-    chown -R nextjs:nodejs /etc/nginx/conf.d
-
-# 切换到非root用户
 USER nextjs
 
-# 暴露端口
 EXPOSE 8080
 
-# 启动Nginx
 CMD ["nginx", "-g", "daemon off;"]

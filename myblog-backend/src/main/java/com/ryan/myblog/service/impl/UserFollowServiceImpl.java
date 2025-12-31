@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ryan.myblog.event.NotificationEvent;
 import com.ryan.myblog.mapper.UserFollowMapper;
 import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.model.entity.User;
@@ -13,6 +14,7 @@ import com.ryan.myblog.model.vo.UserFollowVO;
 import com.ryan.myblog.service.UserFollowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class UserFollowServiceImpl extends ServiceImpl<UserFollowMapper, UserFol
 
     private final UserFollowMapper userFollowMapper;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 获取当前登录用户ID
@@ -78,6 +81,16 @@ public class UserFollowServiceImpl extends ServiceImpl<UserFollowMapper, UserFol
         userFollow.setFollowerId(followerId);
         userFollow.setFolloweeId(followeeId);
         save(userFollow);
+
+        // 发送关注通知
+        User follower = userMapper.selectById(followerId);
+        String followerName = follower != null ? follower.getNickname() : "有人";
+        NotificationEvent event = NotificationEvent.followEvent(
+                this, followeeId, followerId, followerName,
+                java.util.Map.of("followerAvatar",
+                        follower != null && follower.getAvatar() != null ? follower.getAvatar() : ""));
+        eventPublisher.publishEvent(event);
+
         log.info("用户 {} 关注了用户 {}", followerId, followeeId);
     }
 

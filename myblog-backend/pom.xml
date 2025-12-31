@@ -176,6 +176,19 @@
             <version>1.1.2</version>
         </dependency>
 
+        <!-- Spring Kafka (可选，用于本地开发/面试展示) -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring WebSocket (用于实时通知推送) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryan.myblog.common.PageRequest;
 import com.ryan.myblog.common.RedisKeyFactory;
+import com.ryan.myblog.event.NotificationEvent;
 import com.ryan.myblog.model.dto.CommentSaveDTO;
+import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.model.entity.Comment;
 import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.model.entity.UserLike;
@@ -23,6 +25,7 @@ import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -51,6 +54,7 @@ public class CommentServiceImpl implements CommentService {
     private final UnifiedCacheService unifiedCacheService;
     private final UserService userService;
     private final BlogService blogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -77,8 +81,70 @@ public class CommentServiceImpl implements CommentService {
         // 更新 Redis 评论数 (+1)
         commentCountService.incrementCommentCount(commentSaveDTO.getBlogId());
 
+        // 发送通知
+        publishCommentNotification(comment, userId);
+
         // 清除博客列表缓存
         clearBlogCaches();
+    }
+
+    /**
+     * 发布评论通知
+     */
+    private void publishCommentNotification(Comment comment, Long senderId) {
+        try {
+            Blog blog = blogMapper.selectById(comment.getBlogId());
+            if (blog == null)
+                return;
+
+            User sender = userMapper.selectById(senderId);
+            String senderName = sender != null ? sender.getNickname() : "有人";
+
+            log.info("准备处理通知逻辑: senderId={}, authorId={}, isParent={}", senderId, blog.getAuthorId(),
+                    comment.getParentId() != null);
+            if (comment.getParentId() != null) {
+                // 回复评论 - 通知被回复者
+                Comment parentComment = commentMapper.selectById(comment.getParentId());
+                if (parentComment != null && !parentComment.getUserId().equals(senderId)) {
+                    log.info("发送回复通知给 userId={}", parentComment.getUserId());
+                    NotificationEvent event = NotificationEvent.replyEvent(
+                            this,
+                            parentComment.getUserId(),
+                            senderId,
+                            comment.getContent(),
+                            comment.getId(),
+                            java.util.Map.of(
+                                    "blogId", blog.getId(),
+                                    "blogTitle", blog.getTitle(),
+                                    "commentContent", comment.getContent().length() > 100
+                                            ? comment.getContent().substring(0, 100) + "..."
+                                            : comment.getContent()));
+                    eventPublisher.publishEvent(event);
+                }
+            } else {
+                // 顶级评论 - 通知文章作者
+                if (!blog.getAuthorId().equals(senderId)) {
+                    log.info("发送文章评论通知给作者 userId={}", blog.getAuthorId());
+                    NotificationEvent event = NotificationEvent.commentEvent(
+                            this,
+                            blog.getAuthorId(),
+                            senderId,
+                            blog.getTitle(),
+                            comment.getContent(),
+                            blog.getId(),
+                            java.util.Map.of(
+                                    "commentContent", comment.getContent().length() > 100
+                                            ? comment.getContent().substring(0, 100) + "..."
+                                            : comment.getContent()));
+                    eventPublisher.publishEvent(event);
+                    log.info("事件已发布");
+                } else {
+                    log.info("作者给自己评论，不发通知: authorId={}, senderId={}", blog.getAuthorId(), senderId);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("发送评论通知失败: {}", e.getMessage(), e);
+        }
     }
 
     @Override

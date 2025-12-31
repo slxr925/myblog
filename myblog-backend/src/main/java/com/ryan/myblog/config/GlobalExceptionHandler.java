@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     /**
      * 处理认证异常
      * 返回 401 Unauthorized
@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
         log.warn("请求限流: {}", e.getMessage());
         return Result.error(429, e.getMessage());
     }
-    
+
     /**
      * 处理运行时异常
      */
@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
         log.error("运行时异常: {}", e.getMessage(), e);
         return Result.error(e.getMessage());
     }
-    
+
     /**
      * 处理参数验证异常
      */
@@ -57,7 +57,18 @@ public class GlobalExceptionHandler {
         log.error("参数异常: {}", e.getMessage(), e);
         return Result.error(e.getMessage());
     }
-    
+
+    /**
+     * 处理资源未找到异常 (如 favicon.ico)
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Result<Void> handleNoResourceFoundException(
+            org.springframework.web.servlet.resource.NoResourceFoundException e) {
+        log.debug("资源未找到: {}", e.getMessage());
+        return Result.error(404, "资源不存在");
+    }
+
     /**
      * 处理通用异常
      */

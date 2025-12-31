@@ -97,7 +97,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const heartIconClass = isCommentLiked ? 'fill-current' : '';
 
   return (
-    <div className={`${isReply ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''}`}>
+    <div
+      id={`comment-${comment.id}`}
+      className={`${isReply ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''} scroll-mt-24 transition-colors duration-1000`}
+    >
       <Card className="mb-4 border-gray-200 shadow-sm">
         <CardContent className="p-4">
           {/* 评论头部 */}
@@ -309,6 +312,26 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       window.removeEventListener('auth:loginSuccess', handleLoginSuccess);
     };
   }, [blogId]);
+
+  // 监听评论加载完成，处理锚点滚动
+  useEffect(() => {
+    if (!loading && comments.length > 0) {
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#comment-')) {
+        setTimeout(() => {
+          const element = document.querySelector(hash);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // 添加高亮效果
+            element.classList.add('bg-blue-50');
+            setTimeout(() => {
+              element.classList.remove('bg-blue-50');
+            }, 2000);
+          }
+        }, 500);
+      }
+    }
+  }, [loading, comments]);
 
   // 提交新评论
   const handleSubmitComment = async () => {
@@ -623,6 +646,4 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   );
 };
 
-// 导出组件 - 不使用 React.memo 的自定义比较函数
-// 因为组件内部依赖 AuthContext 的 user 状态，自定义比较函数会阻止 Context 变化触发的重新渲染
 export default CommentSection;

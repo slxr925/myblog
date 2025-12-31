@@ -389,3 +389,62 @@ export interface BrowseHistoryVO {
   likeCount: number;
   commentCount: number;
 }
+
+// ========== 通知相关类型定义 ==========
+
+// 通知类型枚举
+export enum NotificationType {
+  SYSTEM = 'SYSTEM',
+  COMMENT = 'COMMENT',
+  LIKE = 'LIKE',
+  FOLLOW = 'FOLLOW',
+  MENTION = 'MENTION',
+  NEW_ARTICLE = 'NEW_ARTICLE',
+  STATS = 'STATS'
+}
+
+// 通知状态枚举
+export enum NotificationStatus {
+  UNREAD = 0,
+  READ = 1
+}
+
+// 通知VO
+export interface NotificationVO {
+  id: number;
+  receiverId: number; // 后端是 receiverId
+  type: string;       // 后端返回的是字符串类型
+  title: string;
+  content: string;
+  senderId?: number;
+  senderName?: string;
+  senderAvatar?: string;
+  resourceId?: number;   // 修正为 resourceId
+  resourceType?: string; // 修正为 resourceType
+  extraData?: Record<string, any>; // 后端直接返回 Map<String, Object>
+  status: NotificationStatus; // 这里后端返回的是 isRead (boolean)，或者 status
+  isRead?: boolean; // 后端 NotificationVO 用 isRead
+  createTime: string;
+  // 方便前端使用的解析后的extraData
+  parsedExtraData?: Record<string, any>;
+}
+
+// 通知设置
+export interface NotificationSettingVO {
+  userId: number;
+  emailNotification: boolean;
+  commentNotification: boolean;
+  likeNotification: boolean;
+  followNotification: boolean;
+  systemNotification: boolean;
+}
+
+// 未读数量响应
+export interface UnreadCountVO {
+  total: number;
+  system: number;
+  comment: number;
+  like: number;
+  follow: number;
+  mention: number;
+}

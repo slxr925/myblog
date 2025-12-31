@@ -2,7 +2,12 @@ package com.ryan.myblog.service.impl;
 
 import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.event.LikeEvent;
+import com.ryan.myblog.event.NotificationEvent;
+import com.ryan.myblog.mapper.BlogMapper;
 import com.ryan.myblog.mapper.UserLikeMapper;
+import com.ryan.myblog.mapper.UserMapper;
+import com.ryan.myblog.model.entity.Blog;
+import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.model.entity.UserLike;
 import com.ryan.myblog.service.RedisLikeService;
 import com.ryan.myblog.service.UnifiedCacheService;
@@ -57,6 +62,8 @@ public class RedisLikeServiceImpl implements RedisLikeService {
     private final UnifiedCacheService unifiedCacheService;
     private final ApplicationEventPublisher eventPublisher;
     private final UserLikeMapper userLikeMapper;
+    private final BlogMapper blogMapper;
+    private final UserMapper userMapper;
 
     /**
      * 切换点赞状态
@@ -84,6 +91,9 @@ public class RedisLikeServiceImpl implements RedisLikeService {
 
             // 3. 发布点赞事件（异步持久化）
             publishLikeEvent(blogId, userId, true);
+
+            // 4. 发送点赞通知给文章作者
+            publishLikeNotification(blogId, userId);
 
             log.debug("用户 {} 点赞博客 {} (Redis)", userId, blogId);
             return true;
@@ -232,7 +242,29 @@ public class RedisLikeServiceImpl implements RedisLikeService {
             log.debug("发布点赞事件: blogId={}, userId={}, like={}", blogId, userId, like);
         } catch (Exception e) {
             log.error("发布点赞事件失败", e);
-            // 失败后的补偿措施：可以记录到失败队列，后续重试
+        }
+    }
+
+    /**
+     * 发布点赞通知给文章作者
+     */
+    private void publishLikeNotification(Long blogId, Long userId) {
+        try {
+            Blog blog = blogMapper.selectById(blogId);
+            if (blog == null || blog.getAuthorId().equals(userId)) {
+                return; // 自己给自己点赞不通知
+            }
+
+            NotificationEvent event = NotificationEvent.likeEvent(
+                    this,
+                    blog.getAuthorId(),
+                    userId,
+                    blog.getTitle(),
+                    blogId,
+                    java.util.Map.of("blogCover", blog.getCoverImg() != null ? blog.getCoverImg() : ""));
+            eventPublisher.publishEvent(event);
+        } catch (Exception e) {
+            log.warn("发送点赞通知失败: {}", e.getMessage());
         }
     }
 

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ryan.myblog.mapper.NotificationMapper">
+
+    <!-- 通知结果映射 -->
+    <resultMap id="NotificationResultMap" type="com.ryan.myblog.model.entity.Notification">
+        <id column="id" property="id"/>
+        <result column="receiver_id" property="receiverId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="resource_type" property="resourceType"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="extra_data" property="extraData" 
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="is_read" property="isRead"/>
+        <result column="read_time" property="readTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 分页查询用户通知 -->
+    <select id="selectNotificationPage" resultMap="NotificationResultMap">
+        SELECT n.*
+        FROM tb_notification n
+        WHERE n.receiver_id = #{receiverId}
+          AND n.deleted = 0
+        <if test="type != null and type != ''">
+            AND n.type = #{type}
+        </if>
+        <if test="isRead != null">
+            AND n.is_read = #{isRead}
+        </if>
+        ORDER BY n.create_time DESC
+    </select>
+
+    <!-- 统计未读通知数量 -->
+    <select id="countUnread" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM tb_notification
+        WHERE receiver_id = #{receiverId}
+          AND is_read = 0
+          AND deleted = 0
+    </select>
+
+    <!-- 按类型统计未读通知数量 -->
+    <select id="countUnreadByType" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM tb_notification
+        WHERE receiver_id = #{receiverId}
+          AND type = #{type}
+          AND is_read = 0
+          AND deleted = 0
+    </select>
+
+    <!-- 标记所有通知为已读 -->
+    <update id="markAllAsRead">
+        UPDATE tb_notification
+        SET is_read = 1, read_time = NOW()
+        WHERE receiver_id = #{receiverId}
+          AND is_read = 0
+          AND deleted = 0
+    </update>
+
+    <!-- 标记某类型通知为已读 -->
+    <update id="markAsReadByType">
+        UPDATE tb_notification
+        SET is_read = 1, read_time = NOW()
+        WHERE receiver_id = #{receiverId}
+          AND type = #{type}
+          AND is_read = 0
+          AND deleted = 0
+    </update>
+
+</mapper>

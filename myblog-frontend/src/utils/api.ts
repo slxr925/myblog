@@ -27,7 +27,11 @@ import type {
   UserCollectionVO,
   UserFollowVO,
   FollowPageResponse,
-  BrowseHistoryVO
+  BrowseHistoryVO,
+  NotificationVO,
+  NotificationSettingVO,
+  UnreadCountVO,
+  NotificationType
 } from '../types/api';
 
 // 创建axios实例
@@ -865,5 +869,75 @@ export const api = {
     extractKeywords: (content: string): Promise<{ keywords: string[] }> => {
       return apiClient.post('/ai/extract-keywords', { content });
     },
+  },
+
+  notification: {
+    // 获取通知列表
+    getList: async (params?: PageParams & { type?: NotificationType }): Promise<PageResult<NotificationVO>> => {
+      const response = await apiClient.get('/notifications', { params });
+      // 如果后端返回的是标准 PageResponse 格式（包含 records），需要适配前端 PageResult
+      const pageData = response as any;
+
+      // 处理后端返回的列表数据，解析 parsedExtraData
+      let content: NotificationVO[] = [];
+      if (pageData.records) {
+        content = pageData.records;
+      } else if (pageData.content) {
+        content = pageData.content;
+      } else if (Array.isArray(pageData)) {
+        content = pageData;
+      }
+
+      // 解析 extraData
+      content = content.map((item: NotificationVO) => {
+        if (item.extraData) {
+          try {
+            item.parsedExtraData = JSON.parse(item.extraData);
+          } catch (e) {
+            console.error('Failed to parse extraData', e);
+          }
+        }
+        return item;
+      });
+
+      // 构造返回结果
+      return {
+        content: content,
+        totalElements: pageData.total || pageData.totalElements || content.length,
+        totalPages: pageData.pages || pageData.totalPages || 1,
+        size: pageData.size || params?.size || 10,
+        number: pageData.current || pageData.number || 1
+      };
+    },
+
+    // 获取未读数量
+    getUnreadCount: async (): Promise<UnreadCountVO> => {
+      return apiClient.get('/notifications/unread/count') as Promise<UnreadCountVO>;
+    },
+
+    // 标记为已读
+    markAsRead: async (id: number): Promise<void> => {
+      await apiClient.put(`/notifications/${id}/read`);
+    },
+
+    // 标记所有为已读
+    markAllAsRead: async (): Promise<void> => {
+      await apiClient.put('/notifications/read/all');
+    },
+
+    // 删除通知
+    delete: async (id: number): Promise<void> => {
+      await apiClient.delete(`/notifications/${id}`);
+    },
+
+    // 获取通知设置
+    getSettings: async (): Promise<NotificationSettingVO> => {
+      return apiClient.get('/notifications/settings') as Promise<NotificationSettingVO>;
+    },
+
+    // 更新通知设置
+    updateSettings: async (settings: Partial<NotificationSettingVO>): Promise<void> => {
+      await apiClient.put('/notifications/settings', settings);
+    }
   },
 };
