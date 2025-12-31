@@ -134,8 +134,8 @@ services:
     image: apache/kafka:3.7.0
     container_name: myblog-kafka
     restart: unless-stopped
-    ports:
-      - "9092:9092"
+    # ports:
+    #   - "9092:9092"
     environment:
       # KRaft模式配置
       KAFKA_NODE_ID: 1

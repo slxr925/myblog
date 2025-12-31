@@ -41,13 +41,13 @@ echo ""
 # 步骤2: 本地构建
 # ============================================
 echo -e "${BLUE}=== 步骤 2/5: 本地构建 ===${NC}"
-if [ ! -f "./deploy/build-local.sh" ]; then
-    echo -e "${RED}✗ 找不到 build-local.sh${NC}"
+if [ ! -f "./deploy/prod/build-local.sh" ]; then
+    echo -e "${RED}✗ 找不到 deploy/prod/build-local.sh${NC}"
     exit 1
 fi
 
-chmod +x ./deploy/build-local.sh
-if ./deploy/build-local.sh; then
+chmod +x ./deploy/prod/build-local.sh
+if ./deploy/prod/build-local.sh; then
     echo -e "${GREEN}✓ 本地构建成功${NC}"
 else
     echo -e "${RED}✗ 本地构建失败${NC}"
@@ -119,7 +119,7 @@ if [ "$USE_SCP" = true ]; then
     ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy"
     
     # 上传脚本
-    if scp deploy/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/; then
+    if scp deploy/prod/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/; then
         # 添加执行权限
         ssh ${SERVER_USER}@${SERVER_HOST} "chmod +x ${SERVER_PATH}/deploy/*.sh"
         echo -e "${GREEN}✓ 部署脚本上传成功${NC}"
