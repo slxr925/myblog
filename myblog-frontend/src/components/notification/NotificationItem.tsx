@@ -97,7 +97,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         }
     };
 
-    const isUnread = notification.status === NotificationStatus.UNREAD || notification.isRead === false;
+    const isUnread = !notification.isRead;
 
     return (
         <div
