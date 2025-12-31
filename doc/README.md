@@ -30,6 +30,8 @@
 | [🔄 BACKUP-RESTORE.md](./BACKUP-RESTORE.md) | 备份与恢复 |
 | [⚡ PERFORMANCE.md](./PERFORMANCE.md) | 性能优化 |
 | [🐛 TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | 问题排查 |
+| [🧹 CLEANUP.md](./CLEANUP.md) | 项目清理指南 ⭐ |
+| [🔐 SECURITY.md](./SECURITY.md) | 敏感信息安全指南 ⭐ |
 
 ---
 
@@ -337,4 +339,4 @@ df -h
 
 **保持文档更新，让协作更高效！** 📚
 
-**最后更新：** 2025-12-18
+**最后更新：** 2025-12-31
