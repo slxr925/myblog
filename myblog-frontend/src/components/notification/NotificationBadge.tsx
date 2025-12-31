@@ -87,7 +87,7 @@ const NotificationBadge: React.FC = () => {
         try {
             await api.notification.markAsRead(id);
             setNotifications(prev => prev.map(n =>
-                n.id === id ? { ...n, status: NotificationStatus.READ } : n
+                n.id === id ? { ...n, status: NotificationStatus.READ, isRead: true } : n
             ));
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
@@ -115,7 +115,7 @@ const NotificationBadge: React.FC = () => {
     const handleMarkAllRead = async () => {
         try {
             await api.notification.markAllAsRead();
-            setNotifications(prev => prev.map(n => ({ ...n, status: NotificationStatus.READ })));
+            setNotifications(prev => prev.map(n => ({ ...n, status: NotificationStatus.READ, isRead: true })));
             setUnreadCount(0);
         } catch (error) {
             console.error('全部已读失败', error);
