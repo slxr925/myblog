@@ -102,12 +102,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         }
     };
 
-    // 状态判定：增加 status/isRead 的多重检查
-    const isActuallyRead = notification.isRead === true || (notification as any).status === 1;
-    const isUnread = !isActuallyRead;
+    // 状态判定：使用 ! 判定，确保 undefined/false 均视为未读，只要不是 true 就是未读
+    const isUnread = !notification.isRead;
 
     return (
         <div
+            id={`notification-item-${notification.id}`}
             className={`p-4 border-b border-border hover:bg-muted/50 transition-all duration-200 cursor-pointer relative group ${isUnread ? 'bg-blue-500/[0.04] dark:bg-blue-500/[0.08]' : 'bg-transparent'
                 }`}
             onClick={handleClick}
