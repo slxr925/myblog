@@ -70,6 +70,8 @@ public class SecurityConfig {
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         // 允许用户注册和登录
                         .requestMatchers("/api/user/register", "/api/user/login", "/api/user/logout").permitAll()
+                        // 允许生成验证码（登录前需要）
+                        .requestMatchers("/api/captcha/**").permitAll()
                         // 允许查看博客列表和详情
                         .requestMatchers("/api/blog/page", "/api/blog/{id}").permitAll()
                         // 允许搜索功能

@@ -10,6 +10,7 @@ import com.ryan.myblog.model.dto.UserLoginDTO;
 import com.ryan.myblog.model.dto.UserRegisterDTO;
 import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.mapper.UserMapper;
+import com.ryan.myblog.enums.CaptchaVerificationResult;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.SessionService;
@@ -46,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final CacheService cacheService;
     private final UnifiedCacheService unifiedCacheService;
     private final CacheConsistencyService cacheConsistencyService;
+    private final com.ryan.myblog.service.CaptchaService captchaService;
 
     // 登录失败限制配置
     private static final int MAX_LOGIN_ATTEMPTS = 5; // 最大失败次数
@@ -117,7 +119,17 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        // 验证密码
+        // 1. 验证验证码
+        CaptchaVerificationResult verificationResult = captchaService.verifyCaptcha(
+                userLoginDTO.getCaptchaId(),
+                userLoginDTO.getCaptchaCode());
+
+        if (verificationResult != CaptchaVerificationResult.SUCCESS) {
+            log.warn("登录失败: {}, 用户名={}", verificationResult.getMessage(), userLoginDTO.getUsername());
+            throw new RuntimeException(verificationResult.getMessage());
+        }
+
+        // 2. 验证密码
         if (!passwordEncoder.matches(userLoginDTO.getPassword(), user.getPassword())) {
             log.warn("密码错误：{}", userLoginDTO.getUsername());
             throw new RuntimeException("用户名或密码错误");
@@ -142,6 +154,17 @@ public class UserServiceImpl implements UserService {
     @Override
     public TokenResponse loginWithTokens(UserLoginDTO userLoginDTO, String clientIp) {
         log.info("用户登录请求（双Token）：{}，IP：{}", userLoginDTO.getUsername(), clientIp);
+
+        // 0. 验证验证码
+        CaptchaVerificationResult captchaResult = captchaService.verifyCaptcha(
+                userLoginDTO.getCaptchaId(),
+                userLoginDTO.getCaptchaCode());
+
+        if (captchaResult != CaptchaVerificationResult.SUCCESS) {
+            log.warn("验证码验证失败：username={}, result={}",
+                    userLoginDTO.getUsername(), captchaResult.getMessage());
+            throw new RuntimeException(captchaResult.getMessage());
+        }
 
         String username = userLoginDTO.getUsername();
 

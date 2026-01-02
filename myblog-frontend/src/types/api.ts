@@ -198,6 +198,8 @@ export interface UserRegisterDTO {
 export interface UserLoginDTO {
   username: string;
   password: string;
+  captchaId?: string;
+  captchaCode?: string;
 }
 
 // 用户认证状态

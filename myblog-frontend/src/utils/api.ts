@@ -830,6 +830,19 @@ export const api = {
     },
   },
 
+  captcha: {
+    // 生成验证码
+    generate: (): Promise<{
+      captchaId: string;
+      imageBase64: string;
+    }> => {
+      return apiClient.get('/captcha/generate') as Promise<{
+        captchaId: string;
+        imageBase64: string;
+      }>;
+    },
+  },
+
   // 浏览记录相关API
   browseHistory: {
     // 获取用户浏览记录

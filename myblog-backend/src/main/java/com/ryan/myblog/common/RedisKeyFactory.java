@@ -123,6 +123,13 @@ public enum RedisKeyFactory {
      */
     USER_LOGIN_FAIL("login:fail:user:%s", 15, TimeUnit.MINUTES, "用户登录失败计数"),
 
+    /**
+     * 登录验证码
+     * Key: myblog:captcha:{captchaId}
+     * TTL: 5分钟
+     */
+    CAPTCHA("captcha:%s", 5, TimeUnit.MINUTES, "登录验证码"),
+
     // ==================== 分类模块 ====================
 
     /**
