@@ -1,4 +1,4 @@
-package com.ryan.myblog.listener;
+package com.ryan.myblog.event.listener;
 
 import com.ryan.myblog.event.NotificationEvent;
 import com.ryan.myblog.service.notification.NotificationMessage;
