@@ -21,11 +21,12 @@ public interface UserService {
      * 用户登录（向后兼容）
      */
     String login(UserLoginDTO userLoginDTO);
-    
+
     /**
      * 用户登录（双Token机制）
+     * 
      * @param userLoginDTO 登录信息
-     * @param clientIp 客户端IP地址
+     * @param clientIp     客户端IP地址
      * @return TokenResponse 包含access token和refresh token
      */
     TokenResponse loginWithTokens(UserLoginDTO userLoginDTO, String clientIp);
@@ -64,4 +65,12 @@ public interface UserService {
      * 获取用户总数（管理员功能）
      */
     Long getTotalUserCount(String keyword);
+
+    /**
+     * 获取各状态的用户总数（管理员功能，支持关键词过滤）
+     * 
+     * @param keyword 搜索关键词
+     * @return 状态统计Map，key为状态值，value为该状态的用户总数
+     */
+    java.util.Map<Integer, Long> getUserStatusCounts(String keyword);
 }

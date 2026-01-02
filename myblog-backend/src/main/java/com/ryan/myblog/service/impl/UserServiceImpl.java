@@ -421,4 +421,37 @@ public class UserServiceImpl implements UserService {
 
         return count;
     }
+
+    /**
+     * 获取各状态的用户总数（支持关键词过滤）
+     */
+    @Override
+    public java.util.Map<Integer, Long> getUserStatusCounts(String keyword) {
+        log.info("获取用户状态统计，关键词：{}", keyword);
+
+        java.util.Map<Integer, Long> statusCounts = new java.util.HashMap<>();
+
+        // 统计各状态数量 (0=正常, 1=禁用)
+        for (int status = 0; status <= 1; status++) {
+            LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
+            query.eq(User::getStatus, status);
+
+            // 如果有关键词，添加关键词搜索条件
+            if (StringUtils.isNotBlank(keyword)) {
+                query.and(wrapper -> wrapper
+                        .like(User::getUsername, keyword)
+                        .or()
+                        .like(User::getNickname, keyword)
+                        .or()
+                        .like(User::getEmail, keyword));
+            }
+
+            Long count = userMapper.selectCount(query);
+            statusCounts.put(status, count != null ? count : 0L);
+            log.debug("状态{}的用户数量：{}", status, count);
+        }
+
+        log.info("用户状态统计完成：{}", statusCounts);
+        return statusCounts;
+    }
 }

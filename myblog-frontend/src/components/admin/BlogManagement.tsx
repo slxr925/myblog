@@ -35,6 +35,9 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
   const [statusFilter, setStatusFilter] = useState<number | undefined>(initialStatusFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalBlogs, setTotalBlogs] = useState(0);
+  const [draftCount, setDraftCount] = useState(0);
+  const [publishedCount, setPublishedCount] = useState(0);
+  const [offlineCount, setOfflineCount] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingBlogId, setLoadingBlogId] = useState<number | null>(null);
 
@@ -56,17 +59,27 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
         status: statusFilter
       });
 
-      const responseData = response as { records?: any[]; total?: number; content?: any[]; totalElements?: number };
-      const blogData = Array.isArray(responseData?.records) ? responseData.records : (Array.isArray(responseData?.content) ? responseData.content : []);
-      const totalCount = responseData?.total ?? responseData?.totalElements ?? blogData.length;
+      // Handle new API response structure (cast to any for new fields)
+      const responseData: any = response;
+      const pageResult = responseData.pageResult || response;
+      const blogData = Array.isArray(pageResult?.records) ? pageResult.records : (Array.isArray(pageResult?.content) ? pageResult.content : []);
+      const totalCount = pageResult?.total ?? pageResult?.totalElements ?? blogData.length;
 
       setBlogs(blogData);
       setTotalBlogs(totalCount);
+
+      // Update status counts from backend
+      setDraftCount(Number(responseData.draftCount) || 0);
+      setPublishedCount(Number(responseData.publishedCount) || 0);
+      setOfflineCount(Number(responseData.offlineCount) || 0);
     } catch (error) {
       console.error('获取文章列表失败:', error);
       setMessage({ type: 'error', text: '获取文章列表失败' });
       setBlogs([]);
       setTotalBlogs(0);
+      setDraftCount(0);
+      setPublishedCount(0);
+      setOfflineCount(0);
     } finally {
       setLoading(false);
     }
@@ -235,7 +248,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {blogs.filter(b => b.status === BlogStatus.PUBLISHED).length}
+                    {publishedCount}
                   </p>
                   <p className="text-muted-foreground text-sm">已发布</p>
                 </div>
@@ -251,7 +264,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {blogs.filter(b => b.status === BlogStatus.DRAFT).length}
+                    {draftCount}
                   </p>
                   <p className="text-muted-foreground text-sm">草稿</p>
                 </div>
@@ -267,7 +280,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {blogs.filter(b => b.status === BlogStatus.OFFLINE).length}
+                    {offlineCount}
                   </p>
                   <p className="text-muted-foreground text-sm">已下线</p>
                 </div>

@@ -119,17 +119,17 @@ const SearchResultsPage: React.FC = () => {
   const allCategories = Array.from(new Set(posts.map(post => post.categoryName))).filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
+    <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-slate-900 mb-4">
+          <h1 className="text-3xl font-bold text-foreground mb-4">
             {searchTerm ? `搜索结果: "${searchTerm}"` : "全部文章"}
           </h1>
-          <p className="text-slate-500">
+          <p className="text-muted-foreground">
             找到了 {filteredPosts.length} 篇相关文章
           </p>
           {searchTerm && (
-            <Button variant="link" onClick={() => navigate('/blog')} className="mt-4 text-indigo-600">
+            <Button variant="link" onClick={() => navigate('/blog')} className="mt-4 text-primary">
               <ArrowLeft className="w-4 h-4 mr-2" /> 查看所有文章
             </Button>
           )}
@@ -161,7 +161,7 @@ const SearchResultsPage: React.FC = () => {
         {/* Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-96 bg-white rounded-3xl animate-pulse" />)}
+            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-96 bg-card rounded-3xl animate-pulse" />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -172,7 +172,7 @@ const SearchResultsPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => navigate(`/blog/${post.id}`)}
-                className="group bg-white rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col h-full cursor-pointer [&>*]:pointer-events-none"
+                className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col h-full cursor-pointer [&>*]:pointer-events-none"
               >
                 <div className="relative h-56 overflow-hidden">
                   <img
@@ -181,41 +181,41 @@ const SearchResultsPage: React.FC = () => {
                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-4 left-4">
-                    <Badge className="bg-white/90 backdrop-blur-md text-indigo-600 shadow-sm">
+                    <Badge className="bg-background/90 backdrop-blur-md text-primary shadow-sm">
                       {post.categoryName || '未分类'}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                     <Calendar className="w-4 h-4" />
                     <span>{post.date}</span>
-                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                    <span className="w-1 h-1 bg-muted rounded-full" />
                     <Clock className="w-4 h-4 ml-1" />
                     <span>{post.readTime}</span>
                   </div>
 
                   <h3
-                    className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2 pointer-events-none"
+                    className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2 pointer-events-none"
                     dangerouslySetInnerHTML={{ __html: post.highlightedTitle || post.title }}
                   />
 
                   <p
-                    className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-1 pointer-events-none"
+                    className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 flex-1 pointer-events-none"
                     dangerouslySetInnerHTML={{ __html: post.highlightedExcerpt || post.excerpt }}
                   />
 
 
 
-                  <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
+                  <div className="flex items-center justify-between pt-6 border-t border-border mt-auto">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                         {post.author.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-sm font-medium text-slate-700">{post.author}</span>
+                      <span className="text-sm font-medium text-foreground">{post.author}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-slate-400 text-sm">
+                    <div className="flex items-center gap-4 text-muted-foreground text-sm">
                       <span className="flex items-center gap-1">
                         <Heart className="w-4 h-4" />
                         {post.likes}
@@ -233,8 +233,8 @@ const SearchResultsPage: React.FC = () => {
 
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-20">
-            <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 text-lg">没有找到相关文章</p>
+            <Search className="w-12 h-12 text-muted mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">没有找到相关文章</p>
             <Button variant="outline" onClick={() => navigate('/blog')} className="mt-4">
               查看全部文章
             </Button>

@@ -1112,4 +1112,33 @@ public class BlogServiceImpl implements BlogService {
         Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
         return blogMapper.selectLikedBlogsByUser(page, userId);
     }
+
+    /**
+     * 获取各状态的博客总数（支持关键词过滤）
+     */
+    @Override
+    public java.util.Map<Integer, Long> getBlogStatusCounts(String keyword) {
+        java.util.Map<Integer, Long> statusCounts = new java.util.HashMap<>();
+
+        // 统计各状态数量
+        for (int status = 0; status <= 2; status++) {
+            LambdaQueryWrapper<Blog> query = new LambdaQueryWrapper<>();
+            query.eq(Blog::getStatus, status);
+
+            // 如果有关键词，添加关键词搜索条件
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                query.and(wrapper -> wrapper
+                        .like(Blog::getTitle, keyword.trim())
+                        .or()
+                        .like(Blog::getSummary, keyword.trim())
+                        .or()
+                        .like(Blog::getContent, keyword.trim()));
+            }
+
+            Long count = blogMapper.selectCount(query);
+            statusCounts.put(status, count != null ? count : 0L);
+        }
+
+        return statusCounts;
+    }
 }

@@ -82,8 +82,7 @@ public class AdminController {
                 commentPage.getRecords(),
                 commentPage.getTotal(),
                 commentPage.getCurrent(),
-                commentPage.getSize()
-        );
+                commentPage.getSize());
         return Result.success(pageResult);
     }
 
@@ -103,7 +102,7 @@ public class AdminController {
      */
     @GetMapping("/blogs")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<PageResult<BlogDetailVO>> getBlogs(
+    public Result<Map<String, Object>> getBlogs(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "12") Integer size,
             @RequestParam(required = false) Integer status,
@@ -117,9 +116,19 @@ public class AdminController {
                 blogPage.getRecords(),
                 blogPage.getTotal(),
                 blogPage.getCurrent(),
-                blogPage.getSize()
-        );
-        return Result.success(pageResult);
+                blogPage.getSize());
+
+        // 获取各状态的总数
+        Map<Integer, Long> statusCounts = blogService.getBlogStatusCounts(keyword);
+
+        // 构建返回数据
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("pageResult", pageResult);
+        response.put("draftCount", statusCounts.getOrDefault(0, 0L));
+        response.put("publishedCount", statusCounts.getOrDefault(1, 0L));
+        response.put("offlineCount", statusCounts.getOrDefault(2, 0L));
+
+        return Result.success(response);
     }
 
     /**
@@ -148,7 +157,7 @@ public class AdminController {
     @PutMapping("/blogs/{blogId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateBlogStatus(@PathVariable Long blogId,
-                                         @RequestBody Map<String, Integer> request) {
+            @RequestBody Map<String, Integer> request) {
         Integer status = request.get("status");
         if (status == null) {
             return Result.error("状态值不能为空");
@@ -174,7 +183,7 @@ public class AdminController {
      */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<PageResult<User>> getUsers(
+    public Result<Map<String, Object>> getUsers(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "12") Integer size,
             @RequestParam(required = false) String keyword) {
@@ -191,22 +200,30 @@ public class AdminController {
 
             // 添加详细日志调试
             log.info("MyBatis Plus返回的分页数据：current={}, size={}, total={}, records={}",
-                userPage.getCurrent(), userPage.getSize(), userPage.getTotal(), userPage.getRecords().size());
+                    userPage.getCurrent(), userPage.getSize(), userPage.getTotal(), userPage.getRecords().size());
 
             // 获取真实的总用户数
             Long actualTotal = userService.getTotalUserCount(keyword);
 
             // 转换为前端期望的分页结果格式
             PageResult<User> pageResult = new PageResult<>(
-                userPage.getRecords(),
-                actualTotal, // 使用真实的总用户数
-                userPage.getCurrent(),
-                userPage.getSize()
-            );
+                    userPage.getRecords(),
+                    actualTotal, // 使用真实的总用户数
+                    userPage.getCurrent(),
+                    userPage.getSize());
+
+            // 获取各状态的总数
+            Map<Integer, Long> statusCounts = userService.getUserStatusCounts(keyword);
+
+            // 构建返回数据
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("pageResult", pageResult);
+            response.put("normalCount", statusCounts.getOrDefault(0, 0L));
+            response.put("disabledCount", statusCounts.getOrDefault(1, 0L));
 
             log.info("PageResult构造完成：total={}, records={}, pages={}",
-                pageResult.getTotal(), pageResult.getRecords().size(), pageResult.getPages());
-            return Result.success("获取用户列表成功", pageResult);
+                    pageResult.getTotal(), pageResult.getRecords().size(), pageResult.getPages());
+            return Result.success("获取用户列表成功", response);
 
         } catch (Exception e) {
             log.error("获取用户列表失败", e);

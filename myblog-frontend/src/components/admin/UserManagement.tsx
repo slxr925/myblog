@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -29,13 +29,15 @@ export const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [normalCount, setNormalCount] = useState(0);
+  const [disabledCount, setDisabledCount] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [statusLoadingId, setStatusLoadingId] = useState<number | null>(null);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const debounceSearch = useCallback((value: string) => {
+  const debounceSearch = (value: string) => {
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
@@ -43,13 +45,13 @@ export const UserManagement: React.FC = () => {
     debounceTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchTerm(value);
     }, 300);
-  }, []);
+  };
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     debounceSearch(value);
-  }, [debounceSearch]);
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -72,16 +74,27 @@ export const UserManagement: React.FC = () => {
         keyword: debouncedSearchTerm
       });
 
-      const userData = Array.isArray(response?.records) ? response.records : [];
-      const totalCount = response?.total ?? userData.length;
+      // Cast to any to handle the new backend response structure
+      const responseData: any = response;
+
+      // Extract pageResult (paginated user data)
+      const pageResult = responseData.pageResult || responseData;
+      const userData = Array.isArray(pageResult?.records) ? pageResult.records : [];
+      const totalCount = pageResult?.total ?? userData.length;
 
       setUsers(userData);
       setTotalUsers(totalCount);
+
+      // Extract status counts from backend response
+      setNormalCount(responseData.normalCount ?? 0);
+      setDisabledCount(responseData.disabledCount ?? 0);
     } catch (error) {
       console.error('获取用户列表失败:', error);
       setMessage({ type: 'error', text: '获取用户列表失败' });
       setUsers([]);
       setTotalUsers(0);
+      setNormalCount(0);
+      setDisabledCount(0);
     } finally {
       setLoading(false);
     }
@@ -154,8 +167,8 @@ export const UserManagement: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">管理系统中的所有用户账户</p>
+          <div>
+            <p className="text-muted-foreground">管理系统中的所有用户账户</p>
           </div>
         </div>
 
@@ -183,7 +196,7 @@ export const UserManagement: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {users.filter(u => u.status === UserStatus.NORMAL).length}
+                    {normalCount}
                   </p>
                   <p className="text-muted-foreground text-sm">活跃用户</p>
                 </div>
@@ -199,7 +212,7 @@ export const UserManagement: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {users.filter(u => u.status === UserStatus.DISABLED).length}
+                    {disabledCount}
                   </p>
                   <p className="text-muted-foreground text-sm">已禁用</p>
                 </div>
@@ -275,106 +288,106 @@ export const UserManagement: React.FC = () => {
                 const isCurrentUser = currentUser?.id === user.id;
                 const isAdmin = normalizedRole === Role.ADMIN;
                 const isDisabled = isStatusLoading || isCurrentUser || isAdmin;
-                
+
                 let disabledReason = '';
                 if (isCurrentUser) {
                   disabledReason = '不能修改自己的状态';
                 } else if (isAdmin) {
                   disabledReason = '不能禁用管理员账户';
                 }
-                
+
                 return (
-                <motion.div
-                  key={user.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="group"
-                >
-                  <Card className="hover:shadow-md transition-all duration-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={user.avatar} />
-                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                              {getInitials(user.username || '', user.nickname || '')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-lg truncate">
-                              {user.nickname || user.username}
-                            </h3>
-                            <p className="text-sm text-muted-foreground truncate">
-                              @{user.username}
-                            </p>
+                  <motion.div
+                    key={user.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="group"
+                  >
+                    <Card className="hover:shadow-md transition-all duration-200">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={user.avatar} />
+                              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                                {getInitials(user.username || '', user.nickname || '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-lg truncate">
+                                {user.nickname || user.username}
+                              </h3>
+                              <p className="text-sm text-muted-foreground truncate">
+                                @{user.username}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1">
                             <Badge variant={getRoleBadgeVariant(normalizedRole)} className="text-xs">
                               {getRoleText(normalizedRole)}
-                          </Badge>
+                            </Badge>
                             <Badge variant={getStatusBadgeVariant(normalizedStatus)} className="text-xs">
                               {getStatusText(normalizedStatus)}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                        {user.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span className="truncate">{user.email}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <span>ID: {user.id}</span>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {user.createTime ?
-                              new Date(user.createTime).toLocaleDateString('zh-CN') :
-                              '未知'
-                            }
+                            </Badge>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex gap-2">
+                        <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                          {user.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              <span className="truncate">{user.email}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span>ID: {user.id}</span>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {user.createTime ?
+                                new Date(user.createTime).toLocaleDateString('zh-CN') :
+                                '未知'
+                              }
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
                           <div className="flex-1 relative group/btn">
-                        <Button
+                            <Button
                               variant={normalizedStatus === UserStatus.NORMAL ? "destructive" : "default"}
-                          size="sm"
+                              size="sm"
                               onClick={() => handleToggleUserStatus(user.id, normalizedStatus)}
                               className="w-full flex items-center gap-1"
                               disabled={isDisabled}
-                        >
+                            >
                               {isStatusLoading ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                   处理中...
                                 </>
                               ) : normalizedStatus === UserStatus.NORMAL ? (
-                            <>
-                              <Ban className="w-4 h-4" />
-                              禁用
-                            </>
-                          ) : (
-                            <>
-                              <Shield className="w-4 h-4" />
-                              启用
-                            </>
-                          )}
-                        </Button>
+                                <>
+                                  <Ban className="w-4 h-4" />
+                                  禁用
+                                </>
+                              ) : (
+                                <>
+                                  <Shield className="w-4 h-4" />
+                                  启用
+                                </>
+                              )}
+                            </Button>
                             {disabledReason && (
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                                 {disabledReason}
                               </div>
                             )}
                           </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 );
               })}
             </div>
