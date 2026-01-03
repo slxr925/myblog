@@ -186,7 +186,7 @@ const MyLikes: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
                 >
-                  <Card 
+                  <Card
                     className="group hover:shadow-md transition-all duration-200 cursor-pointer py-0"
                     onClick={() => handleBlogClick(blog.id)}
                   >
@@ -246,30 +246,32 @@ const MyLikes: React.FC = () => {
           </div>
 
           {/* 分页 */}
-          <div className="flex items-center justify-center gap-4 pt-6">
-            <Button
-              variant="outline"
-              disabled={page === 1 || loading}
-              onClick={() => setPage(prev => Math.max(1, prev - 1))}
-            >
-              上一页
-            </Button>
-
-            <div className="text-sm text-muted-foreground">
-              第 {page} / {totalPages} 页，共 {total} 篇文章
+          <div className="flex flex-col items-center gap-2 pt-4">
+            <div className="text-xs text-muted-foreground whitespace-nowrap">
+              {page}/{totalPages}页 共{total}篇
             </div>
-
-            <Button
-              variant="outline"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                '下一页'
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1 || loading}
+                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  '下一页'
+                )}
+              </Button>
+            </div>
           </div>
         </>
       )}

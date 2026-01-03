@@ -156,49 +156,49 @@ export const MyComments: React.FC = () => {
         <div className="space-y-3">
           {comments.map((comment) => (
             <Card key={comment.id} className="hover:shadow-md transition-shadow py-0">
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />
-                            {formatDistanceToNow(new Date(comment.createTime), {
-                              addSuffix: true,
-                              locale: zhCN,
-                            })}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-700 line-clamp-2">
-                          {comment.content}
-                        </div>
-                        {comment.blogTitle && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
-                              {comment.blogTitle}
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleNavigateToBlog(comment.blogId)}
-                              className="text-blue-600 hover:text-blue-700 p-0 h-auto text-xs"
-                            >
-                              查看
-                              <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 ml-2"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+              <CardContent className="p-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5" />
+                        {formatDistanceToNow(new Date(comment.createTime), {
+                          addSuffix: true,
+                          locale: zhCN,
+                        })}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="text-xs text-gray-700 line-clamp-2">
+                      {comment.content}
+                    </div>
+                    {comment.blogTitle && (
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 max-w-[120px] truncate">
+                          {comment.blogTitle}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleNavigateToBlog(comment.blogId)}
+                          className="text-blue-600 hover:text-blue-700 p-0 h-auto text-[10px]"
+                        >
+                          查看
+                          <ExternalLink className="w-2 h-2 ml-0.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteComment(comment.id)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0 shrink-0"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : (

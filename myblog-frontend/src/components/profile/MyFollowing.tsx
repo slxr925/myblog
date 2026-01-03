@@ -137,30 +137,23 @@ export const MyFollowing: React.FC = () => {
                 <div className="space-y-3">
                     {following.map((followedUser) => (
                         <Card key={followedUser.userId} className="hover:shadow-md transition-shadow py-0">
-                            <CardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                        <Avatar className="w-10 h-10">
-                                            <AvatarImage src={followedUser.avatar} alt={followedUser.nickname || followedUser.username} />
-                                            <AvatarFallback className="text-base bg-indigo-100 text-indigo-600">
-                                                {(followedUser.nickname || followedUser.username).charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-medium text-sm text-gray-800 truncate">{followedUser.nickname || followedUser.username}</span>
-                                                <span className="text-xs text-gray-500 whitespace-nowrap">
-                                                    {formatDistanceToNow(new Date(followedUser.followTime), {
-                                                        addSuffix: true,
-                                                        locale: zhCN,
-                                                    })}关注
-                                                </span>
-                                            </div>
-                                            {followedUser.bio && (
-                                                <div className="text-xs text-gray-600 line-clamp-1">
-                                                    {followedUser.bio}
-                                                </div>
-                                            )}
+                            <CardContent className="p-3">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="w-10 h-10 shrink-0">
+                                        <AvatarImage src={followedUser.avatar} alt={followedUser.nickname || followedUser.username} />
+                                        <AvatarFallback className="text-base bg-indigo-100 text-indigo-600">
+                                            {(followedUser.nickname || followedUser.username).charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium text-sm text-gray-800 truncate max-w-[100px]">{followedUser.nickname || followedUser.username}</span>
+                                            <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                                {formatDistanceToNow(new Date(followedUser.followTime), {
+                                                    addSuffix: false,
+                                                    locale: zhCN,
+                                                })}
+                                            </span>
                                         </div>
                                     </div>
                                     <FollowButton
