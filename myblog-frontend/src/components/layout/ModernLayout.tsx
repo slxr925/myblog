@@ -97,7 +97,7 @@ export const ModernLayout = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="fixed top-16 left-0 right-0 z-40 bg-background border-b border-border shadow-xl md:hidden overflow-hidden"
+            className="fixed top-16 left-0 right-0 z-40 bg-background border-b border-border shadow-xl md:hidden overflow-visible"
           >
             <div className="p-4 flex flex-col gap-2">
               <Button variant="ghost" onClick={() => handleNavigation('/')} className="justify-start w-full">

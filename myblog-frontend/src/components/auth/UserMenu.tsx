@@ -73,14 +73,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
               className="fixed inset-0 z-40"
               onClick={() => setIsOpen(false)}
             />
-            
+
             {/* 菜单内容 */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 top-12 z-50 w-80"
+              className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)]"
             >
               <Card className="shadow-lg">
                 <CardContent className="p-4 space-y-4">
@@ -105,7 +105,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ className }) => {
                     </div>
                   </div>
 
-                  
+
 
                   {/* 个人简介 */}
                   {user.bio && (

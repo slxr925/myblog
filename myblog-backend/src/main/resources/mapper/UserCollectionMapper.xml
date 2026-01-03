@@ -99,13 +99,13 @@
         ORDER BY uc.create_time DESC
     </select>
 
-    <!-- 根据用户和目标获取收藏记录 -->
+    <!-- 根据用户和目标获取收藏记录（包括已删除的） -->
     <select id="selectByUserAndTarget" resultType="com.ryan.myblog.model.entity.UserCollection">
         SELECT * FROM tb_user_collection
         WHERE user_id = #{userId}
           AND target_type = #{targetType}
           AND target_id = #{targetId}
-          AND deleted = 0
+        ORDER BY deleted ASC
         LIMIT 1
     </select>
 

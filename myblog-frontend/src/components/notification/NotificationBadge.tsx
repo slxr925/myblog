@@ -26,7 +26,9 @@ const NotificationBadge: React.FC = () => {
         const fetchUnreadCount = async () => {
             try {
                 const res = await api.notification.getUnreadCount();
-                setUnreadCount(res.total);
+                // 后端返回Long类型(数字),前端直接使用
+                const count = typeof res === 'number' ? res : (res.total || 0);
+                setUnreadCount(count);
             } catch (error) {
                 console.error('获取未读数失败', error);
             }
@@ -103,7 +105,8 @@ const NotificationBadge: React.FC = () => {
             setNotifications(prev => prev.filter(n => n.id !== id));
             // 重新获取未读数，因为刚才删除的可能是未读的
             const res = await api.notification.getUnreadCount();
-            setUnreadCount(res.total);
+            const count = typeof res === 'number' ? res : (res.total || 0);
+            setUnreadCount(count);
         } catch (error) {
             console.error('删除通知失败', error);
         }

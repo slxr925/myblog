@@ -99,12 +99,18 @@ public class KafkaNotificationConsumer {
         // 3. 更新Redis未读计数
         notificationService.incrementUnreadCount(message.getReceiverId());
 
-        // 4. WebSocket实时推送
+        // 4. 获取最新未读数
+        Long unreadCount = notificationService.getUnreadCount(message.getReceiverId());
+
+        // 5. WebSocket实时推送通知
         NotificationVO vo = notificationService.toVO(notification);
         webSocketHandler.sendNotification(message.getReceiverId(), vo);
 
-        log.info("[Kafka Consumer] 通知处理完成: id={}, receiver={}",
-                notification.getId(), message.getReceiverId());
+        // 6. WebSocket实时推送未读数更新
+        webSocketHandler.sendUnreadCount(message.getReceiverId(), unreadCount);
+
+        log.info("[Kafka Consumer] 通知处理完成: id={}, receiver={}, unreadCount={}",
+                notification.getId(), message.getReceiverId(), unreadCount);
     }
 
     /**
