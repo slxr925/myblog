@@ -249,79 +249,103 @@ const Profile: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="account" className="w-full">
-                  <TabsList className="grid w-full grid-cols-7">
-                    <TabsTrigger value="account">账户状态</TabsTrigger>
-                    <TabsTrigger value="comments">我的评论</TabsTrigger>
-                    <TabsTrigger value="likes">我的喜爱</TabsTrigger>
-                    <TabsTrigger value="collections">我的收藏</TabsTrigger>
-                    <TabsTrigger value="browse-history">浏览记录</TabsTrigger>
-                    <TabsTrigger value="followers">我的粉丝</TabsTrigger>
-                    <TabsTrigger value="following">我关注的</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="account" className="space-y-4">
-                    <div className="p-4 bg-muted/30 rounded-xl">
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="text-muted-foreground text-sm">当前状态</span>
-                        <Badge variant={user.status === 0 ? 'default' : 'destructive'}>
-                          {user.status === 0 ? '正常' : '异常'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="text-muted-foreground text-sm">账户类型</span>
-                        <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
-                          {user.role === Role.ADMIN ? '管理员' : '普通用户'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="text-muted-foreground text-sm">注册时间</span>
-                        <span className="text-sm font-medium">
-                          {user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-muted-foreground text-sm">最后登录</span>
-                        <span className="text-sm font-medium">
-                          {user.updateTime ? new Date(user.updateTime).toLocaleDateString('zh-CN') : '近期'}
-                        </span>
-                      </div>
+                  {/* 移动端：左右布局 */}
+                  <div className="flex gap-4 sm:hidden items-start">
+                    <TabsList className="flex flex-col w-24 gap-1 h-auto shrink-0 self-start sticky top-4">
+                      <TabsTrigger value="account" className="justify-start text-xs px-2">账户状态</TabsTrigger>
+                      <TabsTrigger value="comments" className="justify-start text-xs px-2">我的评论</TabsTrigger>
+                      <TabsTrigger value="likes" className="justify-start text-xs px-2">我的喜爱</TabsTrigger>
+                      <TabsTrigger value="collections" className="justify-start text-xs px-2">我的收藏</TabsTrigger>
+                      <TabsTrigger value="browse-history" className="justify-start text-xs px-2">浏览记录</TabsTrigger>
+                      <TabsTrigger value="followers" className="justify-start text-xs px-2">我的粉丝</TabsTrigger>
+                      <TabsTrigger value="following" className="justify-start text-xs px-2">我关注的</TabsTrigger>
+                    </TabsList>
+                    <div className="flex-1 min-w-0 text-xs">
+                      <TabsContent value="account" className="space-y-2 mt-0">
+                        <div className="p-2 bg-muted/30 rounded-lg">
+                          <div className="flex justify-between items-center py-1.5 border-b border-border">
+                            <span className="text-muted-foreground">状态</span>
+                            <Badge variant={user.status === 0 ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              {user.status === 0 ? '正常' : '异常'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-border">
+                            <span className="text-muted-foreground">类型</span>
+                            <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}`}>
+                              {user.role === Role.ADMIN ? '管理员' : '用户'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5">
+                            <span className="text-muted-foreground">注册</span>
+                            <span className="font-medium">{user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'}</span>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" className="w-full justify-start text-xs h-8" onClick={() => navigate('/blog/drafts')}>
+                          <FileText className="w-3 h-3 mr-1.5" /> 我的草稿
+                        </Button>
+                      </TabsContent>
+                      <TabsContent value="comments" className="mt-0"><MyComments /></TabsContent>
+                      <TabsContent value="likes" className="mt-0"><MyLikes /></TabsContent>
+                      <TabsContent value="collections" className="mt-0"><CollectionsManager /></TabsContent>
+                      <TabsContent value="browse-history" className="mt-0"><MyBrowseHistory /></TabsContent>
+                      <TabsContent value="followers" className="mt-0"><MyFollowers /></TabsContent>
+                      <TabsContent value="following" className="mt-0"><MyFollowing /></TabsContent>
                     </div>
+                  </div>
 
-                    <div className="p-4 bg-muted/30 rounded-xl">
-                      <h4 className="font-medium text-foreground mb-3">快捷操作</h4>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => navigate('/blog/drafts')}
-                      >
-                        <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> 我的草稿
-                      </Button>
-                    </div>
-                  </TabsContent>
+                  {/* 桌面端：保持原样横向布局 */}
+                  <div className="hidden sm:block">
+                    <TabsList className="grid w-full grid-cols-7">
+                      <TabsTrigger value="account">账户状态</TabsTrigger>
+                      <TabsTrigger value="comments">我的评论</TabsTrigger>
+                      <TabsTrigger value="likes">我的喜爱</TabsTrigger>
+                      <TabsTrigger value="collections">我的收藏</TabsTrigger>
+                      <TabsTrigger value="browse-history">浏览记录</TabsTrigger>
+                      <TabsTrigger value="followers">我的粉丝</TabsTrigger>
+                      <TabsTrigger value="following">我关注的</TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="comments">
-                    <MyComments />
-                  </TabsContent>
-
-                  <TabsContent value="likes">
-                    <MyLikes />
-                  </TabsContent>
-
-                  <TabsContent value="collections">
-                    <CollectionsManager />
-                  </TabsContent>
-
-                  <TabsContent value="browse-history">
-                    <MyBrowseHistory />
-                  </TabsContent>
-
-                  <TabsContent value="followers">
-                    <MyFollowers />
-                  </TabsContent>
-
-                  <TabsContent value="following">
-                    <MyFollowing />
-                  </TabsContent>
+                    <TabsContent value="account" className="space-y-4">
+                      <div className="p-4 bg-muted/30 rounded-xl">
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="text-muted-foreground text-sm">当前状态</span>
+                          <Badge variant={user.status === 0 ? 'default' : 'destructive'}>
+                            {user.status === 0 ? '正常' : '异常'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="text-muted-foreground text-sm">账户类型</span>
+                          <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
+                            {user.role === Role.ADMIN ? '管理员' : '普通用户'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="text-muted-foreground text-sm">注册时间</span>
+                          <span className="text-sm font-medium">
+                            {user.createTime ? new Date(user.createTime).toLocaleDateString('zh-CN') : '未知'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-muted-foreground text-sm">最后登录</span>
+                          <span className="text-sm font-medium">
+                            {user.updateTime ? new Date(user.updateTime).toLocaleDateString('zh-CN') : '近期'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-muted/30 rounded-xl">
+                        <h4 className="font-medium text-foreground mb-3">快捷操作</h4>
+                        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/blog/drafts')}>
+                          <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> 我的草稿
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="comments"><MyComments /></TabsContent>
+                    <TabsContent value="likes"><MyLikes /></TabsContent>
+                    <TabsContent value="collections"><CollectionsManager /></TabsContent>
+                    <TabsContent value="browse-history"><MyBrowseHistory /></TabsContent>
+                    <TabsContent value="followers"><MyFollowers /></TabsContent>
+                    <TabsContent value="following"><MyFollowing /></TabsContent>
+                  </div>
                 </Tabs>
               </CardContent>
             </Card>

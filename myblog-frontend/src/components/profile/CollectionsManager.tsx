@@ -197,8 +197,8 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
   return (
     <div className={`space-y-6 ${className || ''}`}>
       {/* 顶部工具栏 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
           <Select
             value={selectedFolder?.toString() || "all"}
             onValueChange={(value) => {
@@ -206,7 +206,7 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[140px] sm:w-[200px] text-sm">
               <SelectValue placeholder="选择收藏夹" />
             </SelectTrigger>
             <SelectContent>
@@ -222,12 +222,14 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
             variant="outline"
             size="sm"
             onClick={() => setShowCreateFolder(true)}
+            className="text-xs sm:text-sm"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            新建收藏夹
+            <Plus className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">新建收藏夹</span>
+            <span className="sm:hidden">新建</span>
           </Button>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2 text-xs sm:text-sm">
           {selectedItems.length > 0 && (
             <>
               <span className="text-sm text-muted-foreground">
