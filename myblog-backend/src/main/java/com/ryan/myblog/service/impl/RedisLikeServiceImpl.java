@@ -1,5 +1,6 @@
 package com.ryan.myblog.service.impl;
 
+import com.ryan.myblog.annotation.DistributedLock;
 import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.event.LikeEvent;
 import com.ryan.myblog.event.NotificationEvent;
@@ -73,8 +74,14 @@ public class RedisLikeServiceImpl implements RedisLikeService {
      * 2. 根据结果执行ZADD或ZREM（原子操作）
      * 3. 对应更新计数器（INCR/DECR，原子操作）
      * 4. 发布异步事件，持久化到数据库
+     * 
+     * 分布式锁说明：
+     * - key格式：lock:like:{blogId}:{userId}
+     * - 防止同一用户对同一博客的并发点赞请求导致数据不一致
+     * - 过期时间30秒，足够业务完成
      */
     @Override
+    @DistributedLock(key = "'like:' + #blogId + ':' + #userId", expire = 30, waitTime = 0)
     public Boolean toggleLike(Long blogId, Long userId) {
         // 检查用户是否已点赞 - 使用统一缓存服务
         Double score = unifiedCacheService.getZSetScore(RedisKeyFactory.BLOG_LIKES_SET, userId.toString(), blogId);

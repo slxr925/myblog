@@ -178,7 +178,37 @@ public enum RedisKeyFactory {
      * Key: myblog:cache:version:{pattern}
      * TTL: 永久 (手动管理)
      */
-    CACHE_VERSION("cache:version:%s", -1, TimeUnit.SECONDS, "缓存版本号");
+    CACHE_VERSION("cache:version:%s", -1, TimeUnit.SECONDS, "缓存版本号"),
+
+    // ==================== 分布式锁模块 ====================
+
+    /**
+     * 点赞操作锁
+     * Key: myblog:lock:like:{blogId}:{userId}
+     * TTL: 30秒
+     */
+    LOCK_LIKE("lock:like:%s:%s", 30, TimeUnit.SECONDS, "点赞操作锁"),
+
+    /**
+     * 关注操作锁
+     * Key: myblog:lock:follow:{followerId}:{followeeId}
+     * TTL: 30秒
+     */
+    LOCK_FOLLOW("lock:follow:%s:%s", 30, TimeUnit.SECONDS, "关注操作锁"),
+
+    /**
+     * 收藏操作锁
+     * Key: myblog:lock:collect:{userId}:{blogId}
+     * TTL: 30秒
+     */
+    LOCK_COLLECT("lock:collect:%s:%s", 30, TimeUnit.SECONDS, "收藏操作锁"),
+
+    /**
+     * 评论操作锁（防止重复评论）
+     * Key: myblog:lock:comment:{blogId}:{userId}
+     * TTL: 10秒
+     */
+    LOCK_COMMENT("lock:comment:%s:%s", 10, TimeUnit.SECONDS, "评论操作锁");
 
     /**
      * 项目前缀

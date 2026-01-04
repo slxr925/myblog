@@ -7,17 +7,15 @@
 ### 🚀 部署相关
 
 | 文档 | 说明 | 适用场景 |
-|------|------|---------|
-| [📦 DEPLOYMENT.md](./DEPLOYMENT.md) | **完整部署手册** | 首次部署、生产环境部署 ⭐ |
-| [🚀 QUICK-ITERATION.md](./QUICK-ITERATION.md) | **快速迭代部署** | 日常开发、版本更新 ⭐⭐⭐ |
-| [🔐 SSH-SETUP.md](./SSH-SETUP.md) | **SSH 密钥配置** | 实现一键部署 |
-| [🔒 SSL-SETUP.md](./SSL-SETUP.md) | **HTTPS 配置** | 生产环境安全配置 |
+|------|------|----|
+| [📦 deploy/DEPLOYMENT.md](./deploy/DEPLOYMENT.md) | **完整部署手册** | 首次部署、生产环境部署 ⭐ |
+| [🚀 deploy/QUICK-ITERATION.md](./deploy/QUICK-ITERATION.md) | **快速迭代部署** | 日常开发、版本更新 ⭐⭐⭐ |
+| [🔐 deploy/SSH-SETUP.md](./deploy/SSH-SETUP.md) | **SSH 密钥配置** | 实现一键部署 |
 
 ### 💻 开发相关
 
 | 文档 | 说明 |
 |------|------|
-| [🏗️ PROJECT-STRUCTURE.md](./PROJECT-STRUCTURE.md) | 项目结构说明 |
 | [🔧 DEVELOPMENT.md](./DEVELOPMENT.md) | 本地开发指南 |
 | [📝 API-GUIDE.md](./API-GUIDE.md) | API 接口文档 |
 | [🎨 FRONTEND-GUIDE.md](./FRONTEND-GUIDE.md) | 前端开发指南 |
@@ -30,8 +28,18 @@
 | [🔄 BACKUP-RESTORE.md](./BACKUP-RESTORE.md) | 备份与恢复 |
 | [⚡ PERFORMANCE.md](./PERFORMANCE.md) | 性能优化 |
 | [🐛 TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | 问题排查 |
-| [🧹 CLEANUP.md](./CLEANUP.md) | 项目清理指南 ⭐ |
-| [🔐 SECURITY.md](./SECURITY.md) | 敏感信息安全指南 ⭐ |
+| [🧹 tools/CLEANUP.md](./tools/CLEANUP.md) | 项目清理指南 ⭐ |
+| [🔐 tools/SECURITY.md](./tools/SECURITY.md) | 敏感信息安全指南 ⭐ |
+
+### 🎯 面试必备（技术深度）⭐⭐⭐
+
+| 文档 | 说明 | 用途 |
+|------|------|------|
+| [🎯 interview/INTERVIEW-GUIDE.md](./interview/INTERVIEW-GUIDE.md) | **综合面试指南** | 项目介绍+技术栈+难点解析+17个常见问题 |
+| [🏛️ interview/DESIGN-PATTERNS.md](./interview/DESIGN-PATTERNS.md) | **设计模式应用** | 8种设计模式+代码示例+面试话术 |
+| [⚡ interview/PERFORMANCE-GUIDE.md](./interview/PERFORMANCE-GUIDE.md) | **性能优化实践** | 缓存+并发+数据库+搜索优化 |
+| [❄️ interview/SNOWFLAKE-MIGRATION.md](./interview/SNOWFLAKE-MIGRATION.md) | **雪花算法迁移策略** | 分布式ID生成+老数据兼容 |
+| [📊 interview/PROJECT-SUMMARY.md](./interview/PROJECT-SUMMARY.md) | **项目完整总结** | 功能清单+技术指标+部署架构 |
 
 ---
 
@@ -90,6 +98,12 @@ docker stats
 - QUICK-ITERATION.md - 快速更新部署
 - MONITORING.md - 监控配置
 - BACKUP-RESTORE.md - 备份恢复
+
+**💼 面试准备：** ⭐
+- INTERVIEW-GUIDE.md - 综合面试指南（必看！）
+- DESIGN-PATTERNS.md - 设计模式应用实例
+- PERFORMANCE-GUIDE.md - 性能优化证明
+- PROJECT-SUMMARY.md - 项目完整总结
 
 **🆕 新手入门：**
 1. 先看 README.md 了解项目
@@ -339,4 +353,4 @@ df -h
 
 **保持文档更新，让协作更高效！** 📚
 
-**最后更新：** 2025-12-31
+**最后更新：** 2026-01-04

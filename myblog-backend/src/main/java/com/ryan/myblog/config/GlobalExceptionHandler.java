@@ -1,6 +1,7 @@
 package com.ryan.myblog.config;
 
 import com.ryan.myblog.common.Result;
+import com.ryan.myblog.exception.DistributedLockException;
 import com.ryan.myblog.exception.RateLimitException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,17 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
     public Result<Void> handleRateLimitException(RateLimitException e) {
         log.warn("请求限流: {}", e.getMessage());
+        return Result.error(429, e.getMessage());
+    }
+
+    /**
+     * 处理分布式锁异常
+     * 返回 429 Too Many Requests（并发操作过于频繁）
+     */
+    @ExceptionHandler(DistributedLockException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public Result<Void> handleDistributedLockException(DistributedLockException e) {
+        log.warn("分布式锁获取失败: {}", e.getMessage());
         return Result.error(429, e.getMessage());
     }
 
