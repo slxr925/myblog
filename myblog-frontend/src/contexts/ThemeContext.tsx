@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+type ThemeMode = 'light' | 'dark' | 'auto';
 type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
+  theme: Theme; // 实际应用的主题
+  themeMode: ThemeMode; // 用户选择的模式
+  setThemeMode: (mode: ThemeMode) => void;
   isDark: boolean;
 }
 
@@ -16,73 +17,92 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
+  const [theme, setTheme] = useState<Theme>('light');
   const [isMounted, setIsMounted] = useState(false);
+
+  // 获取系统主题偏好
+  const getSystemTheme = (): Theme => {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  };
+
+  // 应用主题到 DOM
+  const applyTheme = (newTheme: Theme) => {
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    setTheme(newTheme);
+  };
 
   // 初始化主题
   useEffect(() => {
     setIsMounted(true);
 
-    // 从 localStorage 获取保存的主题偏好，或使用系统偏好
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // 迁移旧的 localStorage 格式
+    const oldTheme = localStorage.getItem('theme');
+    const newMode = localStorage.getItem('theme-mode');
 
-    const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-    setThemeState(initialTheme);
-
-    // 应用主题到 DOM
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    // 如果有旧格式但没有新格式，进行迁移
+    if (oldTheme && !newMode) {
+      localStorage.setItem('theme-mode', oldTheme as ThemeMode);
+      // 清理旧数据（可选）
+      localStorage.removeItem('theme');
     }
+
+    // 从 localStorage 获取保存的主题模式，默认为 auto
+    const savedMode = (localStorage.getItem('theme-mode') as ThemeMode) || 'auto';
+    setThemeModeState(savedMode);
+
+    // 根据模式决定实际主题
+    let actualTheme: Theme;
+    if (savedMode === 'auto') {
+      actualTheme = getSystemTheme();
+    } else {
+      actualTheme = savedMode;
+    }
+
+    applyTheme(actualTheme);
   }, []);
 
-  // 监听系统主题变化
+  // 监听系统主题变化（仅在 auto 模式下生效）
   useEffect(() => {
     if (!isMounted) return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const handleChange = (e: MediaQueryListEvent) => {
-      // 只有在没有用户偏好设置时才跟随系统主题
-      const savedTheme = localStorage.getItem('theme') as Theme | null;
-      if (!savedTheme) {
+      // 只有在 auto 模式下才跟随系统主题
+      if (themeMode === 'auto') {
         const newTheme = e.matches ? 'dark' : 'light';
-        setThemeState(newTheme);
-        if (newTheme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        applyTheme(newTheme);
       }
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [isMounted]);
+  }, [isMounted, themeMode]);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-  };
+  const setThemeMode = (newMode: ThemeMode) => {
+    setThemeModeState(newMode);
+    localStorage.setItem('theme-mode', newMode);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
-
-    // 应用主题到 DOM
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
+    // 根据新模式决定实际主题
+    let actualTheme: Theme;
+    if (newMode === 'auto') {
+      actualTheme = getSystemTheme();
     } else {
-      document.documentElement.classList.remove('dark');
+      actualTheme = newMode;
     }
+
+    applyTheme(actualTheme);
   };
 
   const value: ThemeContextType = {
     theme,
-    toggleTheme,
-    setTheme,
+    themeMode,
+    setThemeMode,
     isDark: theme === 'dark',
   };
 
