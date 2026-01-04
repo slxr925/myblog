@@ -220,22 +220,24 @@ export const MyComments: React.FC = () => {
 
       {/* 分页 */}
       {total > pageSize && (
-        <div className="flex justify-center pt-4">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col items-center gap-2 pt-4">
+          <div className="text-xs text-muted-foreground whitespace-nowrap">
+            {currentPage}/{Math.ceil(total / pageSize)}页 共{total}条
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
+              size="sm"
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             >
               上一页
             </Button>
-            <span className="text-sm text-gray-600">
-              第 {currentPage} 页，共 {Math.ceil(total / pageSize)} 页
-            </span>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= Math.ceil(total / pageSize)}
+              size="sm"
+              disabled={currentPage >= Math.ceil(total / pageSize) || loading}
+              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(total / pageSize), prev + 1))}
             >
               下一页
             </Button>
