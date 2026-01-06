@@ -149,8 +149,12 @@ public class AdminStatsServiceImpl implements AdminStatsService {
                 Long newComments = commentMapper.selectCount(commentQuery);
                 dailyStats.setNewComments(newComments != null ? newComments : 0L);
 
-                // 访问量暂时使用模拟数据
-                dailyStats.setTotalViews(0L);
+                // 修复：统计当日真实访问量
+                LambdaQueryWrapper<VisitLog> visitQuery = new LambdaQueryWrapper<>();
+                visitQuery.between(VisitLog::getVisitTime, dayStart, dayEnd);
+                visitQuery.eq(VisitLog::getDeleted, 0);
+                Long totalViews = visitLogMapper.selectCount(visitQuery);
+                dailyStats.setTotalViews(totalViews != null ? totalViews : 0L);
 
                 dailyStatsList.add(dailyStats);
                 currentDate = currentDate.plusDays(1);

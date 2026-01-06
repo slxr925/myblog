@@ -19,6 +19,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +39,7 @@ public class MonitoringServiceImpl implements MonitoringService {
     private final CommentMapper commentMapper;
     private final UserLikeMapper userLikeMapper;
     private final NotificationMapper notificationMapper;
+    private final VisitLogMapper visitLogMapper;
 
     @Autowired(required = false)
     private DataSource dataSource;
@@ -279,8 +281,20 @@ public class MonitoringServiceImpl implements MonitoringService {
         try {
             Timer timer = meterRegistry.find("http.server.requests").timer();
             if (timer != null) {
-                // 暂时还原为简单的计算方式
-                return timer.count() / 60.0;
+                // 修复：使用Timer的mean rate（平均速率）
+                // meanRate() 返回每秒平均请求数
+                double meanRate = timer.mean(TimeUnit.SECONDS);
+                if (meanRate > 0) {
+                    // mean返回的是平均响应时间，我们需要用count除以总运行时间
+                    // 但Micrometer没有直接提供总运行时间，所以使用简化方案：
+                    // 返回最近一段时间的平均QPS（这里假设系统已运行足够长时间）
+                    long count = timer.count();
+                    // 获取JVM运行时间(秒)
+                    long uptimeSeconds = ManagementFactory.getRuntimeMXBean().getUptime() / 1000;
+                    if (uptimeSeconds > 0) {
+                        return (double) count / uptimeSeconds;
+                    }
+                }
             }
         } catch (Exception e) {
             log.debug("无法计算QPS", e);
@@ -299,9 +313,26 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     private double getP95ResponseTime() {
         try {
-            // 暂时还原为max
             Timer timer = meterRegistry.find("http.server.requests").timer();
-            return timer != null ? timer.max(TimeUnit.MILLISECONDS) : 0.0;
+            if (timer != null) {
+                // 修复：尝试获取P95分位数
+                // Micrometer需要在配置中启用percentile histogram才能准确计算
+                // 否则使用max作为近似值（偏保守）
+                try {
+                    // 尝试从snapshot获取percentile
+                    var snapshot = timer.takeSnapshot();
+                    var percentileValues = snapshot.percentileValues();
+                    for (var pv : percentileValues) {
+                        if (pv.percentile() >= 0.95) {
+                            return pv.value(TimeUnit.MILLISECONDS);
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.debug("无法获取P95精确值，使用max", ex);
+                }
+                // fallback to max
+                return timer.max(TimeUnit.MILLISECONDS);
+            }
         } catch (Exception e) {
             log.debug("无法获取P95响应时间", e);
         }
@@ -311,7 +342,22 @@ public class MonitoringServiceImpl implements MonitoringService {
     private double getP99ResponseTime() {
         try {
             Timer timer = meterRegistry.find("http.server.requests").timer();
-            return timer != null ? timer.max(TimeUnit.MILLISECONDS) : 0.0;
+            if (timer != null) {
+                // 修复：尝试获取P99分位数
+                try {
+                    var snapshot = timer.takeSnapshot();
+                    var percentileValues = snapshot.percentileValues();
+                    for (var pv : percentileValues) {
+                        if (pv.percentile() >= 0.99) {
+                            return pv.value(TimeUnit.MILLISECONDS);
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.debug("无法获取P99精确值，使用max", ex);
+                }
+                // fallback to max
+                return timer.max(TimeUnit.MILLISECONDS);
+            }
         } catch (Exception e) {
             log.debug("无法获取P99响应时间", e);
         }
@@ -320,15 +366,24 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     private double getErrorRate() {
         try {
-            Counter errors = meterRegistry.find("http.server.requests")
-                    .tag("status", "5")
-                    .counter();
-            Counter total = meterRegistry.find("http.server.requests").counter();
+            // 修复：统计所有4xx和5xx状态码的请求（错误请求）
+            Collection<Timer> allTimers = meterRegistry.find("http.server.requests").timers();
 
-            if (total != null && errors != null) {
-                double totalCount = total.count();
-                return totalCount > 0 ? (errors.count() / totalCount) * 100 : 0.0;
+            long totalCount = 0;
+            long errorCount = 0;
+
+            for (Timer timer : allTimers) {
+                long count = timer.count();
+                totalCount += count;
+
+                // 检查status标签，统计4xx和5xx错误
+                String status = timer.getId().getTag("status");
+                if (status != null && (status.startsWith("4") || status.startsWith("5"))) {
+                    errorCount += count;
+                }
             }
+
+            return totalCount > 0 ? (errorCount / (double) totalCount) * 100 : 0.0;
         } catch (Exception e) {
             log.debug("无法计算错误率", e);
         }
@@ -382,21 +437,27 @@ public class MonitoringServiceImpl implements MonitoringService {
         BusinessMetricsVO.UserActivityMetrics metrics = new BusinessMetricsVO.UserActivityMetrics();
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayEnd = now.plusDays(1).toLocalDate().atStartOfDay();
 
-        Long dau = userMapper.selectCount(new LambdaQueryWrapper<User>().ge(User::getCreateTime, todayStart));
+        // 修复：使用访问日志统计真实活跃用户（有访问记录的去重用户）
+        // DAU: Daily Active Users - 今日有访问记录的用户数
+        Long dau = visitLogMapper.countDistinctActiveUsers(todayStart, todayEnd);
         metrics.setDailyActiveUsers(dau != null ? dau : 0L);
 
+        // WAU: Weekly Active Users - 近7天有访问记录的用户数
         LocalDateTime weekAgo = now.minusDays(7);
-        Long wau = userMapper.selectCount(new LambdaQueryWrapper<User>().ge(User::getCreateTime, weekAgo));
+        Long wau = visitLogMapper.countDistinctActiveUsers(weekAgo, todayEnd);
         metrics.setWeeklyActiveUsers(wau != null ? wau : 0L);
 
+        // MAU: Monthly Active Users - 近30天有访问记录的用户数
         LocalDateTime monthAgo = now.minusDays(30);
-        Long mau = userMapper.selectCount(new LambdaQueryWrapper<User>().ge(User::getCreateTime, monthAgo));
+        Long mau = visitLogMapper.countDistinctActiveUsers(monthAgo, todayEnd);
         metrics.setMonthlyActiveUsers(mau != null ? mau : 0L);
 
+        // TODO: 实现在线用户数统计（基于WebSocket连接或Redis）
         metrics.setOnlineNow(0L);
 
-        // 7日暂定0
+        // TODO: 实现7日留存率计算（需要活跃度数据支持）
         metrics.setRetentionRate7d(0.0);
 
         return metrics;
