@@ -60,14 +60,14 @@ export const Dashboard: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
+
               {user?.bio && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">个人简介</label>
                   <p className="text-lg mt-1">{user.bio}</p>
                 </div>
               )}
-              
+
               <div className="pt-4">
                 <Button onClick={handleLogout} variant="destructive">
                   退出登录
@@ -123,31 +123,6 @@ export const Dashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* 管理员功能卡片 */}
-          {user?.role === Role.ADMIN && (
-            <Card className="md:col-span-3">
-              <CardHeader>
-                <CardTitle>管理员功能</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button variant="outline" className="h-20">
-                    用户管理
-                  </Button>
-                  <Button variant="outline" className="h-20">
-                    文章管理
-                  </Button>
-                  <Button variant="outline" className="h-20">
-                    分类管理
-                  </Button>
-                  <Button variant="outline" className="h-20">
-                    系统设置
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </motion.div>

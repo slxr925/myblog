@@ -627,6 +627,25 @@ export const api = {
       return apiClient.post('/admin/track-visit', { page });
     },
 
+    // 获取监控Dashboard数据
+    getMonitoringDashboard: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/dashboard');
+    },
+
+    // 获取系统指标
+    getMonitoringSystem: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/system');
+    },
+
+    // 获取性能指标
+    getMonitoringPerformance: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/performance');
+    },
+
+    // 获取业务指标
+    getMonitoringBusiness: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/business');
+    },
 
   },
 

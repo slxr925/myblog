@@ -46,6 +46,7 @@ public class AdminController {
     private final CommentService commentService;
     private final CategoryService categoryService;
     private final TagService tagService;
+    private final com.ryan.myblog.service.MonitoringService monitoringService;
 
     /**
      * 获取管理员统计数据
@@ -59,6 +60,66 @@ public class AdminController {
         } catch (Exception e) {
             log.error("获取统计数据失败", e);
             return Result.error("获取统计数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取监控仪表盘（所有监控指标）
+     */
+    @GetMapping("/monitoring/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.MonitoringDashboardVO> getMonitoringDashboard() {
+        try {
+            com.ryan.myblog.model.vo.MonitoringDashboardVO dashboard = monitoringService.getDashboard();
+            return Result.success("获取监控数据成功", dashboard);
+        } catch (Exception e) {
+            log.error("获取监控数据失败", e);
+            return Result.error("获取监控数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取系统指标
+     */
+    @GetMapping("/monitoring/system")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.SystemMetricsVO> getSystemMetrics() {
+        try {
+            com.ryan.myblog.model.vo.SystemMetricsVO metrics = monitoringService.getSystemMetrics();
+            return Result.success("获取系统指标成功", metrics);
+        } catch (Exception e) {
+            log.error("获取系统指标失败", e);
+            return Result.error("获取系统指标失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取性能指标
+     */
+    @GetMapping("/monitoring/performance")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.PerformanceMetricsVO> getPerformanceMetrics() {
+        try {
+            com.ryan.myblog.model.vo.PerformanceMetricsVO metrics = monitoringService.getPerformanceMetrics();
+            return Result.success("获取性能指标成功", metrics);
+        } catch (Exception e) {
+            log.error("获取性能指标失败", e);
+            return Result.error("获取性能指标失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取业务指标
+     */
+    @GetMapping("/monitoring/business")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.BusinessMetricsVO> getBusinessMetrics() {
+        try {
+            com.ryan.myblog.model.vo.BusinessMetricsVO metrics = monitoringService.getBusinessMetrics();
+            return Result.success("获取业务指标成功", metrics);
+        } catch (Exception e) {
+            log.error("获取业务指标失败", e);
+            return Result.error("获取业务指标失败: " + e.getMessage());
         }
     }
 

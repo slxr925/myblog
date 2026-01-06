@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
 import { Role, type AdminStatsDTO, BlogStatus } from '../types/api';
@@ -10,10 +10,11 @@ import { BlogManagement } from '../components/admin/BlogManagement';
 import { CommentManagement } from '../components/admin/CommentManagement';
 import { CategoryManagement } from '../components/admin/CategoryManagement';
 import { TagManagement } from '../components/admin/TagManagement';
+import { MonitoringDashboard } from '../components/admin/MonitoringDashboard';
 import { ActivityChart } from '../components/charts/ActivityChart';
 import {
-  Users, FileText, MessageSquare, Settings, ThumbsUp, Eye, TrendingUp,
-  Calendar, FolderOpen, Hash, LogOut, LayoutDashboard, RefreshCcw
+  Users, FileText, MessageSquare, Settings, ThumbsUp,
+  FolderOpen, Hash, LogOut, LayoutDashboard
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -143,32 +144,14 @@ export const Admin: React.FC = () => {
         ))}
       </div>
 
+      {/* 监控面板 */}
+      <MonitoringDashboard />
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ActivityChart data={stats.weeklyStats} title="最近7天活跃度" showLegend={true} />
         <ActivityChart data={stats.monthlyStats} title="最近30天活跃度" showLegend={true} />
       </div>
-
-      {/* Detailed Stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" /> 数据概览
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-muted/30 rounded-xl">
-              <div className="flex items-center justify-center mb-2 text-indigo-600">
-                <Eye className="w-6 h-6 mr-2" />
-                <span className="text-3xl font-bold">{stats.todayViews}</span>
-              </div>
-              <div className="text-sm text-muted-foreground">今日访问量</div>
-            </div>
-            {/* More detailed stats can be added here */}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 

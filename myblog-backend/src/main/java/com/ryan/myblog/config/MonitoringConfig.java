@@ -11,9 +11,9 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class MonitoringConfig {
-    
+
     @Bean
-    public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags(
+    public MeterRegistryCustomizer<MeterRegistry> monitoringCommonTags(
             @Value("${spring.application.name:myblog}") String applicationName) {
         return registry -> registry.config().commonTags("application", applicationName);
     }
