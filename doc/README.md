@@ -38,6 +38,7 @@
 | [🎯 interview/INTERVIEW-GUIDE.md](./interview/INTERVIEW-GUIDE.md) | **综合面试指南** | 项目介绍+技术栈+难点解析+17个常见问题 |
 | [🏛️ interview/DESIGN-PATTERNS.md](./interview/DESIGN-PATTERNS.md) | **设计模式应用** | 8种设计模式+代码示例+面试话术 |
 | [⚡ interview/PERFORMANCE-GUIDE.md](./interview/PERFORMANCE-GUIDE.md) | **性能优化实践** | 缓存+并发+数据库+搜索优化 |
+| [📊 interview/MONITORING-SYSTEM.md](./interview/MONITORING-SYSTEM.md) | **监控系统设计** | 三层监控架构+数据准确性优化+8个面试问答 ⭐ |
 | [❄️ interview/SNOWFLAKE-MIGRATION.md](./interview/SNOWFLAKE-MIGRATION.md) | **雪花算法迁移策略** | 分布式ID生成+老数据兼容 |
 | [📊 interview/PROJECT-SUMMARY.md](./interview/PROJECT-SUMMARY.md) | **项目完整总结** | 功能清单+技术指标+部署架构 |
 
