@@ -9,7 +9,7 @@
 
 **功能完整、开箱即用的现代化博客系统**
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [在线演示](http://49.235.139.118:3000) • [技术栈](#-技术栈) • [面试文档](doc/interview/INTERVIEW-GUIDE.md)
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [在线访问](http://49.235.139.118) • [技术栈](#-技术栈) 
 
 </div>
 
@@ -436,59 +436,7 @@ cd deploy
 - 问题反馈：[GitHub Issues](https://github.com/yourname/myblog/issues)
 - 邮箱：your.email@example.com
 
-## 📂 项目结构
 
-```
-myblog/
-├── README.md                      # 项目介绍和快速开始
-├── docker-compose.prod.yml        # 生产环境Docker配置
-│
-├── myblog-backend/                # 后端Spring Boot应用
-│   ├── src/main/java/            # Java源代码
-│   │   ├── controller/           # REST API控制器
-│   │   ├── service/              # 业务逻辑层
-│   │   ├── mapper/               # 数据访问层
-│   │   ├── model/                # 数据模型（entity, dto, vo）
-│   │   ├── config/               # 配置类（Security, JWT, Redis等）
-│   │   ├── utils/                # 工具类
-│   │   ├── exception/            # 异常处理
-│   │   ├── aspect/               # AOP切面（限流、审计日志）
-│   │   └── annotation/           # 自定义注解
-│   ├── src/main/resources/       # 资源文件
-│   ├── database/                 # 数据库脚本
-│   ├── target/                   # 构建产物（JAR包）
-│   └── Dockerfile.prod           # 生产环境Dockerfile
-│
-├── myblog-frontend/               # 前端React应用
-│   ├── src/                      # 源代码
-│   │   ├── components/           # React组件
-│   │   ├── pages/                # 页面组件
-│   │   ├── contexts/             # React Context（状态管理）
-│   │   ├── utils/                # 工具函数
-│   │   ├── types/                # TypeScript类型定义
-│   │   └── hooks/                # 自定义React Hooks
-│   ├── dist/                     # 构建产物（静态文件）
-│   └── Dockerfile.prod           # 生产环境Dockerfile
-│
-├── nginx/                         # Nginx配置
-│   ├── nginx.conf                # Nginx主配置
-│   └── health.html               # 健康检查页面
-│
-├── deploy/                        # 🚀 部署脚本
-│   ├── README.md                 # 脚本使用说明
-│   ├── build-local.sh            # 本地构建
-│   ├── deploy-update.sh          # 一键部署
-│   ├── quick-deploy.sh           # 服务器部署
-│   ├── init-database.sh          # 数据库初始化
-│   ├── backup.sh                 # 数据备份
-│   ├── logs.sh                   # 日志查看
-│   └── stop.sh                   # 服务停止
-│
-└── docs/                          # 📚 文档中心
-    ├── README.md                  # 文档索引
-    ├── releases/                  # 版本发布文档
-    ├── security/                  # 安全文档
-    └── deployment/                # 部署文档
 ```
 
 ### 核心技术栈
