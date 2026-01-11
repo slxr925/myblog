@@ -128,10 +128,11 @@ management:
     defaults:
       enabled: true
 
-# Arthas JVM诊断工具配置（生产环境）
+# ========== Arthas 配置 ==========
+# 生产环境禁用Arthas（Alpine JRE不支持agent attach）
 arthas:
-  telnetPort: 3658
-  httpPort: 8563
-  ip: 127.0.0.1
+  enabled: false
+  # 如需启用，需使用JDK镜像并安装tools.jar
+
   agent-id: myblog-arthas-prod
   app-name: myblog-backend
