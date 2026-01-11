@@ -17,7 +17,7 @@ RUN mvn clean package -DskipTests
 
 # 生产阶段 (Production Runtime)
 # 使用方法: docker build --target prod -t myblog-backend:prod .
-FROM eclipse-temurin:21-jre-alpine AS prod
+FROM eclipse-temurin:21-jdk-alpine AS prod
 
 # 安装必要工具
 RUN apk add --no-cache curl
