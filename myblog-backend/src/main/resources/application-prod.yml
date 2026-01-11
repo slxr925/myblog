@@ -1,5 +1,11 @@
 # 生产环境配置
 spring:
+  # 排除Arthas自动配置（Alpine JRE不支持agent attach）
+  autoconfigure:
+    exclude:
+      - com.alibaba.arthas.spring.ArthasAutoConfiguration
+      - com.alibaba.arthas.spring.ArtHashConfiguration
+  
   # AI配置 - 通过环境变量配置
   ai:
     enabled: ${AI_ENABLED:false}
