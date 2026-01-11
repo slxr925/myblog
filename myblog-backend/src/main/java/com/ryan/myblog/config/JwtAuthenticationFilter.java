@@ -32,26 +32,33 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    
+
     private final JwtUtils jwtUtils;
     private final SessionService sessionService;
-    
+
     @Autowired
     private ApplicationContext applicationContext;
-    
+
     private UserService userService;
-    
+
     private UserService getUserService() {
         if (userService == null) {
             userService = applicationContext.getBean(UserService.class);
         }
         return userService;
     }
-    
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                  HttpServletResponse response,
-                                  FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+
+        // 跳过actuator端点（健康检查等）
+        String requestPath = request.getRequestURI();
+        if (requestPath.startsWith("/actuator/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String token = getTokenFromRequest(request);
 
@@ -102,8 +109,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
 
                     // 创建认证对象
-                    UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userId, null, authorities);
 
                     // 设置到Security上下文
@@ -135,7 +141,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
-    
+
     /**
      * 从请求头中获取token
      */
