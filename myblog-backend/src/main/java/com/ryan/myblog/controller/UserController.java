@@ -28,22 +28,32 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
-    
+
     private final UserService userService;
     private final SessionService sessionService;
-    
+
     /**
-     * 用户注册
-     * 限流：每小时3次（防止恶意注册）
+     * 注册新用户
+     * 
+     * 安全措施：
+     * 1. IP频率限制：每小时最多5次注册（防止批量注册）
+     * 2. 验证码验证：防止机器人注册
+     * 3. 用户名/邮箱唯一性检查
+     * 4. 密码强度验证
      */
     @PostMapping("/register")
-    @RateLimit(key = "ip", limit = 3, window = 3600, message = "注册过于频繁，请1小时后再试")
+    @RateLimit(key = "ip", limit = 5, window = 3600, message = "注册过于频繁，请1小时后再试")
     public Result<Void> register(@Validated @RequestBody UserRegisterDTO userRegisterDTO) {
-        userService.register(userRegisterDTO);
-        log.info("用户注册成功：{}", userRegisterDTO.getUsername());
-        return Result.success();
+        try {
+            userService.register(userRegisterDTO);
+            log.info("用户注册成功：{}", userRegisterDTO.getUsername());
+            return Result.success();
+        } catch (Exception e) {
+            log.warn("用户注册失败：{}，原因：{}", userRegisterDTO.getUsername(), e.getMessage());
+            return Result.error(e.getMessage());
+        }
     }
-    
+
     /**
      * 用户登录
      * 返回access token和refresh token
@@ -55,17 +65,17 @@ public class UserController {
             @Validated @RequestBody UserLoginDTO userLoginDTO,
             HttpServletRequest request) {
         log.info("用户登录请求：{}", userLoginDTO.getUsername());
-        
+
         // 获取客户端IP
         String clientIp = IpUtils.getClientIp(request);
-        
+
         // 使用双Token机制登录
         TokenResponse tokenResponse = userService.loginWithTokens(userLoginDTO, clientIp);
-        
+
         log.info("用户登录成功，返回tokens");
         return Result.success(tokenResponse);
     }
-    
+
     /**
      * 获取当前用户信息
      */
@@ -80,7 +90,7 @@ public class UserController {
         }
         throw new RuntimeException("用户未登录");
     }
-    
+
     /**
      * 更新用户信息
      */
@@ -90,7 +100,7 @@ public class UserController {
         if (authentication != null && authentication.getPrincipal() instanceof Long userId) {
             // 先获取当前用户信息
             User currentUser = userService.getUserById(userId);
-            
+
             // 只更新允许修改的字段
             if (updateUser.getNickname() != null) {
                 currentUser.setNickname(updateUser.getNickname());
@@ -104,13 +114,13 @@ public class UserController {
             if (updateUser.getAvatar() != null) {
                 currentUser.setAvatar(updateUser.getAvatar());
             }
-            
+
             userService.updateUser(currentUser);
             return Result.success();
         }
         throw new RuntimeException("用户未登录");
     }
-    
+
     /**
      * 修改密码
      */
@@ -125,12 +135,13 @@ public class UserController {
             if (changePasswordDTO.getNewPassword().equals(changePasswordDTO.getCurrentPassword())) {
                 throw new RuntimeException("新密码不能与原密码相同");
             }
-            userService.changePassword(userId, changePasswordDTO.getCurrentPassword(), changePasswordDTO.getNewPassword());
+            userService.changePassword(userId, changePasswordDTO.getCurrentPassword(),
+                    changePasswordDTO.getNewPassword());
             return Result.success();
         }
         throw new RuntimeException("用户未登录");
     }
-    
+
     /**
      * 用户登出
      */
@@ -148,7 +159,7 @@ public class UserController {
         }
         throw new RuntimeException("用户未登录");
     }
-    
+
     /**
      * 从请求头中获取token
      */

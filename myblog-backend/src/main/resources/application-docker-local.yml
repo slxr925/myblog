@@ -72,3 +72,11 @@ management:
   health:
     elasticsearch:
       enabled: false
+
+# Arthas JVM诊断工具配置（本地Docker环境）
+arthas:
+  telnetPort: 3658
+  httpPort: 8563
+  ip: 127.0.0.1
+  agent-id: myblog-arthas-docker-local
+  app-name: myblog-backend

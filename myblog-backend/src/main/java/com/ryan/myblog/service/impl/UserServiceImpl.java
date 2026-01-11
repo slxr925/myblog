@@ -58,7 +58,18 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void register(UserRegisterDTO userRegisterDTO) {
-        // 检查用户名是否已存在
+        // 1. 验证验证码
+        CaptchaVerificationResult captchaResult = captchaService.verifyCaptcha(
+                userRegisterDTO.getCaptchaId(),
+                userRegisterDTO.getCaptchaCode());
+
+        if (captchaResult != CaptchaVerificationResult.SUCCESS) {
+            log.warn("注册失败-验证码验证失败：username={}, result={}",
+                    userRegisterDTO.getUsername(), captchaResult.getMessage());
+            throw new RuntimeException(captchaResult.getMessage());
+        }
+
+        // 2. 检查用户名是否已存在
         User existUser = userMapper.selectByUsername(userRegisterDTO.getUsername());
         if (existUser != null) {
             throw new RuntimeException("用户名已存在");
@@ -144,8 +155,8 @@ public class UserServiceImpl implements UserService {
         // 生成JWT令牌
         String token = jwtUtils.generateToken(user.getId(), user.getUsername());
 
-        // 保存用户会话到Redis
-        sessionService.saveSession(token, user.getId());
+        // 保存用户会话到Redis（单设备登录模式）
+        sessionService.saveSessionWithSingleDevice(token, user.getId());
 
         log.info("用户登录成功：{}，token长度：{}", userLoginDTO.getUsername(), token.length());
         return token;
@@ -218,8 +229,8 @@ public class UserServiceImpl implements UserService {
         // 8. 生成Refresh Token
         String refreshToken = jwtUtils.generateRefreshToken(user.getId());
 
-        // 9. 保存用户会话到Redis
-        sessionService.saveSession(accessToken, user.getId());
+        // 9. 保存用户会话到Redis（单设备登录模式）
+        sessionService.saveSessionWithSingleDevice(accessToken, user.getId());
 
         log.info("用户登录成功：{}，角色：{}，accessToken长度：{}，refreshToken长度：{}",
                 username, user.getRole(), accessToken.length(), refreshToken.length());

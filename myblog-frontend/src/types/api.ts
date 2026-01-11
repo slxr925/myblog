@@ -191,6 +191,8 @@ export interface UserRegisterDTO {
   password: string;
   email: string;
   nickname?: string;
+  captchaId?: string;
+  captchaCode?: string;
   role?: number;
 }
 

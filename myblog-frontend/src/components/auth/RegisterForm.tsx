@@ -24,6 +24,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   const [errors, setErrors] = useState<Partial<UserRegisterDTO & { confirmPassword: string }>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>(''); // 持久化错误消息
+
 
   const validateForm = (): boolean => {
     const newErrors: Partial<UserRegisterDTO & { confirmPassword: string }> = {};
@@ -74,7 +76,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
+
     return hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar;
   };
 
@@ -88,12 +90,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
+    setErrorMessage(''); // 清除旧的错误消息
     try {
       await register(formData);
       setRegistrationSuccess(true);
@@ -105,17 +108,24 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         response: error.response?.data,
         status: error.response?.status
       });
-      
-      // 显示错误信息给用户
-      let errorMessage = '注册失败，请稍后重试';
+
+      // 显示错误信息给用户（使用状态而不是alert）
+      let displayMessage = '注册失败，请稍后重试';
       if (error.message) {
-        errorMessage = error.message;
+        displayMessage = error.message;
       }
-      alert(errorMessage);
+
+      // 特殊处理429限流错误，显示更明显的提示
+      if (error.status === 429 || error.isRateLimitError) {
+        displayMessage = `⚠️ ${displayMessage}`;
+      }
+
+      setErrorMessage(displayMessage);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // 注册成功后跳转到登录界面
   const handleGoToLogin = () => {
@@ -126,7 +136,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // 清除对应字段的错误
     if (errors[name as keyof UserRegisterDTO]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
@@ -136,7 +146,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setConfirmPassword(value);
-    
+
     // 清除确认密码的错误
     if (errors.confirmPassword) {
       setErrors(prev => ({ ...prev, confirmPassword: undefined }));
@@ -156,7 +166,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
             {registrationSuccess ? '注册成功' : '注册'}
           </CardTitle>
           <CardDescription className="text-center">
-            {registrationSuccess 
+            {registrationSuccess
               ? '恭喜您注册成功！请使用您的账号密码登录'
               : '创建一个新账号来开始您的博客之旅'
             }
@@ -279,6 +289,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
                   <p className="text-sm text-red-500">{errors.confirmPassword}</p>
                 )}
               </div>
+
+              {/* 错误消息显示 */}
+              {errorMessage && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-600 font-medium">{errorMessage}</p>
+                </div>
+              )}
 
               <Button
                 type="submit"

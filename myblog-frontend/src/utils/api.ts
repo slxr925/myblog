@@ -119,6 +119,20 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // 处理429限流错误
+    if (error.response?.status === 429) {
+      const limitMessage = error.response?.data?.message || '请求过于频繁，请稍后再试';
+      console.warn('请求被限流:', error.config?.url, limitMessage);
+
+      // 返回带429标识的错误，让调用方能识别并特殊处理
+      const rateLimitError = new Error(limitMessage);
+      rateLimitError.status = 429;
+      rateLimitError.isRateLimitError = true;
+      rateLimitError.originalError = error;
+
+      return Promise.reject(rateLimitError);
+    }
+
     // 为其他错误也添加友好的错误提示
     let errorMessage = '网络错误，请稍后重试';
     if (error.response?.data?.message) {
@@ -642,9 +656,31 @@ export const api = {
       return apiClient.get('/admin/monitoring/performance');
     },
 
-    // 获取业务指标
+    //获取业务指标
     getMonitoringBusiness: async (): Promise<any> => {
       return apiClient.get('/admin/monitoring/business');
+    },
+
+    // ========== Arthas增强监控API ==========
+
+    // 获取Arthas监控Dashboard（包含系统+性能+业务指标）
+    getArthasMonitoringDashboard: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/arthas/dashboard');
+    },
+
+    // 获取Arthas系统指标（增强版JVM信息）
+    getArthasSystemMetrics: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/arthas/system');
+    },
+
+    // 获取线程分析数据
+    getArthasThreadAnalysis: async (): Promise<any> => {
+      return apiClient.get('/admin/monitoring/arthas/threads');
+    },
+
+    // Arthas健康检查
+    checkArthasHealth: async (): Promise<boolean> => {
+      return apiClient.get('/admin/monitoring/arthas/health') as Promise<boolean>;
     },
 
   },

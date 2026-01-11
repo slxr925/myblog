@@ -37,6 +37,18 @@ public class UserRegisterDTO {
     private String nickname;
 
     /**
+     * 验证码ID
+     */
+    @NotBlank(message = "验证码ID不能为空")
+    private String captchaId;
+
+    /**
+     * 验证码内容
+     */
+    @NotBlank(message = "验证码不能为空")
+    private String captchaCode;
+
+    /**
      * 用户角色：0-普通用户，1-管理员
      * 默认注册为普通用户
      */
@@ -46,12 +58,14 @@ public class UserRegisterDTO {
     /**
      * 密码强度验证注解
      */
-    @Target({ElementType.FIELD})
+    @Target({ ElementType.FIELD })
     @Retention(RetentionPolicy.RUNTIME)
     @Constraint(validatedBy = StrongPasswordValidator.class)
     public @interface StrongPassword {
         String message() default "密码强度不符合要求";
+
         Class<?>[] groups() default {};
+
         Class<? extends Payload>[] payload() default {};
     }
 

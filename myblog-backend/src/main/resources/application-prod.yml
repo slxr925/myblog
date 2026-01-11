@@ -127,3 +127,11 @@ management:
       enabled: false  # 禁用Elasticsearch健康检查
     defaults:
       enabled: true
+
+# Arthas JVM诊断工具配置（生产环境）
+arthas:
+  telnetPort: 3658
+  httpPort: 8563
+  ip: 127.0.0.1
+  agent-id: myblog-arthas-prod
+  app-name: myblog-backend

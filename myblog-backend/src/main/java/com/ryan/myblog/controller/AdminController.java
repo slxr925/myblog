@@ -47,6 +47,7 @@ public class AdminController {
     private final CategoryService categoryService;
     private final TagService tagService;
     private final com.ryan.myblog.service.MonitoringService monitoringService;
+    private final com.ryan.myblog.service.ArthasMonitoringService arthasMonitoringService;
 
     /**
      * 获取管理员统计数据
@@ -120,6 +121,71 @@ public class AdminController {
         } catch (Exception e) {
             log.error("获取业务指标失败", e);
             return Result.error("获取业务指标失败: " + e.getMessage());
+        }
+    }
+
+    // ========== Arthas增强监控接口 ==========
+
+    /**
+     * 获取Arthas监控仪表盘（新版）
+     * 包含：Arthas系统指标 + 性能指标 + 业务指标
+     */
+    @GetMapping("/monitoring/arthas/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.ArthasMonitoringVO> getArthasMonitoringDashboard() {
+        try {
+            com.ryan.myblog.model.vo.ArthasMonitoringVO dashboard = arthasMonitoringService.getMonitoringDashboard();
+            return Result.success("获取Arthas监控数据成功", dashboard);
+        } catch (Exception e) {
+            log.error("获取Arthas监控数据失败", e);
+            return Result.error("获取监控数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取Arthas系统指标（增强版）
+     * 提供比原有系统指标更详细的JVM信息
+     */
+    @GetMapping("/monitoring/arthas/system")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.ArthasSystemMetricsVO> getArthasSystemMetrics() {
+        try {
+            com.ryan.myblog.model.vo.ArthasSystemMetricsVO metrics = arthasMonitoringService.getArthasSystemMetrics();
+            return Result.success("获取Arthas系统指标成功", metrics);
+        } catch (Exception e) {
+            log.error("获取Arthas系统指标失败", e);
+            return Result.error("获取系统指标失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取线程分析数据
+     * 包含热点线程、阻塞线程、线程状态分布等
+     */
+    @GetMapping("/monitoring/arthas/threads")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<com.ryan.myblog.model.vo.ArthasThreadAnalysisVO> getThreadAnalysis() {
+        try {
+            com.ryan.myblog.model.vo.ArthasThreadAnalysisVO analysis = arthasMonitoringService.getThreadAnalysis();
+            return Result.success("获取线程分析数据成功", analysis);
+        } catch (Exception e) {
+            log.error("获取线程分析数据失败", e);
+            return Result.error("获取线程分析失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Arthas健康检查
+     */
+    @GetMapping("/monitoring/arthas/health")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Boolean> checkArthasHealth() {
+        try {
+            boolean healthy = arthasMonitoringService.isArthasHealthy();
+            return Result.success("Arthas健康检查完成", healthy);
+        } catch (Exception e) {
+            log.error("Arthas健康检查失败", e);
+            return Result.error("健康检查失败: " + e.getMessage());
         }
     }
 
