@@ -48,6 +48,7 @@ public class AdminController {
     private final TagService tagService;
     private final com.ryan.myblog.service.MonitoringService monitoringService;
     private final com.ryan.myblog.service.ArthasMonitoringService arthasMonitoringService;
+    private final com.ryan.myblog.service.ErrorLogService errorLogService;
 
     /**
      * 获取管理员统计数据
@@ -186,6 +187,44 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Arthas健康检查失败", e);
             return Result.error("健康检查失败: " + e.getMessage());
+        }
+    }
+
+    // ========== 错误日志接口 ==========
+
+    /**
+     * 获取最近的错误日志
+     */
+    @GetMapping("/monitoring/errors")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<List<com.ryan.myblog.model.vo.ErrorLogVO>> getRecentErrors(
+            @RequestParam(defaultValue = "50") int limit) {
+        try {
+            if (limit > 100) {
+                limit = 100; // 限制最大数量
+            }
+            List<com.ryan.myblog.model.vo.ErrorLogVO> errors = errorLogService.getRecentErrors(limit);
+            return Result.success("获取错误日志成功", errors);
+        } catch (Exception e) {
+            log.error("获取错误日志失败", e);
+            return Result.error("获取错误日志失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取错误统计
+     */
+    @GetMapping("/monitoring/errors/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Map<String, Object>> getErrorStats() {
+        try {
+            long errorCount = errorLogService.getErrorCount24Hours();
+            Map<String, Object> stats = new java.util.HashMap<>();
+            stats.put("count24Hours", errorCount);
+            return Result.success("获取错误统计成功", stats);
+        } catch (Exception e) {
+            log.error("获取错误统计失败", e);
+            return Result.error("获取错误统计失败: " + e.getMessage());
         }
     }
 

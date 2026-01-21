@@ -683,6 +683,17 @@ export const api = {
       return apiClient.get('/admin/monitoring/arthas/health') as Promise<boolean>;
     },
 
+    // 获取最近错误日志
+    getRecentErrors: async (limit: number = 50): Promise<any[]> => {
+      const response = await apiClient.get(`/admin/monitoring/errors?limit=${limit}`);
+      return response as any[];
+    },
+
+    // 获取错误统计
+    getErrorStats: async (): Promise<{ count24Hours: number }> => {
+      return apiClient.get('/admin/monitoring/errors/stats') as Promise<{ count24Hours: number }>;
+    },
+
   },
 
   upload: {

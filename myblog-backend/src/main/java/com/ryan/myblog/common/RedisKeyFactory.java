@@ -208,7 +208,23 @@ public enum RedisKeyFactory {
      * Key: myblog:lock:comment:{blogId}:{userId}
      * TTL: 10秒
      */
-    LOCK_COMMENT("lock:comment:%s:%s", 10, TimeUnit.SECONDS, "评论操作锁");
+    LOCK_COMMENT("lock:comment:%s:%s", 10, TimeUnit.SECONDS, "评论操作锁"),
+
+    // ==================== 监控模块 ====================
+
+    /**
+     * 错误日志详情
+     * Key: myblog:monitor:error:{errorId}
+     * TTL: 24小时
+     */
+    ERROR_LOG_DETAIL("monitor:error:%s", 24, TimeUnit.HOURS, "错误日志详情"),
+
+    /**
+     * 错误日志索引 (ZSet)
+     * Key: myblog:monitor:error:index
+     * TTL: 24小时（手动清理过期）
+     */
+    ERROR_LOG_INDEX("monitor:error:index", 24, TimeUnit.HOURS, "错误日志索引");
 
     /**
      * 项目前缀
