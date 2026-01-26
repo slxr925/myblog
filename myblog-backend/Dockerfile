@@ -49,3 +49,39 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
 USER spring
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+
+# 快速部署阶段 (使用本地预构建的JAR)
+# 用途：本地已构建JAR，直接打包进镜像，跳过Maven编译，适合快速迭代部署
+# 使用方法: docker build --target prod-prebuilt -t myblog-backend:prod .
+FROM eclipse-temurin:21-jdk-alpine AS prod-prebuilt
+
+# 安装必要工具
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# 创建非root用户
+RUN addgroup -g 1000 spring && adduser -D -s /bin/sh -u 1000 -G spring spring
+
+# 直接复制本地target目录的预构建JAR（不从builder阶段复制）
+COPY target/*.jar app.jar
+
+# 创建相关目录
+RUN mkdir -p /app/logs /app/uploads && \
+    chown -R spring:spring /app
+
+# JVM参数
+ENV JAVA_OPTS="-Xms768m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0"
+ENV TZ=Asia/Shanghai
+
+# 设置时区
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+EXPOSE 8081
+
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
+    CMD curl -f http://localhost:8081/actuator/health || exit 1
+
+USER spring
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

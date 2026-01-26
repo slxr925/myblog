@@ -27,6 +27,7 @@ services:
     build:
       context: ./myblog-backend
       dockerfile: Dockerfile.prod
+      target: prod-prebuilt # 使用预构建JAR，快速部署
     container_name: myblog-backend
     restart: unless-stopped
     environment:
