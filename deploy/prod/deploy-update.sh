@@ -114,9 +114,9 @@ echo ""
 echo -e "${BLUE}=== 步骤 4.5: 上传部署脚本和配置 ===${NC}"
 
 if [ "$USE_SCP" = true ]; then
-    echo "上传: deploy/*.sh 和 docker-compose.prod.yml"
+    echo "上传: deploy/*.sh, docker-compose.prod.yml 和 Dockerfile.prod"
     # 确保远程目录存在
-    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy"
+    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy ${SERVER_PATH}/myblog-backend"
     
     # 上传脚本
     if scp deploy/prod/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/; then
@@ -127,6 +127,7 @@ if [ "$USE_SCP" = true ]; then
         echo -e "${RED}✗ 部署脚本上传失败${NC}"
         exit 1
     fi
+    
     # 上传docker-compose配置
     if scp docker-compose.prod.yml ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/; then
         echo -e "${GREEN}✓ docker-compose配置上传成功${NC}"
@@ -134,8 +135,16 @@ if [ "$USE_SCP" = true ]; then
         echo -e "${RED}✗ docker-compose配置上传失败${NC}"
         exit 1
     fi
+    
+    # 上传Dockerfile.prod
+    if scp myblog-backend/Dockerfile.prod ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/myblog-backend/; then
+        echo -e "${GREEN}✓ Dockerfile.prod上传成功${NC}"
+    else
+        echo -e "${RED}✗ Dockerfile.prod上传失败${NC}"
+        exit 1
+    fi
 else
-    echo -e "${YELLOW}请手动上传: deploy/*.sh 和 docker-compose.prod.yml${NC}"
+    echo -e "${YELLOW}请手动上传: deploy/*.sh, docker-compose.prod.yml 和 myblog-backend/Dockerfile.prod${NC}"
 fi
 echo ""
 
