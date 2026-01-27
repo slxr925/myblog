@@ -20,17 +20,47 @@
 
 ## 1️⃣ 工厂模式（Factory Pattern）
 
-### 应用：`RedisKeyFactory`
+### 应用一：`RedisKeyFactory`
 
 ```java
 // 统一管理 Redis Key 的生成
 public enum RedisKeyFactory {
     BLOG_DETAIL("blog:detail:%s", 30, TimeUnit.MINUTES, "博客详情缓存"),
     BLOG_LIKES_SET("blog:likes:%s", 7, TimeUnit.DAYS, "博客点赞集合"),
+    CAPTCHA_CODE("captcha:code:%s", 5, TimeUnit.MINUTES, "验证码"),
     // ...
-    
+
     public String getKey(Object... args) {
         return PROJECT_PREFIX + String.format(pattern, args);
+    }
+}
+```
+
+### 应用二：`CaptchaCodeGenerator`（v2.0.0 新增）
+
+```java
+// 验证码生成器工厂
+@Component
+public class CaptchaCodeGenerator {
+
+    public CaptchaDTO generate() {
+        // 1. 生成唯一 ID（工厂模式）
+        String captchaId = UUID.randomUUID().toString();
+
+        // 2. 生成验证码文本
+        String code = generateRandomCode(4);
+
+        // 3. 绘制验证码图片
+        String imageBase64 = drawCaptchaImage(code);
+
+        // 4. 存储到 Redis（使用工厂管理 key）
+        unifiedCacheService.set(
+            RedisKeyFactory.CAPTCHA_CODE,
+            code,
+            captchaId
+        );
+
+        return new CaptchaDTO(captchaId, imageBase64);
     }
 }
 ```
@@ -43,6 +73,14 @@ public enum RedisKeyFactory {
 > 1. **命名规范化**：避免各处代码硬编码 key，统一格式 `myblog:module:function:id`
 > 2. **TTL 统一管理**：每个 Key 的过期时间在一处定义，便于调优
 > 3. **类型安全**：enum 自带编译检查，避免拼写错误
+>
+> **问：验证码系统如何设计的？**
+>
+> 答：采用工厂模式 + 缓存 + 图形生成：
+> 1. **工厂模式**：统一管理验证码 Redis Key 和过期时间
+> 2. **Base64 编码**：图片直接返回前端，无需存储文件
+> 3. **唯一 ID 绑定**：每次生成新 ID，防止重放攻击
+> 4. **自动过期**：Redis 5 分钟自动过期，减少数据库压力
 
 ---
 

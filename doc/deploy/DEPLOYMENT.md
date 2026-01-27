@@ -218,25 +218,39 @@ REDIS_PASSWORD=        # 你的 Redis 密码
 
 详见 [QUICK-ITERATION.md](./QUICK-ITERATION.md)
 
+### 快速部署（推荐）⭐⭐⭐
+
+项目已提供统一的部署脚本 `scripts/deploy-prod.sh`，支持一键部署：
+
+```bash
+# 完整部署流程（构建 → 上传 → 部署）
+./scripts/deploy-prod.sh deploy
+
+# 分步操作
+./scripts/deploy-prod.sh build          # 本地构建产物
+./scripts/deploy-prod.sh upload         # 上传产物到服务器
+./scripts/deploy-prod.sh server-deploy  # 仅在服务器上部署
+```
+
 ### 场景 1：已配置 SSH 密钥（最快）
 
 ```bash
 # 在本地执行一条命令即可
 cd /path/to/myblog
-./deploy/deploy-update.sh
+./scripts/deploy-prod.sh deploy
 ```
 
 ### 场景 2：未配置 SSH 密钥
 
 ```bash
 # 1. 本地构建
-./deploy/build-local.sh
+./scripts/deploy-prod.sh build
 
 # 2. 手动上传 jar 和 dist
 
 # 3. 服务器部署
 ssh root@your-server
-cd /app/myblog/deploy
+cd /app/myblog/deploy/prod
 ./quick-deploy.sh
 ```
 
@@ -469,4 +483,4 @@ git pull && ./deploy/deploy-update.sh
 
 ---
 
-**最后更新：** 2025-12-18
+**最后更新：** 2026-01-27

@@ -119,21 +119,45 @@ docker stats
 
 ## 🔧 常用操作速查
 
-### 部署相关
+### 本地开发环境
 
 ```bash
-# 一键部署（推荐）
-./deploy/deploy-update.sh
+# 启动本地环境
+./scripts/deploy.sh start          # 启动所有服务
+./scripts/deploy.sh start --rebuild # 强制重新构建并启动
 
-# 分步部署
-./deploy/build-local.sh          # 本地构建
-# 上传 jar 和 dist
-ssh root@server                  # 登录服务器
-cd /app/myblog/deploy
-./quick-deploy.sh                # 服务器部署
+# 查看服务状态
+./scripts/deploy.sh status
+
+# 查看日志
+./scripts/deploy.sh logs           # 查看所有服务日志
+./scripts/deploy.sh logs backend   # 查看后端日志
+
+# 健康检查
+./scripts/health-check.sh
+
+# 停止服务
+./scripts/deploy.sh stop
 ```
 
-### 服务管理
+### 生产环境部署
+
+```bash
+# 一键部署（推荐）⭐⭐⭐
+./scripts/deploy-prod.sh deploy    # 完整部署流程：构建 → 上传 → 部署
+
+# 分步操作
+./scripts/deploy-prod.sh build     # 本地构建产物
+./scripts/deploy-prod.sh upload    # 上传产物到服务器
+./scripts/deploy-prod.sh server-deploy  # 仅在服务器上部署
+
+# 维护操作
+./scripts/deploy-prod.sh backup    # 备份数据库和文件
+./scripts/deploy-prod.sh status    # 检查生产状态
+./scripts/deploy-prod.sh logs      # 查看生产日志
+```
+
+### 服务器管理
 
 ```bash
 # 查看状态
@@ -143,27 +167,9 @@ docker-compose -f docker-compose.prod.yml ps
 # 查看日志
 docker logs -f myblog-backend
 docker logs -f myblog-frontend
-# 或使用脚本
-./deploy/logs.sh
 
 # 重启服务
 docker-compose -f docker-compose.prod.yml restart
-
-# 停止服务
-./deploy/stop.sh
-```
-
-### 数据管理
-
-```bash
-# 备份数据
-./deploy/backup.sh
-
-# 初始化数据库
-./deploy/init-database.sh
-
-# 查看备份
-ls -lh backups/
 ```
 
 ---
@@ -173,6 +179,12 @@ ls -lh backups/
 ```
 myblog/
 ├── README.md                 # 项目主文档
+├── scripts/                  # 🚀 便捷部署脚本（新增）
+│   ├── deploy.sh            # 本地环境管理
+│   ├── deploy-prod.sh       # 生产环境管理
+│   ├── health-check.sh      # 健康检查
+│   └── README.md            # 部署脚本使用指南
+│
 ├── doc/                      # 📚 文档中心（本目录）
 │   ├── README.md            # 文档索引
 │   ├── DEPLOYMENT.md        # 部署手册
@@ -182,14 +194,16 @@ myblog/
 │   ├── DEVELOPMENT.md       # 开发指南
 │   └── ...                  # 其他文档
 │
-├── deploy/                   # 🚀 部署脚本
-│   ├── deploy-update.sh     # 一键部署
-│   ├── build-local.sh       # 本地构建
-│   ├── quick-deploy.sh      # 服务器部署
-│   ├── init-database.sh     # 数据库初始化
-│   ├── backup.sh            # 数据备份
-│   ├── logs.sh              # 日志查看
-│   └── stop.sh              # 停止服务
+├── deploy/                   # 🚀 部署脚本（底层实现）
+│   ├── local/               # 本地 Docker 部署
+│   │   ├── start.sh
+│   │   ├── stop.sh
+│   │   └── quick-deploy.sh
+│   └── prod/                # 生产环境部署
+│       ├── deploy-update.sh
+│       ├── build-local.sh
+│       ├── quick-deploy.sh
+│       └── init-database.sh
 │
 ├── myblog-backend/          # 后端 Spring Boot
 │   ├── src/                 # 源代码
@@ -201,6 +215,7 @@ myblog/
 │   └── dist/                # 构建产物
 │
 ├── nginx/                   # Nginx 配置
+├── docker-compose.yml       # 本地开发环境
 ├── docker-compose.prod.yml  # 生产环境编排
 └── .env.prod                # 生产环境配置
 ```
@@ -343,6 +358,13 @@ df -h
 
 ### 🔄 最近更新
 
+**2026-01-27 - v2.0.0 版本发布** ⭐⭐⭐
+- ✅ **Editorial Modernism 设计系统** - 全新设计语言，OKLCH 色彩空间，自定义字体（Playfair Display、DM Mono、Crimson Pro）
+- ✅ **验证码功能** - 注册/登录表单添加图形验证码防护，防止机器人攻击
+- ✅ **MySQL UTF8MB4** - 字符集升级支持完整 Unicode（emoji、特殊字符）
+- ✅ **统一部署脚本** - 创建 scripts/ 目录，便捷管理本地和生产环境
+- ✅ **部署文档完善** - 新增 scripts/README.md 完整部署指南
+
 **2026-01-06 - 监控系统数据优化** ⭐
 - ✅ 修复用户活跃度指标(DAU/WAU/MAU) - 改用访问日志统计真实活跃用户
 - ✅ 修复QPS计算 - 改为基于JVM运行时间的平均速率
@@ -365,4 +387,4 @@ df -h
 
 **保持文档更新，让协作更高效！** 📚
 
-**最后更新：** 2026-01-06
+**最后更新：** 2026-01-27

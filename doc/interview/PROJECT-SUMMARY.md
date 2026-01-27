@@ -256,7 +256,14 @@ Total:          ~2.5GB
 
 ## 🎨 UI/UX 特色
 
-### 设计系统
+### 设计系统（v2.0.0 Editorial Modernism）
+- **Editorial Modernism** 设计语言 - 专业、现代、具有编辑质感
+- **自定义字体系统**
+  - Playfair Display（标题 - 优雅衬线字体）
+  - DM Mono（装饰文本 - 等宽字体，uppercase tracking-wider）
+  - Crimson Pro（正文 - 优化可读性）
+- **OKLCH 色彩空间** - 更科学的颜色感知，琥珀金色强调色（#C49A2E）
+- **Editorial 风格组件** - rounded-sm 边角、mono-display 装饰文本
 - Shadcn UI 组件库
 - Tailwind CSS 样式系统
 - 一致的设计语言
@@ -265,11 +272,16 @@ Total:          ~2.5GB
 - Framer Motion 流畅动画
 - 页面切换过渡
 - 交互反馈动效
+- AI 助手脉冲动画环
 
 ### 响应式布局
 - 完美适配 320px - 2560px
 - 移动端优先设计
 - 触摸友好的交互
+
+### 安全增强
+- 图形验证码系统（注册/登录防护）
+- MySQL UTF8MB4 字符集（完整 Unicode 支持）
 
 ## 📝 文档完善度
 
@@ -466,6 +478,6 @@ TypeScript 文件: 106 个
 
 ---
 
-**最后更新**: 2025-12-31  
-**文档版本**: 1.0  
+**最后更新**: 2026-01-27
+**文档版本**: 2.0
 **项目版本**: 2.0

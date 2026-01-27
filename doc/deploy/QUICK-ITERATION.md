@@ -18,10 +18,10 @@
 
 ```bash
 # 一键部署完整本地环境（Backend + Frontend + MySQL + Redis + Kafka + ES）
-./deploy/local/quick-deploy.sh
+./scripts/deploy.sh start
 
-# 或完整更新流程（构建镜像 + 部署）
-./deploy/local/deploy-update.sh
+# 强制重新构建并启动
+./scripts/deploy.sh start --rebuild
 ```
 
 ### 访问地址
@@ -100,7 +100,7 @@ cat ~/.ssh/id_rsa.pub | ssh root@49.235.139.118 'mkdir -p ~/.ssh && cat >> ~/.ss
 
 ```bash
 cd /path/to/myblog
-./deploy/deploy-update.sh
+./scripts/deploy-prod.sh deploy
 ```
 
 **流程说明：**
@@ -130,7 +130,7 @@ cd /path/to/myblog
 
 ```bash
 cd /path/to/myblog
-./deploy/build-local.sh
+./scripts/deploy-prod.sh build
 ```
 
 **输出：**
@@ -470,4 +470,4 @@ cd /app/myblog/deploy && ./backup.sh
 
 **配置一次 SSH 密钥，享受一键部署的快乐！** 🚀
 
-**最后更新：** 2025-12-18
+**最后更新：** 2026-01-27
