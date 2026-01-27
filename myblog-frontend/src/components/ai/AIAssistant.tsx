@@ -138,16 +138,16 @@ export const AIAssistant: React.FC = () => {
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
       >
-        {/* 脉冲动画环 */}
+        {/* 脉冲动画环 - Editorial风格 */}
         {!isOpen && (
           <>
             <motion.div
-              className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500"
+              className="absolute inset-0 rounded-sm bg-accent/20"
               animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             />
             <motion.div
-              className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500"
+              className="absolute inset-0 rounded-sm bg-accent/10"
               animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
             />
@@ -156,15 +156,15 @@ export const AIAssistant: React.FC = () => {
         <Button
           size="icon"
           onClick={() => setIsOpen(!isOpen)}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-600 shadow-2xl shadow-indigo-500/50 border-2 border-white/30 dark:border-slate-800/50"
+          className="relative w-14 h-14 rounded-sm bg-foreground text-background hover:bg-foreground/90 shadow-lg border-2 border-border"
         >
           {isOpen ? (
             <X className="w-6 h-6" />
           ) : (
             <div className="relative">
-              <Sparkles className="w-6 h-6 text-white" />
+              <Sparkles className="w-6 h-6 text-accent" />
               <motion.span
-                className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full border border-white"
+                className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-accent rounded-full border border-background"
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               />
@@ -183,36 +183,36 @@ export const AIAssistant: React.FC = () => {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)]"
           >
-            <div className="bg-background border border-border rounded-2xl shadow-2xl overflow-hidden">
-              {/* 头部 */}
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4">
+            <div className="bg-background border border-border rounded-sm shadow-2xl overflow-hidden">
+              {/* 头部 - Editorial风格 */}
+              <div className="bg-foreground text-background px-5 py-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-white" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-accent/20 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold">AI助手</h3>
-                      <p className="text-white/70 text-xs">为您解答博客相关问题</p>
+                      <h3 className="font-semibold font-mono-display text-sm uppercase tracking-wider">AI 助手</h3>
+                      <p className="text-xs text-background/70">为您解答博客相关问题</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* 消息列表 */}
-              <div className="h-96 overflow-y-auto p-4 space-y-4 bg-muted/30">
+              <div className="h-96 overflow-y-auto p-4 space-y-4 bg-card">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${message.isUser
-                        ? 'bg-indigo-600 text-white rounded-br-sm'
-                        : 'bg-background border border-border rounded-bl-sm shadow-sm'
+                      className={`max-w-[85%] rounded-sm px-4 py-2.5 ${message.isUser
+                        ? 'bg-foreground text-background rounded-br-none'
+                        : 'bg-muted border border-border rounded-bl-none'
                         }`}
                     >
-                      <p className={`text-sm whitespace-pre-wrap ${message.isUser ? 'text-white' : 'text-foreground'
+                      <p className={`text-sm whitespace-pre-wrap font-light ${message.isUser ? 'text-background' : 'text-foreground'
                         }`}>
                         {message.content}
                       </p>
@@ -220,7 +220,7 @@ export const AIAssistant: React.FC = () => {
                       {/* 相关文章链接 */}
                       {!message.isUser && message.relatedArticles && message.relatedArticles.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-border/50">
-                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 font-mono-display uppercase tracking-wider">
                             <ExternalLink className="w-3 h-3" />
                             相关文章
                           </p>
@@ -229,16 +229,16 @@ export const AIAssistant: React.FC = () => {
                               <button
                                 key={article.id}
                                 onClick={() => handleArticleClick(article.id)}
-                                className="block w-full text-left text-xs text-indigo-600 hover:text-indigo-700 hover:underline truncate transition-colors"
+                                className="block w-full text-left text-xs text-accent hover:underline truncate transition-colors font-mono-display"
                               >
-                                📄 {article.title}
+                                {article.title}
                               </button>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      <p className={`text-xs mt-1 ${message.isUser ? 'text-white/60' : 'text-muted-foreground'
+                      <p className={`text-xs mt-1 font-mono-display uppercase tracking-wider ${message.isUser ? 'text-background/60' : 'text-muted-foreground'
                         }`}>
                         {message.timestamp.toLocaleTimeString('zh-CN', {
                           hour: '2-digit',
@@ -250,8 +250,8 @@ export const AIAssistant: React.FC = () => {
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-background border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
-                      <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                    <div className="bg-muted border border-border rounded-sm rounded-bl-none px-4 py-2.5">
+                      <Loader2 className="w-5 h-5 animate-spin text-accent" />
                     </div>
                   </div>
                 )}
@@ -267,13 +267,13 @@ export const AIAssistant: React.FC = () => {
                     onKeyPress={handleKeyPress}
                     placeholder="问我任何问题..."
                     disabled={isLoading}
-                    className="flex-1 rounded-xl border-border focus:border-indigo-500 focus:ring-indigo-500/20"
+                    className="flex-1 rounded-sm border-border focus:border-accent focus:ring-accent/20"
                   />
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim() || isLoading}
                     size="icon"
-                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700"
+                    className="rounded-sm bg-foreground text-background hover:bg-foreground/90"
                   >
                     {isLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -282,7 +282,7 @@ export const AIAssistant: React.FC = () => {
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
+                <p className="text-xs text-muted-foreground mt-2 text-center font-mono-display uppercase tracking-wider">
                   AI助手可能会出错，请谨慎参考
                 </p>
               </div>

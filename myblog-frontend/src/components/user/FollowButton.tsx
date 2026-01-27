@@ -128,7 +128,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({
             size={size}
             onClick={handleClick}
             disabled={loading}
-            className={`${className} ${isFollowing ? 'border-gray-300' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
+            className={`${className} ${isFollowing ? 'border-border text-muted-foreground' : 'bg-foreground text-background hover:bg-foreground/90'} rounded-sm font-mono-display text-xs uppercase tracking-wider`}
         >
             {isFollowing ? (
                 <UserCheck className="w-4 h-4" />

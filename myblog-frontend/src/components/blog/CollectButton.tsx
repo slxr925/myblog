@@ -94,7 +94,7 @@ const CollectButton: React.FC<CollectButtonProps> = ({
         size={size}
         onClick={handleClick}
         disabled={loading}
-        className={className}
+        className={`${className} rounded-sm`}
       >
         {collected ? (
           <BookmarkCheck className="w-4 h-4" />

@@ -27,45 +27,55 @@ export const ModernLayout = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground flex flex-col">
-      {/* Navbar */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isHomePage ? 'bg-background/80 backdrop-blur-md border-b border-border' : 'bg-background shadow-sm border-b border-border'
+      {/* Navbar - Editorial Minimal */}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isHomePage ? 'bg-background/90 backdrop-blur-sm border-b border-border/50' : 'bg-background border-b border-border'
         }`}>
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo + Nav */}
-          <div className="flex items-center gap-2">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => navigate('/')}
-            >
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
-                R
-              </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-                Ryan's Blog
-              </span>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => navigate('/')}
+          >
+            <div className="w-8 h-8 bg-foreground text-background flex items-center justify-center text-sm font-bold font-mono-display transition-transform group-hover:scale-105">
+              R
             </div>
-
-            {/* Desktop Nav - 紧跟在logo右侧 */}
-            <nav className="hidden md:flex items-center gap-1 ml-6">
-              <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
-                首页
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/blog')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
-                文章
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/about')} className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-muted/50">
-                关于
-              </Button>
-            </nav>
+            <span className="hidden sm:block text-lg font-bold text-foreground tracking-tight">
+              Ryan<span className="text-accent">'</span>s Blog
+            </span>
           </div>
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="text-muted-foreground hover:text-foreground hover:bg-transparent font-mono-display text-xs uppercase tracking-wider h-9 px-3"
+            >
+              首页
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/blog')}
+              className="text-muted-foreground hover:text-foreground hover:bg-transparent font-mono-display text-xs uppercase tracking-wider h-9 px-3"
+            >
+              文章
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/about')}
+              className="text-muted-foreground hover:text-foreground hover:bg-transparent font-mono-display text-xs uppercase tracking-wider h-9 px-3"
+            >
+              关于
+            </Button>
+          </nav>
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-4">
-            <div className="w-64">
-              <RealTimeSearch placeholder="搜索文章..." />
+            <div className="w-56">
+              <RealTimeSearch placeholder="搜索..." />
             </div>
 
-            <div className="h-6 w-px bg-border" />
+            <div className="h-4 w-px bg-border" />
 
             <ThemeToggle />
 
@@ -74,7 +84,11 @@ export const ModernLayout = () => {
             {isAuthenticated ? (
               <UserMenu />
             ) : (
-              <Button onClick={openAuthModal} className="rounded-full px-6 shadow-indigo-500/20">
+              <Button
+                onClick={openAuthModal}
+                variant="outline"
+                className="h-8 px-4 text-xs font-mono-display uppercase tracking-wider rounded-sm hover:bg-muted"
+              >
                 登录
               </Button>
             )}
@@ -82,60 +96,89 @@ export const ModernLayout = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-muted-foreground hover:bg-muted rounded-lg"
+            className="md:hidden p-2 text-foreground hover:bg-muted rounded-sm transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Overlay - Editorial Style */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="fixed top-16 left-0 right-0 z-40 bg-background border-b border-border shadow-xl md:hidden overflow-visible"
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed top-16 left-0 right-0 z-40 bg-background border-b border-border shadow-lg md:hidden"
           >
-            <div className="p-4 flex flex-col gap-2">
-              <Button variant="ghost" onClick={() => handleNavigation('/')} className="justify-start w-full">
-                <Home className="w-4 h-4 mr-2" /> 首页
-              </Button>
-              <Button variant="ghost" onClick={() => handleNavigation('/blog')} className="justify-start w-full">
-                <FileText className="w-4 h-4 mr-2" /> 文章
-              </Button>
-              <Button variant="ghost" onClick={() => handleNavigation('/about')} className="justify-start w-full">
-                <User className="w-4 h-4 mr-2" /> 关于
-              </Button>
+            <div className="p-6 flex flex-col gap-4">
+              {/* Navigation Links */}
+              <nav className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleNavigation('/')}
+                  className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
+                >
+                  <Home className="w-4 h-4 mr-3" /> 首页
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleNavigation('/blog')}
+                  className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
+                >
+                  <FileText className="w-4 h-4 mr-3" /> 文章
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleNavigation('/about')}
+                  className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
+                >
+                  <User className="w-4 h-4 mr-3" /> 关于
+                </Button>
+              </nav>
 
-              <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
+              <div className="h-px bg-border" />
 
-              <div className="px-2">
+              {/* Search */}
+              <div>
                 <RealTimeSearch placeholder="搜索文章..." />
               </div>
 
-              <div className="flex items-center justify-between px-2 mt-2">
-                <span className="text-sm text-slate-500 dark:text-slate-400">切换主题</span>
+              {/* Theme Toggle */}
+              <div className="flex items-center justify-between py-2">
+                <span className="font-mono-display text-xs uppercase tracking-wider text-muted-foreground">
+                  主题
+                </span>
                 <ThemeToggle />
               </div>
 
+              {/* Notifications */}
               {isAuthenticated && (
-                <div className="flex items-center justify-between px-2 mt-2">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">通知</span>
+                <div className="flex items-center justify-between py-2">
+                  <span className="font-mono-display text-xs uppercase tracking-wider text-muted-foreground">
+                    通知
+                  </span>
                   <NotificationBadge />
                 </div>
               )}
 
+              {/* Login Button */}
               {!isAuthenticated && (
-                <Button onClick={openAuthModal} className="w-full mt-4">
+                <Button
+                  onClick={openAuthModal}
+                  className="w-full h-12 font-mono-display text-xs uppercase tracking-wider rounded-sm"
+                >
                   登录
                 </Button>
               )}
 
+              {/* User Menu */}
               {isAuthenticated && (
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <div className="pt-4 border-t border-border">
                   <UserMenu />
                 </div>
               )}
@@ -149,25 +192,50 @@ export const ModernLayout = () => {
         <Outlet />
       </main>
 
-      {/* Footer */}
+      {/* Footer - Editorial Style */}
       <footer className="bg-background border-t border-border py-12 mt-auto">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                R
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            {/* Logo & Tagline */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-foreground text-background flex items-center justify-center text-xs font-bold font-mono-display">
+                  R
+                </div>
+                <span className="font-bold text-foreground">Ryan's Blog</span>
               </div>
-              <span className="font-bold text-foreground">Ryan's Blog</span>
+              <p className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground">
+                Exploring Tech & Design
+              </p>
             </div>
 
-            <div className="text-muted-foreground text-sm">
-              © {new Date().getFullYear()} Ryan Xu. All rights reserved.
+            {/* Copyright */}
+            <div className="text-center md:text-left">
+              <p className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground">
+                © {new Date().getFullYear()} Ryan Xu. All rights reserved.
+              </p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms</a>
-              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact</a>
+            {/* Links */}
+            <div className="flex flex-wrap justify-center md:justify-end gap-4 sm:gap-6 text-sm">
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-accent transition-colors font-mono-display text-xs uppercase tracking-wider"
+              >
+                Privacy
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-accent transition-colors font-mono-display text-xs uppercase tracking-wider"
+              >
+                Terms
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-accent transition-colors font-mono-display text-xs uppercase tracking-wider"
+              >
+                Contact
+              </a>
             </div>
           </div>
         </div>

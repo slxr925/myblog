@@ -100,6 +100,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClos
       } else {
         setErrors({ password: errorMessage });
       }
+      // 刷新验证码
+      loadCaptcha();
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +173,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClos
 
             <div className="space-y-2">
               <label htmlFor="captcha" className="text-sm font-medium">
-                验证码
+                验证码 <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
                 <Input
@@ -183,25 +185,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClos
                   onChange={handleInputChange}
                   maxLength={4}
                   className={errors.captchaCode ? 'border-red-500' : ''}
-                  disabled={isLoading}
+                  disabled={isLoading || captchaLoading}
                 />
-                <div
-                  className="flex-shrink-0 cursor-pointer border rounded overflow-hidden hover:opacity-80 transition-opacity"
-                  onClick={loadCaptcha}
-                  title="点击刷新验证码"
-                >
-                  {captchaLoading ? (
-                    <div className="w-[120px] h-[40px] flex items-center justify-center bg-muted">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    </div>
-                  ) : (
-                    <img
-                      src={captchaImage}
-                      alt="验证码"
-                      className="w-[120px] h-[40px] select-none"
-                    />
-                  )}
-                </div>
+                {captchaLoading ? (
+                  <div className="h-10 w-24 shrink-0 rounded-sm border border-border bg-muted flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <img
+                    src={captchaImage}
+                    alt="验证码"
+                    className="h-10 w-24 shrink-0 rounded-sm border border-border cursor-pointer hover:border-accent/50 transition-colors"
+                    onClick={loadCaptcha}
+                    title="点击刷新验证码"
+                  />
+                )}
               </div>
               {errors.captchaCode && (
                 <p className="text-sm text-red-500">{errors.captchaCode}</p>
@@ -210,7 +208,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClos
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-sm font-mono-display text-xs uppercase tracking-wider"
               disabled={isLoading}
             >
               {isLoading ? '登录中...' : '登录'}

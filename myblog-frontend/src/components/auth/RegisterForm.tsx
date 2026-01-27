@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../utils/api';
 import type { UserRegisterDTO } from '../../types/api';
 import { Role } from '../../types/api';
+import { RefreshCw } from 'lucide-react';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -20,11 +22,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     email: '',
     nickname: '',
     role: Role.USER,
+    captchaId: '',
+    captchaCode: '',
   });
   const [errors, setErrors] = useState<Partial<UserRegisterDTO & { confirmPassword: string }>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string>(''); // 持久化错误消息
+  const [captchaImage, setCaptchaImage] = useState<string>('');
+  const [isLoadingCaptcha, setIsLoadingCaptcha] = useState(false);
 
 
   const validateForm = (): boolean => {
@@ -66,6 +72,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
       newErrors.nickname = '昵称长度不能超过12位';
     }
 
+    // 验证码验证
+    if (!formData.captchaCode?.trim()) {
+      newErrors.captchaCode = '验证码不能为空';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -87,6 +98,25 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   };
 
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+
+  // 获取验证码
+  const fetchCaptcha = async () => {
+    try {
+      setIsLoadingCaptcha(true);
+      const response = await api.captcha.generate();
+      setCaptchaImage(response.imageBase64);
+      setFormData(prev => ({ ...prev, captchaId: response.captchaId }));
+    } catch (error) {
+      console.error('获取验证码失败:', error);
+    } finally {
+      setIsLoadingCaptcha(false);
+    }
+  };
+
+  // 组件加载时获取验证码
+  useEffect(() => {
+    fetchCaptcha();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +151,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
       }
 
       setErrorMessage(displayMessage);
+      // 刷新验证码
+      fetchCaptcha();
+      setFormData(prev => ({ ...prev, captchaCode: '' }));
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +218,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
               </div>
               <Button
                 onClick={handleGoToLogin}
-                className="w-full"
+                className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-sm font-mono-display text-xs uppercase tracking-wider"
               >
                 立即登录
               </Button>
@@ -290,6 +323,52 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
                 )}
               </div>
 
+              {/* 验证码 */}
+              <div className="space-y-2">
+                <label htmlFor="captchaCode" className="text-sm font-medium">
+                  验证码 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="captchaCode"
+                    name="captchaCode"
+                    type="text"
+                    placeholder="请输入验证码"
+                    value={formData.captchaCode || ''}
+                    onChange={handleInputChange}
+                    className={errors.captchaCode ? 'border-red-500' : ''}
+                    disabled={isLoading || isLoadingCaptcha}
+                  />
+                  {captchaImage ? (
+                    <img
+                      src={captchaImage}
+                      alt="验证码"
+                      className="h-10 w-24 shrink-0 rounded-sm border border-border cursor-pointer hover:border-accent/50 transition-colors"
+                      onClick={fetchCaptcha}
+                      title="点击刷新验证码"
+                    />
+                  ) : (
+                    <div className="h-10 w-24 shrink-0 rounded-sm border border-border bg-muted flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground">加载中...</span>
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={fetchCaptcha}
+                    disabled={isLoading || isLoadingCaptcha}
+                    className="shrink-0"
+                    title="刷新验证码"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isLoadingCaptcha ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+                {errors.captchaCode && (
+                  <p className="text-sm text-red-500">{errors.captchaCode}</p>
+                )}
+              </div>
+
               {/* 错误消息显示 */}
               {errorMessage && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -299,7 +378,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-sm font-mono-display text-xs uppercase tracking-wider"
                 disabled={isLoading}
               >
                 {isLoading ? '注册中...' : '注册'}

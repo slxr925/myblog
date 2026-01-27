@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Calendar, Clock, Heart, MessageCircle } from 'lucide-react';
+import { Clock, Heart, MessageCircle, ArrowUpRight } from 'lucide-react';
 import type { BlogPost } from '../types/api';
 
 interface BlogCardProps {
@@ -8,68 +8,101 @@ interface BlogCardProps {
   onClick: (postId: number | string) => void;
 }
 
-// 优化的文章卡片组件，使用React.memo防止不必要的重渲染
+// Editorial-style blog card component
 const BlogCard = memo(({ post, index, onClick }: BlogCardProps) => {
   const handleClick = () => {
     onClick(post.id);
   };
 
   return (
-    <div
+    <article
       onClick={handleClick}
-      className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col h-full cursor-pointer"
+      className="group relative bg-card border border-border hover:border-accent/50 transition-all duration-500 flex flex-col h-full cursor-pointer overflow-hidden"
     >
-      <div className="relative h-56 overflow-hidden">
+      {/* Decorative corner accent */}
+      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+      {/* Image with editorial treatment */}
+      <div className="relative h-64 overflow-hidden border-b border-border">
         <img
           src={post.image}
           alt={post.title}
-          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 transform group-hover:scale-105"
           loading="lazy"
         />
-        <div className="absolute top-4 left-4 flex gap-2">
-          {post.tags.slice(0, 2).map(tag => (
-            <span key={tag} className="px-3 py-1 bg-white/90 backdrop-blur-md text-xs font-semibold text-indigo-600 rounded-full shadow-sm">
-              {tag}
-            </span>
-          ))}
-        </div>
+        {/* Overlay on hover */}
+        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors duration-500" />
+
+        {/* Editorial label overlay */}
+        {post.tags.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-card to-transparent">
+            <div className="flex gap-2">
+              {post.tags.slice(0, 2).map((tag, idx) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 bg-background/90 backdrop-blur text-xs font-mono-display uppercase tracking-wider text-accent border border-accent/30"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="p-6 flex flex-col flex-1">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-          <Calendar className="w-4 h-4" />
+      {/* Content */}
+      <div className="p-6 flex flex-col flex-1 relative">
+        {/* Meta information - editorial style */}
+        <div className="flex items-center gap-4 text-xs font-mono-display uppercase tracking-wider text-muted-foreground mb-4">
           <span>{post.date}</span>
-          <span className="w-1 h-1 bg-border rounded-full" />
-          <Clock className="w-4 h-4 ml-1" />
-          <span>{post.readTime}</span>
+          <span className="w-px h-px bg-border" />
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            <span>{post.readTime}</span>
+          </div>
         </div>
 
-        <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
+        {/* Title with hover effect */}
+        <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-accent transition-colors duration-300 line-clamp-2 leading-tight">
           {post.title}
         </h3>
 
-        <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
+        {/* Excerpt */}
+        <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 flex-1 font-light">
           {post.excerpt}
         </p>
 
-        <div className="flex items-center justify-between pt-6 border-t border-border mt-auto">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-              {post.author.charAt(0).toUpperCase()}
+        {/* Footer */}
+        <div className="pt-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            {/* Author */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-muted flex items-center justify-center text-foreground font-bold text-sm font-mono-display">
+                {post.author.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium text-foreground">{post.author}</span>
             </div>
-            <span className="text-sm font-medium text-foreground">{post.author}</span>
-          </div>
-          <div className="flex items-center gap-4 text-muted-foreground text-sm">
-            <span className="flex items-center gap-1">
-              <Heart className="w-4 h-4" /> {post.likes}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" /> {post.comments}
-            </span>
+
+            {/* Stats + Arrow */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 text-xs font-mono-display uppercase tracking-wider text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" /> {post.likes}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" /> {post.comments}
+                </span>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-accent transform -rotate-45 group-hover:rotate-0 transition-transform duration-300" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Hover border accent */}
+      <div className="absolute bottom-0 left-0 h-px bg-accent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+    </article>
   );
 });
 

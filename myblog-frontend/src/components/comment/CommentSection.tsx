@@ -92,16 +92,16 @@ const CommentItem: React.FC<CommentItemProps> = ({
   // 根据点赞状态决定样式
   const isCommentLiked = comment.isLiked;
   const likeButtonClass = isCommentLiked
-    ? 'text-red-500 hover:text-red-600'
-    : 'text-gray-500 hover:text-red-500';
+    ? 'text-destructive hover:text-destructive/80'
+    : 'text-muted-foreground hover:text-destructive';
   const heartIconClass = isCommentLiked ? 'fill-current' : '';
 
   return (
     <div
       id={`comment-${comment.id}`}
-      className={`${isReply ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''} scroll-mt-24 transition-colors duration-1000`}
+      className={`${isReply ? 'ml-8 border-l-2 border-border pl-4' : ''} scroll-mt-24 transition-colors duration-1000`}
     >
-      <Card className="mb-4 border-gray-200 shadow-sm">
+      <Card className="mb-4 border-border shadow-sm">
         <CardContent className="p-4">
           {/* 评论头部 */}
           <div className="flex items-start justify-between mb-3">
@@ -113,8 +113,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium text-gray-800">{comment.nickname || comment.username}</div>
-                <div className="text-xs text-gray-500">
+                <div className="font-medium text-foreground">{comment.nickname || comment.username}</div>
+                <div className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(comment.createTime), {
                     addSuffix: true,
                     locale: zhCN,
@@ -145,7 +145,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDelete(comment.id)}
-                  className="text-gray-500 hover:text-red-500"
+                  className="text-muted-foreground hover:text-red-500"
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
@@ -154,7 +154,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
 
           {/* 评论内容 */}
-          <div className="text-gray-700 mb-3 leading-relaxed whitespace-pre-wrap">
+          <div className="text-foreground mb-3 leading-relaxed whitespace-pre-wrap">
             {comment.content}
           </div>
 
@@ -164,7 +164,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setShowReplyInput(!showReplyInput)}
-              className="text-gray-500 hover:text-blue-500"
+              className="text-muted-foreground hover:text-accent"
             >
               <Reply className="w-4 h-4 mr-1" />
               回复
@@ -189,7 +189,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   placeholder="写下你的回复..."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  className="flex-1 min-h-[80px] border-gray-300 focus:border-blue-500 mb-2"
+                  className="flex-1 min-h-[80px] border-border focus:border-accent mb-2"
                 />
 
                 {/* 工具栏 */}
@@ -198,7 +198,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowReplyEmojiPicker(!showReplyEmojiPicker)}
-                    className="text-gray-500 hover:text-blue-500"
+                    className="text-muted-foreground hover:text-accent"
                   >
                     <Smile className="w-4 h-4 mr-1" />
                     表情
@@ -323,9 +323,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             // 添加高亮效果
-            element.classList.add('bg-blue-50');
+            element.classList.add('bg-accent/10');
             setTimeout(() => {
-              element.classList.remove('bg-blue-50');
+              element.classList.remove('bg-accent/10');
             }, 2000);
           }
         }, 500);
@@ -532,7 +532,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       )}
 
       {/* 发表评论 */}
-      <Card className="mb-6 border-gray-200 shadow-sm">
+      <Card className="mb-6 border-border shadow-sm">
         <CardContent className="p-4">
           {user ? (
             <div className="flex space-x-3">
@@ -549,7 +549,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
                     placeholder="写下你的评论..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="mb-2 border-gray-300 focus:border-blue-500"
+                    className="mb-2 border-border focus:border-accent"
                     rows={3}
                   />
 
@@ -559,7 +559,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="text-gray-500 hover:text-blue-500"
+                      className="text-muted-foreground hover:text-accent"
                     >
                       <Smile className="w-4 h-4 mr-1" />
                       表情
@@ -568,7 +568,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
                     <Button
                       onClick={handleSubmitComment}
                       disabled={!newComment.trim() || submitting}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-foreground text-background hover:bg-foreground/90 rounded-sm font-mono-display text-xs uppercase tracking-wider"
                     >
                       {submitting ? '发送中...' : '发表评论'}
                     </Button>
@@ -589,10 +589,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">登录后即可发表评论</p>
+              <p className="text-muted-foreground mb-4">登录后即可发表评论</p>
               <Button
                 onClick={openAuthModal}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-foreground text-background hover:bg-foreground/90 rounded-sm font-mono-display text-xs uppercase tracking-wider"
               >
                 立即登录
               </Button>
@@ -605,17 +605,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-gray-200 shadow-sm">
+            <Card key={i} className="border-border shadow-sm">
               <CardContent className="p-4">
                 <div className="animate-pulse">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                    <div className="w-8 h-8 bg-muted rounded-full"></div>
                     <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                      <div className="h-4 bg-muted rounded mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-20"></div>
                     </div>
                   </div>
-                  <div className="h-16 bg-gray-200 rounded"></div>
+                  <div className="h-16 bg-muted rounded"></div>
                 </div>
               </CardContent>
             </Card>
@@ -635,10 +635,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
           ))}
         </div>
       ) : (
-        <Card className="border-gray-200 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardContent className="p-8 text-center">
-            <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">还没有评论，来发表第一条评论吧！</p>
+            <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">还没有评论，来发表第一条评论吧！</p>
           </CardContent>
         </Card>
       )}

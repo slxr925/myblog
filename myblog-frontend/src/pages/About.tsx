@@ -1,8 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Github, Mail, Code2, Database, Globe, Server, Rocket, Heart, User, ExternalLink } from 'lucide-react';
+import { Github, Mail, Code2, Database, Globe, Server, Rocket, Heart, ExternalLink } from 'lucide-react';
 
 const About: React.FC = () => {
   const container = {
@@ -24,40 +22,32 @@ const About: React.FC = () => {
     {
       category: '前端技术',
       icon: <Code2 className="w-5 h-5" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-950/30',
       technologies: ['React 19', 'TypeScript 5.8', 'Vite 7', 'Tailwind CSS 4', 'Framer Motion']
     },
     {
       category: '后端技术',
       icon: <Server className="w-5 h-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 dark:bg-green-950/30',
       technologies: ['Spring Boot 3.5', 'MyBatis Plus', 'Spring Security', 'Spring Data JPA', 'Kafka', 'WebSocket']
     },
     {
       category: '数据架构',
       icon: <Database className="w-5 h-5" />,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 dark:bg-purple-950/30',
       technologies: ['MySQL 8.0', 'Redis 7.x', 'Elasticsearch 8.11']
     },
     {
       category: 'DevOps & AI',
       icon: <Rocket className="w-5 h-5" />,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50 dark:bg-orange-950/30',
       technologies: ['Spring AI (ZhipuGLM)', 'Docker', 'Nginx', 'GitHub Actions']
     }
   ];
 
   const features = [
-    { title: '响应式设计', description: '完美适配移动端和桌面端，提供流畅体验' },
-    { title: '深色模式', description: '基于系统偏好的明暗主题自动切换' },
-    { title: 'AI 智能助手', description: 'Spring AI 驱动的智能问答与文章分析' },
-    { title: '实时通知', description: '基于 WebSocket 的实时消息推送系统' },
-    { title: '全文搜索', description: 'Elasticsearch 毫秒级全文检索能力' },
-    { title: '互动社区', description: '完整的评论、回复、点赞与关注体系' },
+    { title: '响应式设计', description: '完美适配移动端和桌面端' },
+    { title: '深色模式', description: '明暗主题自动切换' },
+    { title: 'AI 智能助手', description: 'Spring AI 驱动的智能问答' },
+    { title: '实时通知', description: 'WebSocket 实时消息推送' },
+    { title: '全文搜索', description: 'Elasticsearch 毫秒级检索' },
+    { title: '互动社区', description: '完整的评论、点赞与关注' },
   ];
 
   return (
@@ -65,25 +55,25 @@ const About: React.FC = () => {
       variants={container}
       initial="hidden"
       animate="show"
-      className="min-h-screen bg-muted/30 py-12 transition-colors duration-300"
+      className="min-h-screen bg-background py-12"
     >
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* 头部介绍 */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+        {/* Header */}
         <div className="text-center mb-16">
-          <motion.div variants={item} className="inline-block p-3 bg-card rounded-2xl shadow-sm mb-6 border border-border">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
-              <Globe className="w-8 h-8" />
+          <motion.div variants={item} className="mb-6">
+            <div className="w-24 h-24 bg-foreground text-background flex items-center justify-center text-2xl font-bold font-mono-display mx-auto">
+              R
             </div>
           </motion.div>
           <motion.h1
             variants={item}
-            className="text-4xl md:text-5xl font-bold text-foreground mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400"
+            className="text-editorial-lg text-foreground mb-6"
           >
             关于本站
           </motion.h1>
           <motion.p
             variants={item}
-            className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light"
           >
             一个专注于技术分享的现代化博客平台，
             <br className="hidden md:block" />
@@ -92,152 +82,143 @@ const About: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-          {/* 左侧主要内容：8列 */}
+          {/* Main Content */}
           <div className="lg:col-span-8 space-y-8">
-            {/* 博客简介 */}
+            {/* Project Overview */}
             <motion.div variants={item}>
-              <Card className="border-border shadow-sm overflow-hidden bg-card/80 backdrop-blur-sm">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-xl text-foreground">
-                    <span className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-600 dark:text-indigo-400">
-                      <Rocket className="w-5 h-5" />
-                    </span>
-                    项目概述
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
-                    <p className="leading-relaxed">
-                      这是一个基于 <strong>Spring Boot 3.5</strong> 和 <strong>React 19</strong> 构建的全栈博客系统。
-                      项目不仅是一个内容发布平台，更是对微服务架构、实时通信、搜索引擎以及 AI 应用集成的实践探索。
-                    </p>
-                    <p className="leading-relaxed">
-                      我们致力于打造极致的用户体验：从秒级加载的页面性能，到平滑自然的交互动画；
-                      从精准的全文检索，到懂你所想的 AI 助手。每一个细节都经过精心打磨。
-                    </p>
-                  </div>
+              <div className="border border-border p-8 bg-card">
+                <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-accent/10 flex items-center justify-center text-accent">
+                    <Rocket className="w-4 h-4" />
+                  </span>
+                  项目概述
+                </h2>
+                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    这是一个基于 <strong>Spring Boot 3.5</strong> 和 <strong>React 19</strong> 构建的全栈博客系统。
+                    项目不仅是一个内容发布平台，更是对微服务架构、实时通信、搜索引擎以及 AI 应用集成的实践探索。
+                  </p>
+                  <p>
+                    我们致力于打造极致的用户体验：从秒级加载的页面性能，到平滑自然的交互动画；
+                    从精准的全文检索，到懂你所想的 AI 助手。每一个细节都经过精心打磨。
+                  </p>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                    {features.map((feature, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors">
-                        <div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-foreground text-sm mb-1">{feature.title}</h4>
-                          <p className="text-sm text-muted-foreground">{feature.description}</p>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
+                  {features.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 border border-border hover:border-accent/50 transition-colors">
+                      <span className="w-1.5 h-1.5 bg-accent rotate-45 mt-2 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-foreground text-sm mb-1">{feature.title}</h4>
+                        <p className="text-sm text-muted-foreground font-light">{feature.description}</p>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </motion.div>
 
-            {/* 技术栈 */}
+            {/* Tech Stack */}
             <motion.div variants={item}>
               <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-                <Code2 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <Code2 className="w-6 h-6 text-accent" />
                 技术架构
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {techStacks.map((stack, index) => (
-                  <Card key={index} className="border-border shadow-sm hover:shadow-md transition-shadow group bg-card">
-                    <CardContent className="p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className={`${stack.bgColor} p-2.5 rounded-xl ${stack.color} group-hover:scale-105 transition-transform`}>
-                          {stack.icon}
-                        </div>
-                        <h4 className="font-semibold text-foreground">{stack.category}</h4>
+                  <div key={index} className="border border-border p-5 hover:border-accent/50 transition-colors bg-card">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2.5 bg-accent/10 text-accent">
+                        {stack.icon}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {stack.technologies.map((tech, idx) => (
-                          <Badge key={idx} variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted/80">
-                            {tech}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <h4 className="font-semibold text-foreground">{stack.category}</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {stack.technologies.map((tech, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-muted text-xs font-mono-display uppercase tracking-wider text-muted-foreground">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </motion.div>
           </div>
 
-          {/* 右侧边栏：4列 */}
+          {/* Sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            {/* 作者信息 */}
+            {/* Author Info */}
             <motion.div variants={item}>
-              <Card className="border-border shadow-sm overflow-hidden text-center bg-card">
-                <div className="h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
-                <div className="-mt-12 mb-4 flex justify-center">
-                  <div className="w-24 h-24 bg-card rounded-full p-2 shadow-md">
-                    <div className="w-full h-full bg-muted rounded-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
+              <div className="border border-border bg-card overflow-hidden">
+                <div className="h-20 bg-foreground"></div>
+                <div className="-mt-10 mb-4 flex justify-center">
+                  <div className="w-20 h-20 bg-card rounded-full p-2 border border-border">
+                    <div className="w-full h-full bg-muted rounded-full flex items-center justify-center text-xl font-bold text-foreground font-mono-display">
                       R
                     </div>
                   </div>
                 </div>
-                <CardContent className="pb-8">
-                  <h3 className="text-xl font-bold text-foreground">Ryan Xu</h3>
-                  <p className="text-indigo-600 dark:text-indigo-400 font-medium text-sm mb-4">Full Stack Developer</p>
-                  <p className="text-muted-foreground text-sm mb-6 px-4">
+                <div className="px-6 pb-6 text-center">
+                  <h3 className="text-lg font-bold text-foreground mb-1">Ryan Xu</h3>
+                  <p className="text-accent font-mono-display text-xs uppercase tracking-wider mb-4">Full Stack Developer</p>
+                  <p className="text-muted-foreground text-sm mb-6 font-light">
                     热爱开源，热衷于探索前沿技术。
+                    <br />
                     构建优雅的代码，创造有价值的产品。
                   </p>
 
                   <div className="flex justify-center gap-3">
-                    <a href="https://github.com/slxr925" target="_blank" title="GitHub" rel="noopener noreferrer" className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all">
-                      <Github className="w-5 h-5" />
+                    <a href="https://github.com/slxr925" target="_blank" title="GitHub" rel="noopener noreferrer" className="p-2 text-muted-foreground hover:text-foreground border border-border hover:border-accent rounded-sm transition-all">
+                      <Github className="w-4 h-4" />
                     </a>
-                    <a href="mailto:contact@example.com" title="Email" className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all">
-                      <Mail className="w-5 h-5" />
+                    <a href="mailto:contact@example.com" title="Email" className="p-2 text-muted-foreground hover:text-foreground border border-border hover:border-accent rounded-sm transition-all">
+                      <Mail className="w-4 h-4" />
                     </a>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
 
-            {/* 统计数据 */}
+            {/* Stats */}
             <motion.div variants={item}>
-              <Card className="border-border shadow-sm bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Database className="w-4 h-4 opacity-80" />
-                    数据概览
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                      <div className="text-2xl font-bold">47</div>
-                      <div className="text-xs opacity-70">文章总数</div>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                      <div className="text-2xl font-bold">2.3k</div>
-                      <div className="text-xs opacity-70">总访问量</div>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                      <div className="text-2xl font-bold">128</div>
-                      <div className="text-xs opacity-70">获赞总数</div>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                      <div className="text-2xl font-bold">99%</div>
-                      <div className="text-xs opacity-70">好评率</div>
-                    </div>
+              <div className="border border-border p-6 bg-card">
+                <h3 className="font-mono-display text-xs uppercase tracking-wider mb-4 text-muted-foreground flex items-center gap-2">
+                  <Database className="w-4 h-4 text-accent" />
+                  数据概览
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="border border-border p-3">
+                    <div className="text-2xl font-bold text-foreground">47</div>
+                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">文章总数</div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="border border-border p-3">
+                    <div className="text-2xl font-bold text-foreground">2.3k</div>
+                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">总访问量</div>
+                  </div>
+                  <div className="border border-border p-3">
+                    <div className="text-2xl font-bold text-foreground">128</div>
+                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">获赞总数</div>
+                  </div>
+                  <div className="border border-border p-3">
+                    <div className="text-2xl font-bold text-foreground">99%</div>
+                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">好评率</div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
-            {/* 致谢 */}
+            {/* Acknowledgments */}
             <motion.div variants={item}>
-              <Card className="border-border shadow-sm bg-card">
-                <CardContent className="p-6 text-center">
-                  <Heart className="w-8 h-8 text-rose-500 mx-auto mb-3 animate-pulse" />
-                  <p className="text-muted-foreground text-sm">
-                    感谢每一位访问者
-                  </p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">
-                    Made with ❤️ by Ryan
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="border border-border p-6 text-center bg-card">
+                <Heart className="w-6 h-6 text-accent mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm font-light">
+                  感谢每一位访问者
+                </p>
+                <p className="text-xs text-muted-foreground/60 mt-2 font-mono-display uppercase tracking-wider">
+                  Made with care by Ryan
+                </p>
+              </div>
             </motion.div>
           </div>
         </div>

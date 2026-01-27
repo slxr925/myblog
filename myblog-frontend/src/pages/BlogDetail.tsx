@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Heart, Share2, MessageCircle, FileText, Tag, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -82,7 +81,6 @@ const BlogDetail: React.FC = () => {
       } catch (err: any) {
         console.error('获取文章详情失败:', err);
       } finally {
-        // 确保页面从顶部开始显示
         window.scrollTo(0, 0);
         setLoading(false);
       }
@@ -90,24 +88,20 @@ const BlogDetail: React.FC = () => {
     fetchBlogDetail();
   }, [id]);
 
-  // 使用useCallback优化函数，避免每次渲染都创建新函数
   const handleLike = useCallback(async () => {
     if (!user) {
       openAuthModal();
       return;
     }
-    if (!blog || isLiking) return; // 防止快速重复点击
+    if (!blog || isLiking) return;
 
     try {
       setIsLiking(true);
       const result: LikeResultDTO = await api.blog.toggleLikeWithDetails(blog.id);
-      // 只更新点赞相关的状态，不更新整个 blog 对象，避免触发子组件重新渲染
       setIsLiked(result.isLiked);
-
     } catch (error) {
       console.error('点赞失败:', error);
     } finally {
-      // 300ms 防抖，既能防止并发问题，又不会让用户感觉卡顿
       setTimeout(() => setIsLiking(false), 300);
     }
   }, [user, blog, isLiking, openAuthModal]);
@@ -126,7 +120,6 @@ const BlogDetail: React.FC = () => {
     }
   }, [blogData.title, blogData.summary]);
 
-  // 处理评论计数变化
   const handleCommentCountChange = useCallback((count: number) => {
     setCommentCount(count);
   }, []);
@@ -134,7 +127,7 @@ const BlogDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
       </div>
     );
   }
@@ -151,35 +144,38 @@ const BlogDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Article Header */}
-      <div className="bg-muted/30 border-b border-border py-20">
+      <div className="bg-muted/30 border-b border-border py-16">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="flex items-center gap-3 mb-6">
-            <Badge variant="default">{blogData.categoryName || '未分类'}</Badge>
-            <span className="text-muted-foreground">|</span>
-            <span className="text-muted-foreground text-sm flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
+          {/* Meta info */}
+          <div className="flex items-center gap-4 mb-6">
+            <span className="px-3 py-1 bg-accent/10 text-accent text-xs font-mono-display uppercase tracking-wider border border-accent/30">
+              {blogData.categoryName || '未分类'}
+            </span>
+            <span className="text-muted-foreground text-xs font-mono-display uppercase tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
               {blogData.publishTime ? new Date(blogData.publishTime).toLocaleDateString('zh-CN') : '未知日期'}
             </span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-8 leading-tight">
+          {/* Title */}
+          <h1 className="text-editorial-lg text-foreground mb-8 leading-tight">
             {blogData.title}
           </h1>
 
-          <div className="flex items-center justify-between flex-wrap gap-4">
+          {/* Author and actions */}
+          <div className="flex items-center justify-between flex-wrap gap-6 pt-6 border-t border-border">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
+              <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center text-sm font-bold font-mono-display">
                 {(blogData.authorName || 'R').charAt(0).toUpperCase()}
               </div>
               <div>
                 <div className="font-bold text-foreground">{blogData.authorName || 'Unknown'}</div>
-                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {Math.ceil((blogData.content?.length || 0) / 500)} min read</span>
+                <div className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground flex items-center gap-3">
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {Math.ceil((blogData.content?.length || 0) / 500)} min</span>
                   <span>·</span>
                   <span>{blogData.viewCount} views</span>
                 </div>
               </div>
-              {/* 新增关注按钮 */}
               <FollowButton
                 userId={blogData.authorId}
                 username={blogData.authorName}
@@ -189,43 +185,42 @@ const BlogDetail: React.FC = () => {
 
             <div className="flex gap-2">
               <Button
-                variant={isLiked ? "default" : "secondary"}
-                className={`rounded-full w-10 h-10 p-0 flex items-center justify-center ${isLiked ? 'bg-red-500 hover:bg-red-600' : ''}`}
+                variant="outline"
+                className={`rounded-sm w-10 h-10 p-0 flex items-center justify-center ${isLiked ? 'border-accent text-accent' : ''}`}
                 onClick={handleLike}
                 disabled={isLiking}
               >
-                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
               </Button>
               <CollectButton
                 blogId={blog.id}
                 size="icon"
-                className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+                className="rounded-sm w-10 h-10 p-0 flex items-center justify-center"
               />
-              <Button variant="secondary" className="rounded-full w-10 h-10 p-0 flex items-center justify-center" onClick={handleShare}>
-                <Share2 className="w-5 h-5" />
+              <Button variant="outline" className="rounded-sm w-10 h-10 p-0 flex items-center justify-center" onClick={handleShare}>
+                <Share2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Layout */}
+      {/* Main Content */}
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-          {/* Main Column: Content */}
-          <main className="flex-1 min-w-0">
-            <article className="prose prose-lg prose-indigo dark:prose-invert max-w-none prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-xl">
+        <main className="flex-1 min-w-0">
+          <article className="prose prose-lg prose-neutral dark:prose-invert max-w-none">
             {blogData.coverImg && (
               <img
                 src={blogData.coverImg}
                 alt={blogData.title}
-                className="w-full aspect-video object-cover mb-10 rounded-2xl"
+                className="w-full aspect-video object-cover mb-10"
               />
             )}
 
-            {/* AI功能区 - 移至上方 */}
-            <div className="mb-8 p-6 bg-muted/30 rounded-2xl border border-border">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">AI 助手</span>
+            {/* AI功能区域 */}
+            <div className="mb-10 p-6 border border-border bg-card">
+              <h3 className="text-sm font-mono-display uppercase tracking-wider mb-6 flex items-center gap-2">
+                <span className="text-accent">AI 助手</span>
               </h3>
 
               <div className="flex gap-3 mb-6">
@@ -234,7 +229,7 @@ const BlogDetail: React.FC = () => {
                   size="sm"
                   onClick={handleGenerateSummary}
                   disabled={isGeneratingSummary}
-                  className="bg-background"
+                  className="rounded-sm font-mono-display text-xs uppercase tracking-wider"
                 >
                   {isGeneratingSummary ? (
                     <>
@@ -254,7 +249,7 @@ const BlogDetail: React.FC = () => {
                   size="sm"
                   onClick={handleExtractKeywords}
                   disabled={isExtractingKeywords}
-                  className="bg-background"
+                  className="rounded-sm font-mono-display text-xs uppercase tracking-wider"
                 >
                   {isExtractingKeywords ? (
                     <>
@@ -272,43 +267,39 @@ const BlogDetail: React.FC = () => {
 
               {/* 摘要显示 */}
               {aiSummary && (
-                <Card className="mb-6 bg-background/50 border-0 shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-indigo-500" />
-                      文章摘要
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {aiSummary}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="mb-6 p-4 bg-muted/30 border border-border">
+                  <p className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                    <FileText className="w-3 h-3 text-accent" />
+                    文章摘要
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {aiSummary}
+                  </p>
+                </div>
               )}
 
               {/* 关键词显示 */}
               {aiKeywords.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-purple-500" />
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Tag className="w-3 h-3 text-accent" />
                     智能关键词
-                  </span>
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {aiKeywords.map((keyword, index) => (
-                      <Badge
+                      <span
                         key={index}
-                        variant="secondary"
-                        className="bg-background text-indigo-700 hover:bg-indigo-50 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800"
+                        className="px-3 py-1 bg-accent/10 text-accent text-xs font-mono-display uppercase tracking-wider border border-accent/30"
                       >
                         {keyword}
-                      </Badge>
+                      </span>
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
+            {/* Content */}
             {blogData.content ? (
               <MarkdownRenderer content={blogData.content} />
             ) : (
@@ -316,13 +307,14 @@ const BlogDetail: React.FC = () => {
             )}
           </article>
 
-          {/* Comments Section */}
+          {/* Comments */}
           <div className="border-t border-border mt-16 pt-10">
-            <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
-              <MessageCircle className="w-6 h-6" /> 评论 ({commentCount})
+            <h3 className="text-xl font-bold text-foreground mb-8 flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-accent" />
+              评论 ({commentCount})
             </h3>
             <CommentSection blogId={blog.id} onCommentCountChange={handleCommentCountChange} />
-            </div>
+          </div>
         </main>
       </div>
     </div>

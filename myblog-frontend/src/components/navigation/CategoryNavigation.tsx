@@ -43,17 +43,16 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
       setLoading(true);
       setErrorMessage(null);
 
-      // 并行获取分类和标签数据
       const [categoriesResponse, tagsResponse] = await Promise.all([
-        api.category.getAll(), // 获取所有分类
-        api.tag.getUsedTags() // 获取所有被使用的标签
+        api.category.getAll(),
+        api.tag.getUsedTags()
       ]);
 
       const formattedCategories = categoriesResponse.map(category => ({
         id: category.id,
         name: category.name,
         description: category.description,
-        blogCount: category.blogCount ?? 0 // 使用后端返回的真实博客数量
+        blogCount: category.blogCount ?? 0
       }));
       setCategories(formattedCategories);
       setTags(tagsResponse);
@@ -82,10 +81,10 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
     return (
       <div className="p-4 space-y-4">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-4 bg-muted rounded w-1/4 mb-4"></div>
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-3 bg-gray-200 rounded"></div>
+              <div key={i} className="h-3 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -94,14 +93,14 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 space-y-6">
+    <div className="border border-border bg-card p-4 space-y-6">
       {/* 分类部分 */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">文章分类</h3>
+          <h3 className="text-sm font-mono-display uppercase tracking-wider text-foreground">文章分类</h3>
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronRight
               className={`h-4 w-4 transition-transform ${
@@ -112,24 +111,24 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
         </div>
 
         {expanded && (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {categories.length === 0 ? (
-              <p className="text-sm text-gray-500 italic px-1">暂无分类</p>
+              <p className="text-sm text-muted-foreground px-1">暂无分类</p>
             ) : (
               categories.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                  className={`w-full text-left px-3 py-2 border-l-2 transition-all duration-200 text-sm ${
                     selectedCategory === category.id
-                      ? 'bg-blue-50 text-blue-600 font-medium border-l-3 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                      ? 'border-accent bg-accent/10 text-accent font-medium'
+                      : 'border-border text-muted-foreground hover:border-accent/50 hover:text-foreground'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{category.name}</span>
                     {typeof category.blogCount === 'number' && (
-                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                      <span className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground bg-muted/30 px-2 py-0.5">
                         {category.blogCount}
                       </span>
                     )}
@@ -143,19 +142,19 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
 
       {/* 标签部分 */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">热门标签</h3>
+        <h3 className="text-sm font-mono-display uppercase tracking-wider text-foreground mb-4">热门标签</h3>
         {errorMessage && (
-          <p className="text-sm text-red-500 mb-2">{errorMessage}</p>
+          <p className="text-sm text-destructive mb-2">{errorMessage}</p>
         )}
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <button
               key={tag.id}
               onClick={() => handleTagClick(tag.name)}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+              className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-mono-display uppercase tracking-wider transition-all duration-200 border ${
                 selectedTag === tag.name
-                  ? 'bg-green-100 text-green-700 border border-green-300'
-                  : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700'
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-border text-muted-foreground hover:border-accent/50 hover:text-foreground'
               }`}
             >
               <Hash className="h-3 w-3" />
@@ -164,7 +163,7 @@ const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
           ))}
         </div>
         {tags.length === 0 && (
-          <p className="text-sm text-gray-500 italic">暂无标签</p>
+          <p className="text-sm text-muted-foreground">暂无标签</p>
         )}
       </div>
     </div>

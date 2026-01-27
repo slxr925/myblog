@@ -5,18 +5,18 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-lg border px-2.5 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-sm border px-2.5 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[2px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden font-mono-display uppercase tracking-wider",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100",
+          "border-transparent bg-accent/10 text-accent border-accent/30 hover:bg-accent/20",
         secondary:
-          "border-transparent bg-slate-100 text-slate-700 hover:bg-slate-200",
+          "border-transparent bg-muted text-foreground hover:bg-muted/80",
         destructive:
-          "border-transparent bg-red-50 text-red-600 border-red-100 hover:bg-red-100",
+          "border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20",
         outline:
-          "text-slate-600 border-slate-200 [a&]:hover:bg-slate-50",
+          "text-muted-foreground border-border hover:bg-muted/50",
       },
     },
     defaultVariants: {

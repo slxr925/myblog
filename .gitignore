@@ -204,3 +204,5 @@ $RECYCLE.BIN/
 # 例如：
 # my-secret-file.txt
 build-info.txt
+.claude/settings.local.json
+.claude/settings*.json
