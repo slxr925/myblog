@@ -2,14 +2,13 @@
 
 <div align="center">
 
-![MyBlog](https://img.shields.io/badge/MyBlog-v2.0-blue?style=for-the-badge)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-green?style=for-the-badge&logo=spring-boot)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker)
 
 **功能完整、开箱即用的现代化博客系统**
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [在线访问](http://49.235.139.118) • [技术栈](#-技术栈) 
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [在线访问](http://49.235.139.118) • [技术栈](#-技术栈)
 
 </div>
 
