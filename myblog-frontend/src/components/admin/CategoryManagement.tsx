@@ -37,14 +37,7 @@ export const CategoryManagement: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.admin.getCategories();
-
-      const categoryData = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.records)
-          ? response.records
-          : [];
-
-      setCategories(categoryData);
+      setCategories(Array.isArray(response) ? response : []);
     } catch (err) {
       setError('获取分类列表失败');
       console.error('获取分类失败:', err);

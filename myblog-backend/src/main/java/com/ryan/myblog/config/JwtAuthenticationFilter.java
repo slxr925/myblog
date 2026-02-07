@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final SessionService sessionService;
+    private final com.ryan.myblog.service.UserSessionService userSessionService;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -80,10 +81,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtUtils.getUsernameFromToken(token);
                 Integer tokenRole = jwtUtils.getRoleFromToken(token);
                 String tokenIp = jwtUtils.getIpFromToken(token);
+                String tokenType = jwtUtils.getTokenType(token);
+                Long sessionId = jwtUtils.getSessionIdFromToken(token);
+
+                // 仅允许access token
+                if (tokenType != null && !"access".equals(tokenType)) {
+                    clearSecurityContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
                 // 获取用户详细信息
                 User user = getUserService().getUserById(userId);
                 if (user != null && user.getStatus() == 0) {
+
+                    // 检查会话是否有效
+                    if (sessionId != null && !userSessionService.isSessionActive(sessionId, userId)) {
+                        log.warn("会话已失效 - userId: {}, sessionId: {}", userId, sessionId);
+                        clearSecurityContext();
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
 
                     // 管理员token需要验证IP
                     if (user.getRole() == Role.ADMIN.getCode() && tokenIp != null) {
@@ -117,6 +135,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 保存或刷新Redis会话
                     sessionService.saveSession(token, userId);
+
+                    // 更新会话活跃时间
+                    if (sessionId != null) {
+                        userSessionService.touchSession(sessionId, currentIp, request.getHeader("User-Agent"));
+                    }
                 } else {
                     // 用户不存在或被禁用
                     log.warn("用户不存在或已被禁用 - 用户ID: {}", userId);

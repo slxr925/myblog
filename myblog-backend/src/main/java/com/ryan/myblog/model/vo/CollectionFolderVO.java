@@ -21,6 +21,11 @@ public class CollectionFolderVO {
     private String name;
 
     /**
+     * 用户ID
+     */
+    private Long userId;
+
+    /**
      * 分类描述
      */
     private String description;
@@ -39,6 +44,21 @@ public class CollectionFolderVO {
      * 收藏数量
      */
     private Integer collectionCount;
+
+    /**
+     * 是否公开
+     */
+    private Boolean isPublic;
+
+    /**
+     * 分享码
+     */
+    private String shareCode;
+
+    /**
+     * 分享过期时间
+     */
+    private LocalDateTime shareExpireTime;
 
     /**
      * 创建时间

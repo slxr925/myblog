@@ -15,11 +15,11 @@ import MyFollowers from '../components/profile/MyFollowers';
 import MyFollowing from '../components/profile/MyFollowing';
 import MyBrowseHistory from '../components/profile/MyBrowseHistory';
 import { useAuth } from '../contexts/AuthContext';
-import { Role } from '../types/api';
+import { Role, type UserSessionVO } from '../types/api';
 import { api } from '../utils/api';
 import { ChangePasswordModal } from '../components/auth/ChangePasswordModal';
 import { FileUpload } from '../components/upload/FileUpload';
-import { User, Lock, Edit2, Save, X, Camera, FileText, Mail, Bookmark } from 'lucide-react';
+import { User, Lock, Edit2, Save, X, Camera, FileText, Mail, Bookmark, Shield } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -28,6 +28,7 @@ const Profile: React.FC = () => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+  const [sessions, setSessions] = useState<UserSessionVO[]>([]);
   const [formData, setFormData] = useState({
     nickname: user?.nickname || '',
     email: user?.email || '',
@@ -41,6 +42,22 @@ const Profile: React.FC = () => {
       bio: user?.bio || '',
     });
   }, [user]);
+
+  React.useEffect(() => {
+    api.user.getSessions()
+      .then(data => {
+        // 按设备名称+IP+浏览器去重，只保留最新的会话
+        const uniqueSessions = data.reduce((acc, session) => {
+          const key = `${session.deviceInfo || ''}-${session.ip || ''}-${session.browser || ''}`;
+          if (!acc[key] || new Date(session.lastSeen || 0) > new Date(acc[key].lastSeen || 0)) {
+            acc[key] = session;
+          }
+          return acc;
+        }, {} as Record<string, typeof data[0]>);
+        setSessions(Object.values(uniqueSessions));
+      })
+      .catch(() => setSessions([]));
+  }, []);
 
   if (!user) {
     return (
@@ -57,11 +74,28 @@ const Profile: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      await api.user.updateUserInfo(formData);
+      const payload: any = { ...formData };
+      if (formData.email !== user.email) {
+        const currentPassword = window.prompt('修改邮箱需要当前密码');
+        if (!currentPassword) {
+          return;
+        }
+        payload.currentPassword = currentPassword;
+      }
+      await api.user.updateUserInfo(payload);
       await refreshUser();
       setIsEditing(false);
     } catch (error) {
       console.error('保存用户信息失败:', error);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: number) => {
+    try {
+      await api.user.revokeSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+    } catch (error) {
+      console.error('下线会话失败:', error);
     }
   };
 
@@ -110,7 +144,7 @@ const Profile: React.FC = () => {
             <Card className="border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-indigo-600" />
+                  <User className="w-5 h-5 text-primary" />
                   基本信息
                 </CardTitle>
                 <CardDescription>更新您的头像和个人详细信息</CardDescription>
@@ -121,7 +155,7 @@ const Profile: React.FC = () => {
                   <div className="relative group">
                     <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
                       <AvatarImage src={user.avatar || '/default-avatar.png'} alt={user.nickname} />
-                      <AvatarFallback className="text-2xl bg-indigo-100 text-indigo-600">
+                      <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                         {(user.nickname || user.username).charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -139,7 +173,7 @@ const Profile: React.FC = () => {
                     <h3 className="text-2xl font-bold text-foreground">{user.nickname || user.username}</h3>
                     <p className="text-muted-foreground">{user.email}</p>
                     <div className="mt-2 flex gap-2">
-                      <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
+                      <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-primary/10 text-primary" : ""}>
                         {user.role === Role.ADMIN ? '管理员' : '普通用户'}
                       </Badge>
                     </div>
@@ -238,6 +272,42 @@ const Profile: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-emerald-600" />
+                  登录设备
+                </CardTitle>
+                <CardDescription>管理当前登录会话</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {sessions.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">暂无会话记录</div>
+                ) : (
+                  <div className="space-y-3">
+                    {sessions.map((session) => (
+                      <div key={session.sessionId} className="p-3 border border-border rounded-lg flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-medium text-foreground">{session.deviceLabel || '未知设备'}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {session.ip || '未知IP'} · {session.lastSeen ? new Date(session.lastSeen).toLocaleString('zh-CN') : '未知时间'}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRevokeSession(session.sessionId)}
+                          disabled={session.status === 1}
+                        >
+                          {session.status === 1 ? '已下线' : '下线'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* 右侧：Tabs 内容 */}
@@ -271,7 +341,7 @@ const Profile: React.FC = () => {
                           </div>
                           <div className="flex justify-between items-center py-1.5 border-b border-border">
                             <span className="text-muted-foreground">类型</span>
-                            <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}`}>
+                            <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${user.role === Role.ADMIN ? "bg-primary/10 text-primary" : ""}`}>
                               {user.role === Role.ADMIN ? '管理员' : '用户'}
                             </Badge>
                           </div>
@@ -315,7 +385,7 @@ const Profile: React.FC = () => {
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-border">
                           <span className="text-muted-foreground text-sm">账户类型</span>
-                          <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-indigo-100 text-indigo-700" : ""}>
+                          <Badge variant="secondary" className={user.role === Role.ADMIN ? "bg-primary/10 text-primary" : ""}>
                             {user.role === Role.ADMIN ? '管理员' : '普通用户'}
                           </Badge>
                         </div>

@@ -41,4 +41,19 @@ public interface CollectionFolderService extends IService<CollectionFolder> {
      * 更新收藏夹的收藏数量
      */
     void updateCollectionCount(Long folderId, Integer delta);
+
+    /**
+     * 设置收藏夹公开/私密
+     */
+    CollectionFolderVO setFolderPublic(Long userId, Long folderId, boolean isPublic);
+
+    /**
+     * 生成分享码
+     */
+    CollectionFolderVO generateShareCode(Long userId, Long folderId);
+
+    /**
+     * 通过分享码获取收藏夹
+     */
+    CollectionFolderVO getByShareCode(String shareCode);
 }

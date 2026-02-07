@@ -52,6 +52,11 @@ public interface UserService {
     void changePassword(Long userId, String currentPassword, String newPassword);
 
     /**
+     * 校验用户当前密码
+     */
+    void verifyPassword(Long userId, String currentPassword);
+
+    /**
      * 分页查询用户列表（管理员功能）
      */
     IPage<User> getUserPage(PageRequest pageRequest, String keyword);

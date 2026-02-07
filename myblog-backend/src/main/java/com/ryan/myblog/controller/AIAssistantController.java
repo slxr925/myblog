@@ -22,6 +22,13 @@ import org.springframework.web.bind.annotation.*;
 public class AIAssistantController {
 
     private final AIAssistantService aiAssistantService;
+    private final com.ryan.myblog.service.AiUsageService aiUsageService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.ai.quota.max-requests-per-day:50}")
+    private int maxRequestsPerDay;
+
+    @org.springframework.beans.factory.annotation.Value("${app.ai.quota.max-tokens-per-day:50000}")
+    private int maxTokensPerDay;
 
     /**
      * AI聊天接口
@@ -31,6 +38,9 @@ public class AIAssistantController {
     @RateLimit(key = "ai_chat", limit = 20, window = 60)
     public Result<AIChatResponse> chat(@RequestBody AIChatRequest request) {
         log.info("AI聊天请求: {}", request.getQuestion());
+        if (!checkQuota(request.getQuestion(), request.getHistory())) {
+            return Result.error(429, "AI使用额度已达上限，请稍后再试");
+        }
         AIChatResponse response = aiAssistantService.chat(request);
         return Result.success(response);
     }
@@ -53,7 +63,10 @@ public class AIAssistantController {
     @RateLimit(key = "ai_title", limit = 10, window = 60)
     public Result<AITitleResponse> generateTitle(@Valid @RequestBody AIContentRequest request) {
         log.info("AI生成标题请求，内容长度: {}", request.getContent().length());
-        String title = aiAssistantService.generateTitle(request.getContent());
+        if (!checkQuota(request.getContent(), null)) {
+            return Result.error(429, "AI使用额度已达上限，请稍后再试");
+        }
+        String title = aiAssistantService.generateTitle(request.getContent(), request.getStyle());
         return Result.success(new AITitleResponse(title));
     }
 
@@ -65,7 +78,10 @@ public class AIAssistantController {
     @RateLimit(key = "ai_polish", limit = 5, window = 60)
     public Result<AIPolishResponse> polishContent(@Valid @RequestBody AIContentRequest request) {
         log.info("AI润色请求，内容长度: {}", request.getContent().length());
-        String polished = aiAssistantService.polishContent(request.getContent());
+        if (!checkQuota(request.getContent(), null)) {
+            return Result.error(429, "AI使用额度已达上限，请稍后再试");
+        }
+        String polished = aiAssistantService.polishContent(request.getContent(), request.getStyle());
         return Result.success(new AIPolishResponse(polished));
     }
 
@@ -77,7 +93,10 @@ public class AIAssistantController {
     @RateLimit(key = "ai_summary", limit = 20, window = 60)
     public Result<AISummaryResponse> generateSummary(@Valid @RequestBody AIContentRequest request) {
         log.info("AI生成摘要请求，内容长度: {}", request.getContent().length());
-        String summary = aiAssistantService.generateSummary(request.getContent());
+        if (!checkQuota(request.getContent(), null)) {
+            return Result.error(429, "AI使用额度已达上限，请稍后再试");
+        }
+        String summary = aiAssistantService.generateSummary(request.getContent(), request.getStyle());
         return Result.success(new AISummaryResponse(summary));
     }
 
@@ -89,7 +108,20 @@ public class AIAssistantController {
     @RateLimit(key = "ai_keywords", limit = 20, window = 60)
     public Result<AIKeywordsResponse> extractKeywords(@Valid @RequestBody AIContentRequest request) {
         log.info("AI提取关键词请求，内容长度: {}", request.getContent().length());
-        java.util.List<String> keywords = aiAssistantService.extractKeywords(request.getContent());
+        if (!checkQuota(request.getContent(), null)) {
+            return Result.error(429, "AI使用额度已达上限，请稍后再试");
+        }
+        java.util.List<String> keywords = aiAssistantService.extractKeywords(request.getContent(), request.getStyle());
         return Result.success(new AIKeywordsResponse(keywords));
+    }
+
+    private boolean checkQuota(String content, java.util.List<AIChatRequest.ChatMessage> history) {
+        Long userId = com.ryan.myblog.utils.SecurityUtils.getCurrentUserId();
+        int length = content != null ? content.length() : 0;
+        if (history != null) {
+            length += history.stream().mapToInt(msg -> msg.getContent() != null ? msg.getContent().length() : 0).sum();
+        }
+        int estimatedTokens = Math.max(1, length / 4);
+        return aiUsageService.checkAndConsume(userId, estimatedTokens, maxRequestsPerDay, maxTokensPerDay);
     }
 }

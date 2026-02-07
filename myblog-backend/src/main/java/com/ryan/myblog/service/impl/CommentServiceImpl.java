@@ -55,10 +55,13 @@ public class CommentServiceImpl implements CommentService {
     private final UserService userService;
     private final BlogService blogService;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.ryan.myblog.service.UserBlockService userBlockService;
 
     @Override
     @Transactional
     public void saveComment(CommentSaveDTO commentSaveDTO, Long userId) {
+        validateCommentSpam(commentSaveDTO, userId);
+
         Comment comment = new Comment();
         comment.setBlogId(commentSaveDTO.getBlogId());
         comment.setUserId(userId);
@@ -83,6 +86,7 @@ public class CommentServiceImpl implements CommentService {
 
         // 发送通知
         publishCommentNotification(comment, userId);
+        publishMentionNotifications(comment, userId);
 
         // 清除博客列表缓存
         clearBlogCaches();
@@ -147,6 +151,75 @@ public class CommentServiceImpl implements CommentService {
         }
     }
 
+    /**
+     * @提及通知
+     */
+    private void publishMentionNotifications(Comment comment, Long senderId) {
+        try {
+            if (comment.getContent() == null || comment.getContent().isBlank()) {
+                return;
+            }
+            java.util.Set<String> mentions = extractMentions(comment.getContent());
+            if (mentions.isEmpty()) {
+                return;
+            }
+            for (String name : mentions) {
+                User mentioned = userMapper.selectByUsername(name);
+                if (mentioned == null) {
+                    mentioned = userMapper.selectByNickname(name);
+                }
+                if (mentioned == null || mentioned.getId().equals(senderId)) {
+                    continue;
+                }
+                NotificationEvent event = NotificationEvent.mentionEvent(
+                        this,
+                        mentioned.getId(),
+                        senderId,
+                        comment.getContent(),
+                        comment.getId(),
+                        java.util.Map.of("blogId", comment.getBlogId(), "mention", name));
+                eventPublisher.publishEvent(event);
+            }
+        } catch (Exception e) {
+            log.warn("发送@提及通知失败: {}", e.getMessage(), e);
+        }
+    }
+
+    private java.util.Set<String> extractMentions(String content) {
+        java.util.Set<String> result = new java.util.HashSet<>();
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("@([\\w\\-\\u4e00-\\u9fa5]{1,20})");
+        java.util.regex.Matcher matcher = pattern.matcher(content);
+        while (matcher.find()) {
+            result.add(matcher.group(1));
+        }
+        return result;
+    }
+
+    private void validateCommentSpam(CommentSaveDTO commentSaveDTO, Long userId) {
+        if (userId == null) {
+            return;
+        }
+        String content = commentSaveDTO.getContent() != null ? commentSaveDTO.getContent().trim() : "";
+        if (content.isEmpty()) {
+            throw new RuntimeException("评论内容不能为空");
+        }
+        String hash = Integer.toHexString(content.hashCode());
+        String duplicateKey = String.format("comment:spam:%d:%d:%s", userId, commentSaveDTO.getBlogId(), hash);
+        if (cacheService.exists(duplicateKey)) {
+            throw new RuntimeException("请不要重复提交相同内容");
+        }
+        cacheService.set(duplicateKey, 1, 60);
+
+        String rateKey = String.format("comment:rate:%d", userId);
+        long count = cacheService.increment(rateKey);
+        if (count == 1) {
+            cacheService.expire(rateKey, 60);
+        }
+        if (count > 10) {
+            throw new RuntimeException("评论过于频繁，请稍后再试");
+        }
+    }
+
     @Override
     public List<CommentVO> getCommentTree(Long blogId, Integer status) {
         // 查询所有评论
@@ -160,6 +233,17 @@ public class CommentServiceImpl implements CommentService {
         List<Comment> comments = commentMapper.selectList(wrapper);
         if (CollectionUtils.isEmpty(comments)) {
             return new ArrayList<>();
+        }
+
+        // 屏蔽用户过滤
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId != null) {
+            List<Long> blockedUserIds = userBlockService.getBlockedUserIds(currentUserId);
+            if (!blockedUserIds.isEmpty()) {
+                comments = comments.stream()
+                        .filter(comment -> !blockedUserIds.contains(comment.getUserId()))
+                        .collect(Collectors.toList());
+            }
         }
 
         // 获取所有用户信息
@@ -188,6 +272,17 @@ public class CommentServiceImpl implements CommentService {
 
         if (CollectionUtils.isEmpty(commentPage.getRecords())) {
             return new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        }
+
+        // 屏蔽用户过滤
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId != null) {
+            List<Long> blockedUserIds = userBlockService.getBlockedUserIds(currentUserId);
+            if (!blockedUserIds.isEmpty()) {
+                commentPage.setRecords(commentPage.getRecords().stream()
+                        .filter(comment -> !blockedUserIds.contains(comment.getUserId()))
+                        .collect(Collectors.toList()));
+            }
         }
 
         // 获取用户信息

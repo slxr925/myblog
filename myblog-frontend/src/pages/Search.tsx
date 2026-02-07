@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
+import { FileText } from 'lucide-react';
 
 import BlogListItem from '../components/BlogListItem';
 
@@ -94,7 +95,12 @@ const SearchPage: React.FC = () => {
     <div className="min-h-screen bg-muted/30 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">全部文章</h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <FileText className="w-5 h-5" />
+            </div>
+            <h1 className="text-4xl font-bold text-foreground">全部文章</h1>
+          </div>
           <p className="text-muted-foreground text-lg">探索所有技术分享、项目实战和学习心得</p>
         </div>
 

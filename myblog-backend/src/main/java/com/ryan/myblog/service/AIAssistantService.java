@@ -32,7 +32,7 @@ public interface AIAssistantService {
      * @param content 文章内容
      * @return 生成的标题
      */
-    String generateTitle(String content);
+    String generateTitle(String content, String style);
 
     /**
      * 润色文章内容
@@ -40,7 +40,7 @@ public interface AIAssistantService {
      * @param content 原始内容
      * @return 润色后的内容
      */
-    String polishContent(String content);
+    String polishContent(String content, String style);
 
     /**
      * 生成文章摘要
@@ -48,7 +48,7 @@ public interface AIAssistantService {
      * @param content 文章内容
      * @return 生成的摘要
      */
-    String generateSummary(String content);
+    String generateSummary(String content, String style);
 
     /**
      * 提取文章关键词
@@ -56,5 +56,5 @@ public interface AIAssistantService {
      * @param content 文章内容
      * @return 关键词列表
      */
-    List<String> extractKeywords(String content);
+    List<String> extractKeywords(String content, String style);
 }

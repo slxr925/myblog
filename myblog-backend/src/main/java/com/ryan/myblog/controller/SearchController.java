@@ -28,6 +28,7 @@ public class SearchController {
 
     private final SearchService searchService;
     private final BlogService blogService;
+    private final com.ryan.myblog.service.SearchLogService searchLogService;
 
     /**
      * 搜索博客
@@ -48,6 +49,7 @@ public class SearchController {
                         .searchBlogsWithHighlight(keyword, pageable);
                 if (result.getTotalElements() > 0) {
                     log.debug("使用ES搜索 - 关键词: '{}', 结果数: {}", keyword, result.getTotalElements());
+                    recordSearch(keyword, page, size, (int) result.getTotalElements());
                     return Result.success(result);
                 }
             } catch (Exception e) {
@@ -57,7 +59,9 @@ public class SearchController {
 
         // 降级到MySQL搜索
         log.debug("使用MySQL搜索 - 关键词: '{}'", keyword);
-        return Result.success(fallbackToMySQLSearch(keyword, page, size));
+        var fallback = fallbackToMySQLSearch(keyword, page, size);
+        recordSearch(keyword, page, size, (int) fallback.getTotalElements());
+        return Result.success(fallback);
     }
 
     /**
@@ -77,6 +81,7 @@ public class SearchController {
                 Pageable pageable = PageRequest.of(page, size);
                 Page<BlogDocument> result = searchService.advancedSearch(keyword, categoryId, tags, pageable);
                 if (result.getTotalElements() > 0) {
+                    recordSearch(keyword, page, size, (int) result.getTotalElements());
                     return Result.success(result);
                 }
             } catch (Exception e) {
@@ -86,7 +91,9 @@ public class SearchController {
 
         // 降级到MySQL搜索
         if (keyword != null && !keyword.trim().isEmpty()) {
-            return Result.success(fallbackToMySQLSearch(keyword, page, size));
+            var fallback = fallbackToMySQLSearch(keyword, page, size);
+            recordSearch(keyword, page, size, (int) fallback.getTotalElements());
+            return Result.success(fallback);
         }
 
         return Result.success(Page.empty());
@@ -113,6 +120,22 @@ public class SearchController {
     public Result<List<String>> getSuggestions(@RequestParam String prefix) {
         List<String> suggestions = searchService.getSuggestions(prefix);
         return Result.success(suggestions);
+    }
+
+    /**
+     * 获取搜索热词
+     */
+    @GetMapping("/trending")
+    public Result<List<com.ryan.myblog.model.vo.SearchTrendVO>> getTrending(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "10") int limit) {
+        return Result.success(searchLogService.getTrending(days, limit));
+    }
+
+    private void recordSearch(String keyword, int page, int size, int total) {
+        Long userId = com.ryan.myblog.utils.SecurityUtils.getCurrentUserId();
+        String filters = String.format("{\"page\":%d,\"size\":%d}", page, size);
+        searchLogService.recordSearch(userId, keyword, filters, total);
     }
 
     /**

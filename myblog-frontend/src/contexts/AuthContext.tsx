@@ -104,11 +104,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             // 如果 token 即将过期（5分钟内），提前刷新
             if (tokenPayload.exp && tokenPayload.exp < currentTime + 300) {
-              console.log('Token 即将过期，清除认证状态');
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-              localStorage.removeItem('refreshToken');
-              return;
+              try {
+                const refreshResponse = await api.auth.refreshToken();
+                const newToken = refreshResponse.accessToken;
+                localStorage.setItem('token', newToken);
+                if (refreshResponse.refreshToken) {
+                  localStorage.setItem('refreshToken', refreshResponse.refreshToken);
+                }
+              } catch (refreshError) {
+                console.log('Token 即将过期且刷新失败，清除认证状态');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('refreshToken');
+                return;
+              }
             }
           } catch (tokenError) {
             // 如果解析 token 失败，可能不是 JWT 格式，继续使用

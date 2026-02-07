@@ -143,4 +143,41 @@ public class CollectionController {
         userCollectionService.batchDelete(userId, collectionIds);
         return Result.success();
     }
+
+    /**
+     * 生成分享码并设为公开
+     */
+    @PostMapping("/folders/{id}/share")
+    public Result<CollectionFolderVO> shareFolder(@PathVariable Long id) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        CollectionFolderVO vo = collectionFolderService.generateShareCode(userId, id);
+        return Result.success(vo);
+    }
+
+    /**
+     * 设置公开/私密
+     */
+    @PostMapping("/folders/{id}/public")
+    public Result<CollectionFolderVO> setFolderPublic(@PathVariable Long id, @RequestParam boolean isPublic) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        CollectionFolderVO vo = collectionFolderService.setFolderPublic(userId, id, isPublic);
+        return Result.success(vo);
+    }
+
+    /**
+     * 通过分享码获取收藏夹
+     */
+    @GetMapping("/share/{shareCode}")
+    public Result<java.util.Map<String, Object>> getSharedFolder(
+            @PathVariable String shareCode,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        CollectionFolderVO folder = collectionFolderService.getByShareCode(shareCode);
+        var collections = userCollectionService.getUserCollections(folder.getUserId(), folder.getId(), page, size)
+                .getRecords();
+        return Result.success(java.util.Map.of(
+                "folder", folder,
+                "items", collections
+        ));
+    }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon, File, Loader2, AlertCircle } from 'lucide-react';
+import { X, Image as ImageIcon, File, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { api } from '../../utils/api';
@@ -98,8 +98,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         response = await api.upload.uploadFile(file, 'document');
       }
 
-      if (response.data && (response.data.url || response.data.data?.url)) {
-        const url = response.data.url || response.data.data.url;
+      if (response && (response.url || (response as any).data?.url)) {
+        const url = response.url || (response as any).data?.url;
         setProgress(100);
         onUploadSuccess?.(url, file);
         setError(null);

@@ -30,6 +30,20 @@ interface CommentItemProps {
   user?: any;
 }
 
+const renderCommentContent = (content: string) => {
+  const parts = content.split(/(@[\\w\\-\\u4e00-\\u9fa5]{1,20})/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('@')) {
+      return (
+        <span key={index} className="text-accent font-medium">
+          {part}
+        </span>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
+
 const CommentItem: React.FC<CommentItemProps> = ({
   comment,
   onReply,
@@ -89,6 +103,26 @@ const CommentItem: React.FC<CommentItemProps> = ({
     setTimeout(() => setIsLiking(false), 300);
   };
 
+  const handleReport = async () => {
+    if (!user) {
+      alert('请先登录后再举报评论');
+      return;
+    }
+    const reason = window.prompt('请输入举报原因（选填）');
+    try {
+      await api.report.create({
+        targetType: 'comment',
+        targetId: comment.id,
+        reason: reason || '',
+        detail: '',
+      });
+      alert('举报已提交，感谢反馈');
+    } catch (error) {
+      console.error('举报失败:', error);
+      alert('举报失败，请稍后再试');
+    }
+  };
+
   // 根据点赞状态决定样式
   const isCommentLiked = comment.isLiked;
   const likeButtonClass = isCommentLiked
@@ -140,6 +174,14 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 <Heart className={`w-4 h-4 mr-1 ${heartIconClass}`} />
                 {comment.likeCount}
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReport}
+                className="text-muted-foreground hover:text-amber-600"
+              >
+                <AlertCircle className="w-4 h-4" />
+              </Button>
               {user?.id === comment.userId && onDelete && (
                 <Button
                   variant="ghost"
@@ -155,7 +197,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
           {/* 评论内容 */}
           <div className="text-foreground mb-3 leading-relaxed whitespace-pre-wrap">
-            {comment.content}
+            {renderCommentContent(comment.content)}
           </div>
 
           {/* 回复按钮 */}

@@ -16,6 +16,7 @@ import type {
   UserRegisterDTO,
   UserLoginDTO,
   AuthState,
+  TokenResponse,
   CommentVO,
   CommentCreateDTO,
   AdminStatsDTO,
@@ -25,13 +26,21 @@ import type {
   CollectToggleDTO,
   CollectResultDTO,
   UserCollectionVO,
-  UserFollowVO,
   FollowPageResponse,
   BrowseHistoryVO,
   NotificationVO,
   NotificationSettingVO,
   UnreadCountVO,
-  NotificationType
+  NotificationType,
+  UserSessionVO,
+  ReportCreateDTO,
+  ReportReviewDTO,
+  ReportVO,
+  SearchTrendVO,
+  BlogRevisionVO,
+  BlogRevisionDiffVO,
+  AiUsageDailyVO,
+  AiUsageUserVO
 } from '../types/api';
 
 // 创建axios实例
@@ -52,6 +61,28 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+let isRefreshing = false;
+let refreshPromise: Promise<string | undefined> | null = null;
+
+type ApiError = Error & {
+  status?: number;
+  isRateLimitError?: boolean;
+  originalError?: unknown;
+  isAuthError?: boolean;
+};
+
+const refreshAccessToken = async (): Promise<TokenResponse> => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    throw new Error('No refresh token');
+  }
+  return apiClient.post('/auth/refresh', null, {
+    headers: {
+      Authorization: `Bearer ${refreshToken}`,
+    },
+  }) as Promise<TokenResponse>;
+};
 
 // 请求拦截器
 apiClient.interceptors.request.use(
@@ -92,6 +123,56 @@ apiClient.interceptors.response.use(
       // 只在登录或注册接口之外的401错误才清除认证信息
       const isAuthEndpoint = error.config?.url?.includes('/login') || error.config?.url?.includes('/register');
       const isTrackVisit = error.config?.url?.includes('/track-visit');
+      const isRefreshEndpoint = error.config?.url?.includes('/auth/refresh');
+
+      // 尝试使用refresh token静默刷新
+      if (!isAuthEndpoint && !isTrackVisit && !isRefreshEndpoint && localStorage.getItem('refreshToken')) {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken()
+            .then((tokenResponse) => {
+              const accessToken = tokenResponse.accessToken;
+              const newRefreshToken = tokenResponse.refreshToken;
+              if (accessToken) {
+                localStorage.setItem('token', accessToken);
+              }
+              if (newRefreshToken) {
+                localStorage.setItem('refreshToken', newRefreshToken);
+              }
+              isRefreshing = false;
+              refreshPromise = null;
+              return accessToken;
+            })
+            .catch((refreshError) => {
+              isRefreshing = false;
+              refreshPromise = null;
+              throw refreshError;
+            });
+        }
+
+        const activeRefresh = refreshPromise;
+        if (!activeRefresh) {
+          return Promise.reject(error);
+        }
+        return activeRefresh
+          .then((accessToken) => {
+            if (accessToken && error.config) {
+              error.config.headers = error.config.headers || {};
+              error.config.headers.Authorization = `Bearer ${accessToken}`;
+              return apiClient.request(error.config);
+            }
+            return Promise.reject(error);
+          })
+          .catch(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('refreshToken');
+            window.dispatchEvent(new CustomEvent('auth:expired', {
+              detail: { message: '登录已过期，请重新登录', originalError: error }
+            }));
+            return Promise.reject(error);
+          });
+      }
 
       // 如果不是登录/注册接口,且不是访问统计接口,才清除token
       if (!isAuthEndpoint && !isTrackVisit && localStorage.getItem('token')) {
@@ -125,7 +206,7 @@ apiClient.interceptors.response.use(
       console.warn('请求被限流:', error.config?.url, limitMessage);
 
       // 返回带429标识的错误，让调用方能识别并特殊处理
-      const rateLimitError = new Error(limitMessage);
+      const rateLimitError = new Error(limitMessage) as ApiError;
       rateLimitError.status = 429;
       rateLimitError.isRateLimitError = true;
       rateLimitError.originalError = error;
@@ -146,7 +227,7 @@ apiClient.interceptors.response.use(
     }
 
     // 返回增强的错误对象
-    const enhancedError = new Error(errorMessage);
+    const enhancedError = new Error(errorMessage) as ApiError;
     enhancedError.originalError = error;
     enhancedError.status = error.response?.status;
     enhancedError.isAuthError = error.response?.status === 401;
@@ -258,6 +339,11 @@ export const api = {
     // 获取最新博客
     getLatest: async (limit = 10): Promise<ProcessedResponse<BlogDetailVO[]>> => {
       return apiClient.get('/blog/latest', { params: { limit } });
+    },
+
+    // 获取推荐博客
+    getRecommended: async (limit = 10): Promise<ProcessedResponse<BlogDetailVO[]>> => {
+      return apiClient.get('/blog/recommend', { params: { limit } });
     },
 
     // 根据分类获取博客
@@ -372,6 +458,26 @@ export const api = {
       await apiClient.delete(`/blog/${id}`);
     },
 
+    // 获取关注流
+    getFollowingFeed: async (params?: PageParams): Promise<ProcessedResponse<PageResponse<BlogDetailVO>>> => {
+      return apiClient.get('/blog/following', { params });
+    },
+
+    // 获取博客版本历史
+    getRevisions: async (id: number): Promise<BlogRevisionVO[]> => {
+      return apiClient.get(`/blog/${id}/revisions`) as Promise<BlogRevisionVO[]>;
+    },
+
+    // 版本对比
+    diffRevisions: async (blogId: number, from: number, to: number): Promise<BlogRevisionDiffVO> => {
+      return apiClient.get(`/blog/${blogId}/diff`, { params: { from, to } }) as Promise<BlogRevisionDiffVO>;
+    },
+
+    // 回滚版本
+    restoreRevision: async (blogId: number, revisionId: number): Promise<void> => {
+      await apiClient.post(`/blog/${blogId}/revisions/${revisionId}/restore`);
+    },
+
     // 发布博客
     publish: async (id: number): Promise<void> => {
       await apiClient.post(`/blog/${id}/publish`);
@@ -436,6 +542,10 @@ export const api = {
 
     status: async () => {
       return apiClient.get('/search/status');
+    },
+
+    trending: async (days: number = 7, limit: number = 10): Promise<SearchTrendVO[]> => {
+      return apiClient.get('/search/trending', { params: { days, limit } }) as Promise<SearchTrendVO[]>;
     }
   },
 
@@ -446,8 +556,8 @@ export const api = {
     },
 
     // 用户登录
-    login: async (loginData: UserLoginDTO): Promise<string> => {
-      return apiClient.post('/user/login', loginData) as Promise<string>;
+    login: async (loginData: UserLoginDTO): Promise<TokenResponse> => {
+      return apiClient.post('/user/login', loginData) as Promise<TokenResponse>;
     },
 
     // 获取当前用户信息
@@ -456,7 +566,7 @@ export const api = {
     },
 
     // 更新用户信息
-    updateUserInfo: async (userData: Partial<User>): Promise<void> => {
+    updateUserInfo: async (userData: Partial<User> & { currentPassword?: string }): Promise<void> => {
       await apiClient.put('/user/info', userData);
     },
 
@@ -468,6 +578,31 @@ export const api = {
     // 用户登出
     logout: async (): Promise<void> => {
       await apiClient.post('/user/logout');
+    },
+
+    // 获取会话列表
+    getSessions: async (): Promise<UserSessionVO[]> => {
+      return apiClient.get('/user/sessions') as Promise<UserSessionVO[]>;
+    },
+
+    // 下线指定会话
+    revokeSession: async (sessionId: number): Promise<void> => {
+      await apiClient.delete(`/user/sessions/${sessionId}`);
+    },
+
+    // 屏蔽用户
+    blockUser: async (blockedId: number): Promise<void> => {
+      await apiClient.post(`/user/block/${blockedId}`);
+    },
+
+    // 取消屏蔽
+    unblockUser: async (blockedId: number): Promise<void> => {
+      await apiClient.delete(`/user/block/${blockedId}`);
+    },
+
+    // 获取屏蔽列表
+    getBlockedUsers: async (): Promise<number[]> => {
+      return apiClient.get('/user/block/list') as Promise<number[]>;
     },
 
     // 获取我的评论列表
@@ -511,6 +646,12 @@ export const api = {
     getByUserId: async (userId: number, params?: PageParams): Promise<ApiResponse<PageResponse<CommentVO>>> => {
       return apiClient.get(`/comment/user/${userId}`, { params });
     },
+  },
+
+  report: {
+    create: async (data: ReportCreateDTO): Promise<void> => {
+      await apiClient.post('/report', data);
+    }
   },
 
   category: {
@@ -661,6 +802,31 @@ export const api = {
       return apiClient.get('/admin/monitoring/business');
     },
 
+    // 获取举报列表
+    getReports: async (params?: PageParams & { status?: number; targetType?: string }): Promise<PageResult<ReportVO>> => {
+      return apiClient.get('/admin/reports', { params });
+    },
+
+    // 审核举报
+    reviewReport: async (id: number, data: ReportReviewDTO): Promise<void> => {
+      await apiClient.post(`/admin/reports/${id}/review`, data);
+    },
+
+    // 获取审计日志
+    getAuditLogs: async (params?: PageParams & { operatorId?: number; action?: string }): Promise<PageResult<any>> => {
+      return apiClient.get('/admin/audit-logs', { params });
+    },
+
+    // AI使用Top用户
+    getAiUsageTopUsers: async (days: number = 7, limit: number = 10): Promise<AiUsageUserVO[]> => {
+      return apiClient.get('/admin/ai-usage/top-users', { params: { days, limit } }) as Promise<AiUsageUserVO[]>;
+    },
+
+    // AI使用明细
+    getAiUsageDaily: async (userId?: number, days: number = 7): Promise<AiUsageDailyVO[]> => {
+      return apiClient.get('/admin/ai-usage/daily', { params: { userId, days } }) as Promise<AiUsageDailyVO[]>;
+    },
+
     // ========== Arthas增强监控API ==========
 
     // 获取Arthas监控Dashboard（包含系统+性能+业务指标）
@@ -685,8 +851,7 @@ export const api = {
 
     // 获取最近错误日志
     getRecentErrors: async (limit: number = 50): Promise<any[]> => {
-      const response = await apiClient.get(`/admin/monitoring/errors?limit=${limit}`);
-      return response as any[];
+      return apiClient.get(`/admin/monitoring/errors?limit=${limit}`) as Promise<any[]>;
     },
 
     // 获取错误统计
@@ -698,7 +863,7 @@ export const api = {
 
   upload: {
     // 上传图片
-    uploadImage: async (file: File, type: string = 'content'): Promise<ApiResponse<{ url: string; filename: string; type: string }>> => {
+    uploadImage: async (file: File, type: string = 'content'): Promise<{ url: string; filename: string; type: string }> => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
@@ -710,7 +875,7 @@ export const api = {
     },
 
     // 上传文件
-    uploadFile: async (file: File, type: string = 'document'): Promise<ApiResponse<{ url: string; filename: string; type: string; size: string }>> => {
+    uploadFile: async (file: File, type: string = 'document'): Promise<{ url: string; filename: string; type: string; size: string }> => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
@@ -722,7 +887,7 @@ export const api = {
     },
 
     // 上传编辑器图片
-    uploadEditorImage: async (file: File): Promise<ApiResponse<{ url: string; filename: string }>> => {
+    uploadEditorImage: async (file: File): Promise<{ url: string; filename: string }> => {
       const formData = new FormData();
       formData.append('file', file);
       return apiClient.post('/upload/editor/image', formData, {
@@ -759,6 +924,21 @@ export const api = {
       await apiClient.delete(`/collection/folders/${id}`);
     },
 
+    // 分享收藏夹
+    shareFolder: async (id: number): Promise<CollectionFolderVO> => {
+      return apiClient.post(`/collection/folders/${id}/share`) as Promise<CollectionFolderVO>;
+    },
+
+    // 设置公开/私密
+    setFolderPublic: async (id: number, isPublic: boolean): Promise<CollectionFolderVO> => {
+      return apiClient.post(`/collection/folders/${id}/public`, null, { params: { isPublic } }) as Promise<CollectionFolderVO>;
+    },
+
+    // 获取分享的收藏夹
+    getSharedFolder: async (shareCode: string, page = 1, size = 10): Promise<{ folder: CollectionFolderVO; items: UserCollectionVO[] }> => {
+      return apiClient.get(`/collection/share/${shareCode}`, { params: { page, size } }) as Promise<{ folder: CollectionFolderVO; items: UserCollectionVO[] }>;
+    },
+
     // 收藏/取消收藏
     toggle: async (data: CollectToggleDTO): Promise<CollectResultDTO> => {
       return apiClient.post('/collection/toggle', data) as Promise<CollectResultDTO>;
@@ -772,7 +952,7 @@ export const api = {
     // 获取收藏列表（指定文件夹）
     getList: async (params?: any): Promise<PageResult<UserCollectionVO>> => {
       const response = await apiClient.get('/collection/list', { params });
-      const records = response as UserCollectionVO[];
+      const records = response as unknown as UserCollectionVO[];
       // Backend returns list directly, so we need to wrap it to maintain PageResult format
       // Use a placeholder for total - components will handle this appropriately
       return {
@@ -877,6 +1057,7 @@ export const api = {
     clearAuth: (): void => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
     },
 
     // 检查是否已认证
@@ -893,6 +1074,17 @@ export const api = {
     // 获取token
     getToken: (): string | null => {
       return localStorage.getItem('token');
+    },
+
+    // 刷新token
+    refreshToken: async (): Promise<TokenResponse> => {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token');
+      }
+      return apiClient.post('/auth/refresh', null, {
+        headers: { Authorization: `Bearer ${refreshToken}` }
+      }) as Promise<TokenResponse>;
     },
   },
 
@@ -932,29 +1124,29 @@ export const api = {
     },
 
     // 生成文章标题（需要更长超时时间）
-    generateTitle: (content: string): Promise<{ title: string }> => {
-      return apiClient.post('/ai/generate-title', { content }, {
+    generateTitle: (content: string, style?: string): Promise<{ title: string }> => {
+      return apiClient.post('/ai/generate-title', { content, style }, {
         timeout: 60000,
       });
     },
 
     // 润色文章内容（需要更长超时时间）
-    polishContent: (content: string): Promise<{ polishedContent: string }> => {
-      return apiClient.post('/ai/polish-content', { content }, {
+    polishContent: (content: string, style?: string): Promise<{ polishedContent: string }> => {
+      return apiClient.post('/ai/polish-content', { content, style }, {
         timeout: 60000,
       });
     },
 
     // 生成文章摘要（需要更长超时时间）
-    generateSummary: (content: string): Promise<{ summary: string }> => {
-      return apiClient.post('/ai/generate-summary', { content }, {
+    generateSummary: (content: string, style?: string): Promise<{ summary: string }> => {
+      return apiClient.post('/ai/generate-summary', { content, style }, {
         timeout: 60000,
       });
     },
 
     // 提取文章关键词（需要更长超时时间）
-    extractKeywords: (content: string): Promise<{ keywords: string[] }> => {
-      return apiClient.post('/ai/extract-keywords', { content }, {
+    extractKeywords: (content: string, style?: string): Promise<{ keywords: string[] }> => {
+      return apiClient.post('/ai/extract-keywords', { content, style }, {
         timeout: 60000,
       });
     },
@@ -981,7 +1173,11 @@ export const api = {
       content = content.map((item: NotificationVO) => {
         if (item.extraData) {
           try {
-            item.parsedExtraData = JSON.parse(item.extraData);
+            if (typeof item.extraData === 'string') {
+              item.parsedExtraData = JSON.parse(item.extraData);
+            } else {
+              item.parsedExtraData = item.extraData;
+            }
           } catch (e) {
             console.error('Failed to parse extraData', e);
           }

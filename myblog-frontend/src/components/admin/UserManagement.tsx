@@ -35,7 +35,7 @@ export const UserManagement: React.FC = () => {
   const [statusLoadingId, setStatusLoadingId] = useState<number | null>(null);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const debounceSearch = (value: string) => {
     if (debounceTimeoutRef.current) {

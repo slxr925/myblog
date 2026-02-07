@@ -68,10 +68,13 @@ public class BlogServiceImpl implements BlogService {
     private final RedisLikeService redisLikeService;
     private final CommentCountService commentCountService;
     private final SearchService searchService;
+    private final com.ryan.myblog.service.BrowseHistoryService browseHistoryService;
     private final TagService tagService;
     private final BlogDocumentConverter blogDocumentConverter;
     private final SecurityUtils securityUtils;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final com.ryan.myblog.service.BlogRevisionService blogRevisionService;
+    private final com.ryan.myblog.mapper.UserFollowMapper userFollowMapper;
 
     @Override
     @Transactional
@@ -99,6 +102,9 @@ public class BlogServiceImpl implements BlogService {
 
         // 保存博客
         blogMapper.insert(blog);
+
+        // 记录版本历史
+        blogRevisionService.createRevision(blog, authorId);
 
         // 保存标签关联
         List<Long> tagIds = resolveTagIds(blogSaveDTO);
@@ -160,6 +166,9 @@ public class BlogServiceImpl implements BlogService {
         }
 
         blogMapper.updateById(existBlog);
+
+        // 记录版本历史
+        blogRevisionService.createRevision(existBlog, authorId);
 
         // 更新标签关联
         blogTagMapper.deleteByBlogId(id);
@@ -1111,6 +1120,92 @@ public class BlogServiceImpl implements BlogService {
     public IPage<BlogDetailVO> getLikedBlogsByUser(PageRequest pageRequest, Long userId) {
         Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
         return blogMapper.selectLikedBlogsByUser(page, userId);
+    }
+
+    @Override
+    public IPage<BlogDetailVO> getFollowingFeed(PageRequest pageRequest, Long userId) {
+        if (userId == null) {
+            return new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        }
+        // 获取关注的用户ID
+        List<Long> followeeIds = userFollowMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ryan.myblog.model.entity.UserFollow>()
+                        .eq(com.ryan.myblog.model.entity.UserFollow::getFollowerId, userId)
+                        .eq(com.ryan.myblog.model.entity.UserFollow::getDeleted, 0))
+                .stream()
+                .map(com.ryan.myblog.model.entity.UserFollow::getFolloweeId)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+
+        if (followeeIds.isEmpty()) {
+            return new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        }
+
+        Page<Blog> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Blog> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        wrapper.in(Blog::getAuthorId, followeeIds)
+                .eq(Blog::getStatus, 1)
+                .eq(Blog::getDeleted, 0)
+                .orderByDesc(Blog::getPublishTime);
+
+        IPage<Blog> blogPage = blogMapper.selectPage(page, wrapper);
+        List<BlogDetailVO> records = blogPage.getRecords().stream()
+                .map(blog -> blogMapper.selectBlogDetail(blog.getId()))
+                .collect(java.util.stream.Collectors.toList());
+
+        Page<BlogDetailVO> result = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        result.setTotal(blogPage.getTotal());
+        result.setRecords(records);
+        return result;
+    }
+
+    @Override
+    public List<BlogDetailVO> getRecommendedBlogs(Long userId, int limit) {
+        if (limit <= 0) {
+            limit = 10;
+        }
+        if (userId == null) {
+            return getHotBlogs(limit);
+        }
+        List<com.ryan.myblog.model.vo.BrowseHistoryVO> history = browseHistoryService.getUserBrowseHistory(userId, 7);
+        java.util.LinkedHashSet<Long> recommendedIds = new java.util.LinkedHashSet<>();
+
+        for (com.ryan.myblog.model.vo.BrowseHistoryVO item : history) {
+            if (item.getBlogId() == null) {
+                continue;
+            }
+            List<BlogDetailVO> related = getRelatedBlogs(item.getBlogId(), 3);
+            for (BlogDetailVO blog : related) {
+                if (recommendedIds.size() >= limit) {
+                    break;
+                }
+                recommendedIds.add(blog.getId());
+            }
+            if (recommendedIds.size() >= limit) {
+                break;
+            }
+        }
+
+        List<BlogDetailVO> result = new java.util.ArrayList<>();
+        for (Long blogId : recommendedIds) {
+            BlogDetailVO detail = blogMapper.selectBlogDetail(blogId);
+            if (detail != null) {
+                result.add(detail);
+            }
+        }
+
+        if (result.size() < limit) {
+            List<BlogDetailVO> fallback = getHotBlogs(limit);
+            for (BlogDetailVO blog : fallback) {
+                if (result.size() >= limit) {
+                    break;
+                }
+                if (result.stream().noneMatch(existing -> existing.getId().equals(blog.getId()))) {
+                    result.add(blog);
+                }
+            }
+        }
+        return result;
     }
 
     /**

@@ -50,8 +50,8 @@ public class UserCollectionServiceImpl extends ServiceImpl<UserCollectionMapper,
         UserCollection existing = getOne(wrapper);
 
         if (existing != null \u0026\u0026 existing.getDeleted() == 0) {
-            // 已收藏且未删除 -> 取消收藏
-            userCollectionMapper.logicalDelete(existing.getId());
+            // 已收藏且未删除 -> 取消收藏（物理删除，避免unique key冲突）
+            userCollectionMapper.physicalDeleteById(existing.getId());
             // 更新原收藏夹计数
             collectionFolderService.updateCollectionCount(existing.getFolderId(), -1);
             return new CollectResultDTO(false, "取消收藏成功");
@@ -65,23 +65,22 @@ public class UserCollectionServiceImpl extends ServiceImpl<UserCollectionMapper,
 
             if (existing != null \u0026\u0026 existing.getDeleted() == 1) {
                 // 恢复已删除的收藏记录
-                existing.setDeleted(0);
-                existing.setFolderId(folderId);
-                existing.setNote(dto.getNote());
-                existing.setUpdateTime(java.time.LocalDateTime.now());
-                updateById(existing);
-                log.info("恢复已删除的收藏记录: userId={}, targetId={}, id={}", 
+                // 先物理删除这条旧记录，避免unique key冲突
+                userCollectionMapper.physicalDeleteById(existing.getId());
+                log.info("物理删除已存在的收藏记录: userId={}, targetId={}, id={}",
                         userId, dto.getTargetId(), existing.getId());
-            } else {
-                // 新增收藏记录
-                UserCollection collection = new UserCollection();
-                collection.setUserId(userId);
-                collection.setTargetType(dto.getTargetType());
-                collection.setTargetId(dto.getTargetId());
-                collection.setFolderId(folderId);
-                collection.setNote(dto.getNote());
-                save(collection);
             }
+
+            // 新增收藏记录
+            UserCollection collection = new UserCollection();
+            collection.setUserId(userId);
+            collection.setTargetType(dto.getTargetType());
+            collection.setTargetId(dto.getTargetId());
+            collection.setFolderId(folderId);
+            collection.setNote(dto.getNote());
+            save(collection);
+            log.info("新增收藏记录: userId={}, targetId={}, folderId={}",
+                    userId, dto.getTargetId(), folderId);
 
             // 更新收藏夹计数
             collectionFolderService.updateCollectionCount(folderId, 1);

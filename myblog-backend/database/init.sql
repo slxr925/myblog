@@ -170,6 +170,9 @@ CREATE TABLE IF NOT EXISTS tb_collection_folder (
     is_default TINYINT DEFAULT 0 COMMENT '是否默认分类：0-否，1-是',
     sort_order INT DEFAULT 0 COMMENT '排序顺序',
     collection_count INT DEFAULT 0 COMMENT '收藏数量（冗余字段，提升查询性能）',
+    is_public TINYINT DEFAULT 0 COMMENT '是否公开：0-私密，1-公开',
+    share_code VARCHAR(64) COMMENT '分享码',
+    share_expire_time DATETIME COMMENT '分享过期时间',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
@@ -1677,6 +1680,120 @@ FROM tb_blog WHERE title IN (
     '微服务架构避坑指南：从单体到分布式的演进之路',
     '2024 前端工程化最佳实践：从 Vite 到 Monorepo'
 );
+
+-- ============================================
+-- 新增：安全与功能优化相关表
+-- ============================================
+
+-- 用户会话表（Refresh Token管理）
+CREATE TABLE IF NOT EXISTS tb_user_session (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    refresh_jti VARCHAR(64) NOT NULL COMMENT 'Refresh Token JTI',
+    ip VARCHAR(45) COMMENT 'IP地址',
+    user_agent TEXT COMMENT 'User-Agent',
+    device_label VARCHAR(100) COMMENT '设备标识',
+    last_seen_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '最近活跃时间',
+    expires_time DATETIME NOT NULL COMMENT 'Refresh Token过期时间',
+    revoked TINYINT DEFAULT 0 COMMENT '是否吊销：0-否，1-是',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_refresh_jti (refresh_jti),
+    INDEX idx_revoked (revoked),
+    FOREIGN KEY (user_id) REFERENCES tb_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话表';
+
+-- 审计日志表
+CREATE TABLE IF NOT EXISTS tb_audit_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    operator_id BIGINT COMMENT '操作人ID',
+    action VARCHAR(100) COMMENT '操作类型',
+    target_type VARCHAR(50) COMMENT '目标资源类型',
+    target_id BIGINT COMMENT '目标资源ID',
+    detail_json TEXT COMMENT '详情JSON',
+    ip VARCHAR(45) COMMENT 'IP地址',
+    user_agent TEXT COMMENT 'User-Agent',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_operator_id (operator_id),
+    INDEX idx_action (action),
+    INDEX idx_target_type (target_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审计日志表';
+
+-- 举报表
+CREATE TABLE IF NOT EXISTS tb_report (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    reporter_id BIGINT NOT NULL COMMENT '举报人ID',
+    target_type VARCHAR(20) NOT NULL COMMENT '目标类型：blog/comment/user',
+    target_id BIGINT NOT NULL COMMENT '目标ID',
+    reason VARCHAR(100) COMMENT '举报原因',
+    detail TEXT COMMENT '举报详情',
+    status TINYINT DEFAULT 0 COMMENT '状态：0-待处理，1-已通过，2-已拒绝',
+    reviewer_id BIGINT COMMENT '审核人ID',
+    review_time DATETIME COMMENT '审核时间',
+    action VARCHAR(100) COMMENT '处理动作',
+    notes TEXT COMMENT '审核备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_reporter_id (reporter_id),
+    INDEX idx_target (target_type, target_id),
+    INDEX idx_status (status),
+    FOREIGN KEY (reporter_id) REFERENCES tb_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='举报表';
+
+-- 博客版本历史表
+CREATE TABLE IF NOT EXISTS tb_blog_revision (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    blog_id BIGINT NOT NULL COMMENT '博客ID',
+    version INT NOT NULL COMMENT '版本号',
+    title VARCHAR(255) NOT NULL COMMENT '标题',
+    summary TEXT COMMENT '摘要',
+    content LONGTEXT NOT NULL COMMENT '内容',
+    author_id BIGINT NOT NULL COMMENT '作者ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_blog_id (blog_id),
+    INDEX idx_version (version),
+    FOREIGN KEY (blog_id) REFERENCES tb_blog(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='博客版本历史表';
+
+-- 搜索日志表
+CREATE TABLE IF NOT EXISTS tb_search_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT COMMENT '用户ID',
+    keyword VARCHAR(255) NOT NULL COMMENT '搜索关键词',
+    filters_json TEXT COMMENT '筛选条件JSON',
+    result_count INT DEFAULT 0 COMMENT '结果数量',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_keyword (keyword),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='搜索日志表';
+
+-- AI使用统计（日维度）
+CREATE TABLE IF NOT EXISTS tb_ai_usage_daily (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    usage_date DATE NOT NULL COMMENT '日期',
+    request_count INT DEFAULT 0 COMMENT '请求数',
+    token_count INT DEFAULT 0 COMMENT 'Token数',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_user_date (user_id, usage_date),
+    INDEX idx_usage_date (usage_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI使用统计表';
+
+-- 用户屏蔽表
+CREATE TABLE IF NOT EXISTS tb_user_block (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    blocker_id BIGINT NOT NULL COMMENT '屏蔽者ID',
+    blocked_id BIGINT NOT NULL COMMENT '被屏蔽者ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_block (blocker_id, blocked_id),
+    INDEX idx_blocker_id (blocker_id),
+    INDEX idx_blocked_id (blocked_id),
+    FOREIGN KEY (blocker_id) REFERENCES tb_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (blocked_id) REFERENCES tb_user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户屏蔽表';
 
 
 -- Remove temp columns

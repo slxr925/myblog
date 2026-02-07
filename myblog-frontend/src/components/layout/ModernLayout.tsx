@@ -7,7 +7,7 @@ import { UserMenu } from '../auth/UserMenu';
 import ThemeToggle from '../theme/ThemeToggle';
 import RealTimeSearch from '../search/RealTimeSearch';
 import { AIAssistant } from '../ai/AIAssistant';
-import { Menu, X, Home, FileText, User } from 'lucide-react';
+import { Menu, X, Home, FileText, User, Heart, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBadge from '../notification/NotificationBadge';
 
@@ -45,25 +45,34 @@ export const ModernLayout = () => {
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-2">
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="text-muted-foreground hover:text-foreground hover:bg-transparent font-mono-display text-xs uppercase tracking-wider h-9 px-3"
+              className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
             >
               首页
             </Button>
             <Button
               variant="ghost"
               onClick={() => navigate('/blog')}
-              className="text-muted-foreground hover:text-foreground hover:bg-transparent font-mono-display text-xs uppercase tracking-wider h-9 px-3"
+              className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
             >
               文章
             </Button>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/following')}
+                className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
+              >
+                动态
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={() => navigate('/about')}
-              className="text-muted-foreground hover:text-foreground hover:bg-transparent font-mono-display text-xs uppercase tracking-wider h-9 px-3"
+              className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
             >
               关于
             </Button>
@@ -132,6 +141,15 @@ export const ModernLayout = () => {
                 >
                   <FileText className="w-4 h-4 mr-3" /> 文章
                 </Button>
+                {isAuthenticated && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigation('/following')}
+                    className="justify-start w-full h-12 font-mono-display text-sm uppercase tracking-wider hover:bg-muted"
+                  >
+                    <Heart className="w-4 h-4 mr-3" /> 动态
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   onClick={() => handleNavigation('/about')}

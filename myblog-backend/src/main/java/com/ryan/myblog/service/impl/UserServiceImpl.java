@@ -48,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final UnifiedCacheService unifiedCacheService;
     private final CacheConsistencyService cacheConsistencyService;
     private final com.ryan.myblog.service.CaptchaService captchaService;
+    private final com.ryan.myblog.service.UserSessionService userSessionService;
 
     // 登录失败限制配置
     private static final int MAX_LOGIN_ATTEMPTS = 5; // 最大失败次数
@@ -219,23 +220,31 @@ public class UserServiceImpl implements UserService {
         // 6. 登录成功，清除失败记录
         clearLoginFailures(username, clientIp);
 
-        // 7. 生成Access Token（管理员token绑定IP）
+        // 7. 创建会话并生成Refresh Token
+        String refreshJti = java.util.UUID.randomUUID().toString();
+        com.ryan.myblog.model.entity.UserSession session = userSessionService.createSession(
+                user.getId(), refreshJti, clientIp, null, null,
+                LocalDateTime.now().plusSeconds(jwtProperties.getRefreshTokenExpiration()));
+
+        // 8. 生成Access Token（管理员token绑定IP）
         String accessToken = jwtUtils.generateAccessToken(
                 user.getId(),
                 user.getUsername(),
                 user.getRole(),
-                clientIp);
+                clientIp,
+                session.getId());
 
-        // 8. 生成Refresh Token
-        String refreshToken = jwtUtils.generateRefreshToken(user.getId());
+        // 9. 生成Refresh Token（包含会话ID）
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), session.getId(), refreshJti);
 
-        // 9. 保存用户会话到Redis（单设备登录模式）
-        sessionService.saveSessionWithSingleDevice(accessToken, user.getId());
+        // 10. 保存用户会话到Redis
+        sessionService.saveSession(accessToken, user.getId());
 
         log.info("用户登录成功：{}，角色：{}，accessToken长度：{}，refreshToken长度：{}",
                 username, user.getRole(), accessToken.length(), refreshToken.length());
 
-        return new TokenResponse(accessToken, refreshToken, jwtProperties.getAccessTokenExpiration());
+        return new TokenResponse(accessToken, refreshToken, jwtProperties.getAccessTokenExpiration(),
+                jwtProperties.getRefreshTokenExpiration(), session.getId());
     }
 
     /**
@@ -363,6 +372,17 @@ public class UserServiceImpl implements UserService {
         userMapper.updateById(user);
 
         log.info("用户密码修改成功：{}", user.getUsername());
+    }
+
+    @Override
+    public void verifyPassword(Long userId, String currentPassword) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("当前密码错误");
+        }
     }
 
     @Override

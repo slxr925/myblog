@@ -67,6 +67,7 @@ public class CollectionFolderServiceImpl extends ServiceImpl<CollectionFolderMap
         folder.setUserId(userId);
         folder.setIsDefault(false);
         folder.setCollectionCount(0);
+        folder.setIsPublic(dto.getIsPublic() != null && dto.getIsPublic());
         if (folder.getSortOrder() == null) {
             folder.setSortOrder(0);
         }
@@ -189,5 +190,59 @@ public class CollectionFolderServiceImpl extends ServiceImpl<CollectionFolderMap
     private void clearFolderCache(Long userId) {
         redisTemplate.delete(FOLDER_CACHE_KEY + userId);
         redisTemplate.delete(FOLDER_CACHE_KEY + userId + ":default");
+    }
+
+    @Override
+    public CollectionFolderVO setFolderPublic(Long userId, Long folderId, boolean isPublic) {
+        CollectionFolder folder = getById(folderId);
+        if (folder == null || !folder.getUserId().equals(userId)) {
+            throw new RuntimeException("收藏夹不存在");
+        }
+        folder.setIsPublic(isPublic);
+        if (isPublic && (folder.getShareCode() == null || folder.getShareCode().isBlank())) {
+            folder.setShareCode(generateShareCodeValue());
+        }
+        updateById(folder);
+        clearFolderCache(userId);
+        CollectionFolderVO vo = new CollectionFolderVO();
+        BeanUtils.copyProperties(folder, vo);
+        return vo;
+    }
+
+    @Override
+    public CollectionFolderVO generateShareCode(Long userId, Long folderId) {
+        CollectionFolder folder = getById(folderId);
+        if (folder == null || !folder.getUserId().equals(userId)) {
+            throw new RuntimeException("收藏夹不存在");
+        }
+        folder.setIsPublic(true);
+        folder.setShareCode(generateShareCodeValue());
+        updateById(folder);
+        clearFolderCache(userId);
+        CollectionFolderVO vo = new CollectionFolderVO();
+        BeanUtils.copyProperties(folder, vo);
+        return vo;
+    }
+
+    @Override
+    public CollectionFolderVO getByShareCode(String shareCode) {
+        if (shareCode == null || shareCode.isBlank()) {
+            throw new RuntimeException("分享码不能为空");
+        }
+        LambdaQueryWrapper<CollectionFolder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CollectionFolder::getShareCode, shareCode)
+                .eq(CollectionFolder::getIsPublic, true)
+                .eq(CollectionFolder::getDeleted, 0);
+        CollectionFolder folder = collectionFolderMapper.selectOne(wrapper);
+        if (folder == null) {
+            throw new RuntimeException("分享已失效");
+        }
+        CollectionFolderVO vo = new CollectionFolderVO();
+        BeanUtils.copyProperties(folder, vo);
+        return vo;
+    }
+
+    private String generateShareCodeValue() {
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     }
 }

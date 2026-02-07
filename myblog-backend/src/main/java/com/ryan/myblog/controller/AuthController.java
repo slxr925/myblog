@@ -28,6 +28,7 @@ public class AuthController {
     private final UserService userService;
     private final SessionService sessionService;
     private final JwtProperties jwtProperties;
+    private final com.ryan.myblog.service.UserSessionService userSessionService;
     
     /**
      * 刷新Access Token
@@ -61,9 +62,15 @@ public class AuthController {
         }
         
         try {
-            // 从refresh token中获取用户ID
+            // 从refresh token中获取用户ID、会话ID、JTI
             Long userId = jwtUtils.getUserIdFromToken(refreshToken);
-            
+            Long sessionId = jwtUtils.getSessionIdFromToken(refreshToken);
+            String refreshJti = jwtUtils.getJtiFromToken(refreshToken);
+
+            if (sessionId == null || refreshJti == null) {
+                return Result.error(401, "无效的Refresh Token");
+            }
+
             // 查询用户信息
             User user = userService.getUserById(userId);
             if (user == null) {
@@ -77,27 +84,53 @@ public class AuthController {
                 return Result.error(403, "用户已被禁用");
             }
             
+            // 校验会话
+            com.ryan.myblog.model.entity.UserSession session = userSessionService.getSession(sessionId);
+            if (session == null || session.getRevoked() != null && session.getRevoked() == 1) {
+                return Result.error(401, "会话已失效");
+            }
+            if (!userId.equals(session.getUserId())) {
+                return Result.error(401, "会话不匹配");
+            }
+
+            // Refresh Token复用检测
+            if (!refreshJti.equals(session.getRefreshJti())) {
+                log.warn("检测到Refresh Token复用，吊销用户所有会话: userId={}", userId);
+                userSessionService.revokeAllSessions(userId);
+                return Result.error(401, "登录状态异常，请重新登录");
+            }
+
             // 获取客户端IP
             String clientIp = IpUtils.getClientIp(request);
-            
+
             // 生成新的Access Token
             String newAccessToken = jwtUtils.generateAccessToken(
                 user.getId(),
                 user.getUsername(),
                 user.getRole(),
-                clientIp
+                clientIp,
+                sessionId
             );
-            
+
             // 保存会话
             sessionService.saveSession(newAccessToken, user.getId());
-            
+
+            // 轮换Refresh Token
+            String newJti = java.util.UUID.randomUUID().toString();
+            String newRefreshToken = jwtUtils.generateRefreshToken(userId, sessionId, newJti);
+            userSessionService.rotateRefreshToken(sessionId, newJti,
+                    java.time.LocalDateTime.now().plusSeconds(jwtProperties.getRefreshTokenExpiration()));
+            userSessionService.touchSession(sessionId, clientIp, request.getHeader("User-Agent"));
+
             log.info("Token刷新成功 - 用户：{}，IP：{}", user.getUsername(), clientIp);
-            
-            // 返回新的token（refresh token不变）
+
+            // 返回新的token（refresh token轮换）
             TokenResponse tokenResponse = new TokenResponse(
                 newAccessToken,
-                refreshToken,
-                jwtProperties.getAccessTokenExpiration()
+                newRefreshToken,
+                jwtProperties.getAccessTokenExpiration(),
+                jwtProperties.getRefreshTokenExpiration(),
+                sessionId
             );
             
             return Result.success(tokenResponse);
@@ -123,7 +156,5 @@ public class AuthController {
         return Result.success(isValid);
     }
 }
-
-
 
 

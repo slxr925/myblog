@@ -74,7 +74,8 @@ const NotificationBadge: React.FC = () => {
             try {
                 // 获取前5条未读通知，如果没有则获取最新5条
                 const res = await api.notification.getList({ page: 1, size: 5 });
-                setNotifications(res.content);
+                const items = res.content ?? res.records ?? [];
+                setNotifications(items);
             } catch (error) {
                 console.error('获取通知列表失败', error);
             } finally {
@@ -137,7 +138,7 @@ const NotificationBadge: React.FC = () => {
             <Button
                 variant="ghost"
                 size="icon"
-                className="relative text-foreground hover:bg-accent transition-colors duration-300"
+                className="relative text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300 hover:scale-110"
                 onClick={handleToggle}
             >
                 <Bell className="w-5 h-5" />

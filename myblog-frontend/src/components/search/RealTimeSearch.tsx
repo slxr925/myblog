@@ -20,6 +20,7 @@ interface SearchSuggestion {
   tags: string[];
   highlightedTitle?: string;
   highlightedSummary?: string;
+  highlightedContent?: string;
 }
 
 interface RealTimeSearchProps {
@@ -96,7 +97,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
     try {
       setLoading(true);
       const response = await api.search.searchBlogs(term, 8);
-      const searchData = response?.content ?? [];
+      const searchData = (response as any)?.content ?? (response as any)?.records ?? [];
 
       const formattedSuggestions = searchData.map((doc: any) => {
         // 处理tags：可能是字符串数组或对象数组

@@ -7,6 +7,9 @@ import {
   FolderOpen,
   BookOpen,
   Plus,
+  Share2,
+  Link as LinkIcon,
+  Check,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -56,6 +59,10 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [targetFolderId, setTargetFolderId] = useState<number | undefined>();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -190,6 +197,38 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleShareFolder = async () => {
+    if (!selectedFolder) return;
+
+    try {
+      setShareLoading(true);
+      const updated = await api.collection.shareFolder(selectedFolder);
+      const link = `${window.location.origin}/collection/share/${updated.shareCode}`;
+      setShareLink(link);
+      setShareDialogOpen(true);
+      setShareCopied(false);
+
+      // Update folder in list
+      setFolders(prev => prev.map(f => f.id === updated.id ? { ...f, ...updated } : f));
+    } catch (error) {
+      console.error('生成分享链接失败:', error);
+      toast.error('生成分享链接失败');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareCopied(true);
+      toast.success('分享链接已复制');
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      toast.error('复制失败，请手动复制');
+    }
+  };
+
   const openBlogInFolder = (folderId: number) => {
     window.open(`/user/collections?folder=${folderId}`, '_blank');
   };
@@ -230,6 +269,17 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
           </Button>
         </div>
         <div className="flex items-center gap-2 text-xs sm:text-sm">
+          {selectedFolder && folders.find(f => f.id === selectedFolder && !f.isDefault) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShareFolder}
+              disabled={shareLoading}
+            >
+              <Share2 className="w-4 h-4 mr-1" />
+              分享收藏夹
+            </Button>
+          )}
           {selectedItems.length > 0 && (
             <>
               <span className="text-sm text-muted-foreground">
@@ -308,7 +358,7 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
                       <span>{item.authorName}</span>
                       <span>{item.viewCount} 阅读</span>
                       <span>
-                        {new Date(item.createTime).toLocaleDateString('zh-CN')}
+                        {item.createTime ? new Date(item.createTime).toLocaleDateString('zh-CN') : '-'}
                       </span>
                     </div>
                   </div>
@@ -437,6 +487,53 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
         onClose={() => setShowCreateFolder(false)}
         onSuccess={handleFolderCreated}
       />
+
+      {/* 分享链接对话框 */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>分享收藏夹</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                <p className="text-sm font-mono break-all flex-1">{shareLink}</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              任何人都可以通过此链接访问您的收藏夹，无需登录。
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+            >
+              关闭
+            </Button>
+            <Button
+              onClick={handleCopyShareLink}
+              className="min-w-[100px]"
+            >
+              {shareCopied ? (
+                <>
+                  <Check className="w-4 h-4 mr-1" />
+                  已复制
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="w-4 h-4 mr-1" />
+                  复制链接
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -24,14 +24,16 @@ const Notifications: React.FC = () => {
             }
 
             const res = await api.notification.getList(params);
+            const items = res.content ?? res.records ?? [];
 
             if (isRefresh) {
-                setNotifications(res.content);
+                setNotifications(items);
             } else {
-                setNotifications(prev => [...prev, ...res.content]);
+                setNotifications(prev => [...prev, ...items]);
             }
 
-            setHasMore(currentPage < res.totalPages);
+            const totalPages = res.totalPages ?? res.pages ?? 1;
+            setHasMore(currentPage < totalPages);
             setPage(currentPage + 1);
         } catch (error) {
             console.error('获取通知失败', error);
@@ -84,44 +86,44 @@ const Notifications: React.FC = () => {
         <div className="min-h-screen bg-muted/30 py-12">
             <div className="max-w-4xl mx-auto px-4">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
-                    <div>
-                        <motion.h1
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="text-3xl font-bold text-foreground flex items-center gap-3"
-                        >
-                            <span className="bg-indigo-50 dark:bg-indigo-500/20 p-2 rounded-lg shadow-sm text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/30">
-                                <Bell className="w-6 h-6" />
-                            </span>
-                            消息中心
-                        </motion.h1>
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.1 }}
-                            className="text-muted-foreground mt-2 ml-1"
-                        >
-                            查看所有互动消息和系统通知
-                        </motion.p>
-                    </div>
-
+                <div className="text-center mb-12">
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center justify-center gap-3 mb-2"
                     >
-                        <Button
-                            variant="outline"
-                            onClick={handleMarkAllRead}
-                            className="bg-card hover:bg-muted text-muted-foreground border-border shadow-sm transition-all hover:shadow"
-                            disabled={!notifications.some(n => n.isRead === false)}
-                        >
-                            <Check className="w-4 h-4 mr-2" />
-                            全部已读
-                        </Button>
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <Bell className="w-5 h-5" />
+                        </div>
+                        <h1 className="text-4xl font-bold text-foreground">消息中心</h1>
                     </motion.div>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-muted-foreground text-lg"
+                    >
+                        查看所有互动消息和系统通知
+                    </motion.p>
                 </div>
+
+                {/* 全部已读按钮 */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex justify-center mb-6"
+                >
+                    <Button
+                        variant="outline"
+                        onClick={handleMarkAllRead}
+                        className="bg-card hover:bg-muted text-muted-foreground border-border shadow-sm transition-all hover:shadow"
+                        disabled={!notifications.some(n => n.isRead === false)}
+                    >
+                        <Check className="w-4 h-4 mr-2" />
+                        全部已读
+                    </Button>
+                </motion.div>
 
                 {/* Filter Tabs */}
                 <motion.div
@@ -143,7 +145,7 @@ const Notifications: React.FC = () => {
                             className={`
                                 relative px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-300 flex items-center gap-2
                                 ${filter === tab.value
-                                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/20'
+                                    ? 'text-primary bg-primary/10'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                                 }
                             `}
@@ -153,7 +155,7 @@ const Notifications: React.FC = () => {
                             {filter === tab.value && (
                                 <motion.div
                                     layoutId="activeFilter"
-                                    className="absolute inset-0 border-2 border-indigo-100 dark:border-indigo-500/30 rounded-lg pointer-events-none"
+                                    className="absolute inset-0 border-2 border-primary/20 rounded-lg pointer-events-none"
                                 />
                             )}
                         </button>
@@ -213,7 +215,7 @@ const Notifications: React.FC = () => {
                             <Button
                                 variant="ghost"
                                 onClick={() => fetchNotifications(false)}
-                                className="text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                className="text-muted-foreground hover:text-primary transition-colors"
                             >
                                 加载更多历史消息
                             </Button>

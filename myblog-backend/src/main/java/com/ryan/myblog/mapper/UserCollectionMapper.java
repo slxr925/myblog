@@ -74,4 +74,10 @@ public interface UserCollectionMapper extends BaseMapper<UserCollection> {
             " AND user_id = #{userId} AND deleted = 0" +
             "</script>")
     int batchLogicalDelete(@Param("userId") Long userId, @Param("collectionIds") List<Long> collectionIds);
+
+    /**
+     * 物理删除收藏记录（绕过逻辑删除）
+     */
+    @org.apache.ibatis.annotations.Delete("DELETE FROM tb_user_collection WHERE id = #{id}")
+    int physicalDeleteById(@Param("id") Long id);
 }

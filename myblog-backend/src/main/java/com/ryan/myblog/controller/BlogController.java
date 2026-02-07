@@ -44,6 +44,7 @@ public class BlogController {
     private final UnifiedCacheService unifiedCacheService;
     private final BlogMapper blogMapper;
     private final com.ryan.myblog.service.BrowseHistoryService browseHistoryService;
+    private final com.ryan.myblog.service.BlogRevisionService blogRevisionService;
 
     // 注入 Spring 管理的线程池（避免内存泄漏）
     // 原来使用 Executors.newFixedThreadPool(4) 创建的线程池不会被Spring管理
@@ -70,6 +71,21 @@ public class BlogController {
 
         IPage<BlogDetailVO> result = blogService.getBlogPage(pageRequest, categoryId, tagId, keyword, status);
         return Result.success(result);
+    }
+
+    /**
+     * 获取关注流
+     */
+    @GetMapping("/following")
+    @PreAuthorize("isAuthenticated()")
+    public Result<IPage<BlogDetailVO>> getFollowingFeed(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+        Long userId = getCurrentUserId();
+        return Result.success(blogService.getFollowingFeed(pageRequest, userId));
     }
 
     /**
@@ -224,9 +240,42 @@ public class BlogController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @com.ryan.myblog.annotation.AuditLog(action = "DELETE", resource = "BLOG")
     public Result<Void> deleteBlog(@PathVariable Long id) {
         Long authorId = getCurrentUserId();
         blogService.deleteBlog(id, authorId);
+        return Result.success();
+    }
+
+    /**
+     * 获取博客版本历史
+     */
+    @GetMapping("/{id}/revisions")
+    @PreAuthorize("isAuthenticated()")
+    public Result<java.util.List<com.ryan.myblog.model.vo.BlogRevisionVO>> listRevisions(@PathVariable Long id) {
+        return Result.success(blogRevisionService.listRevisions(id));
+    }
+
+    /**
+     * 版本对比
+     */
+    @GetMapping("/{id}/diff")
+    @PreAuthorize("isAuthenticated()")
+    public Result<com.ryan.myblog.model.vo.BlogRevisionDiffVO> diffRevisions(
+            @PathVariable Long id,
+            @RequestParam Long from,
+            @RequestParam Long to) {
+        return Result.success(blogRevisionService.diffRevisions(from, to));
+    }
+
+    /**
+     * 回滚版本
+     */
+    @PostMapping("/{id}/revisions/{revisionId}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> restoreRevision(@PathVariable Long id, @PathVariable Long revisionId) {
+        Long operatorId = getCurrentUserId();
+        blogRevisionService.restoreRevision(revisionId, operatorId);
         return Result.success();
     }
 
@@ -317,6 +366,15 @@ public class BlogController {
     public Result<List<BlogDetailVO>> getLatestBlogs(@RequestParam(defaultValue = "10") Integer limit) {
         List<BlogDetailVO> latestBlogs = blogService.getLatestBlogs(limit);
         return Result.success(latestBlogs);
+    }
+
+    /**
+     * 个性化推荐
+     */
+    @GetMapping("/recommend")
+    public Result<List<BlogDetailVO>> getRecommended(@RequestParam(defaultValue = "10") Integer limit) {
+        Long userId = getCurrentUserId();
+        return Result.success(blogService.getRecommendedBlogs(userId, limit));
     }
 
     /**

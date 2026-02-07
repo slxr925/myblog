@@ -11,16 +11,19 @@ import { CommentManagement } from '../components/admin/CommentManagement';
 import { CategoryManagement } from '../components/admin/CategoryManagement';
 import { TagManagement } from '../components/admin/TagManagement';
 import { MonitoringDashboard } from '../components/admin/MonitoringDashboard';
+import { ReportManagement } from '../components/admin/ReportManagement';
+import { AuditLogList } from '../components/admin/AuditLogList';
+import { AiUsagePanel } from '../components/admin/AiUsagePanel';
 import { ActivityChart } from '../components/charts/ActivityChart';
 import {
   Users, FileText, MessageSquare, Settings, ThumbsUp,
-  FolderOpen, Hash, LogOut, LayoutDashboard
+  FolderOpen, Hash, LogOut, LayoutDashboard, AlertCircle, Shield, Sparkles
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments' | 'categories' | 'tags';
+type AdminView = 'dashboard' | 'users' | 'blogs' | 'comments' | 'categories' | 'tags' | 'reports' | 'audit' | 'ai';
 
-const ADMIN_VIEWS: AdminView[] = ['dashboard', 'users', 'blogs', 'comments', 'categories', 'tags'];
+const ADMIN_VIEWS: AdminView[] = ['dashboard', 'users', 'blogs', 'comments', 'categories', 'tags', 'reports', 'audit', 'ai'];
 
 const isValidAdminView = (value: string | null): value is AdminView => {
   return value !== null && ADMIN_VIEWS.includes(value as AdminView);
@@ -108,15 +111,21 @@ export const Admin: React.FC = () => {
     { id: 'categories', icon: FolderOpen, label: "分类管理" },
     { id: 'tags', icon: Hash, label: "标签管理" },
     { id: 'users', icon: Users, label: "用户管理" },
+    { id: 'reports', icon: AlertCircle, label: "举报管理" },
+    { id: 'audit', icon: Shield, label: "审计日志" },
+    { id: 'ai', icon: Sparkles, label: "AI用量" },
   ];
 
   const renderContent = () => {
     switch (currentView) {
-      case 'users': return <UserManagement onBack={() => setCurrentView('dashboard')} />;
-      case 'blogs': return <BlogManagement onBack={() => setCurrentView('dashboard')} initialStatusFilter={initialBlogStatus} />;
-      case 'comments': return <CommentManagement onBack={() => setCurrentView('dashboard')} />;
-      case 'categories': return <CategoryManagement onBack={() => setCurrentView('dashboard')} />;
-      case 'tags': return <TagManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'users': return <UserManagement />;
+      case 'blogs': return <BlogManagement initialStatusFilter={initialBlogStatus} />;
+      case 'comments': return <CommentManagement />;
+      case 'categories': return <CategoryManagement />;
+      case 'tags': return <TagManagement />;
+      case 'reports': return <ReportManagement />;
+      case 'audit': return <AuditLogList />;
+      case 'ai': return <AiUsagePanel />;
       default: return renderDashboard();
     }
   };

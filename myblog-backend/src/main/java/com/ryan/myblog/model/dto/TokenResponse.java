@@ -32,6 +32,16 @@ public class TokenResponse {
      * 访问令牌过期时间（秒）
      */
     private Long expiresIn;
+
+    /**
+     * Refresh Token过期时间（秒）
+     */
+    private Long refreshExpiresIn;
+
+    /**
+     * 会话ID
+     */
+    private Long sessionId;
     
     public TokenResponse(String accessToken, String refreshToken, Long expiresIn) {
         this.accessToken = accessToken;
@@ -39,8 +49,16 @@ public class TokenResponse {
         this.expiresIn = expiresIn;
         this.tokenType = "Bearer";
     }
-}
 
+    public TokenResponse(String accessToken, String refreshToken, Long expiresIn, Long refreshExpiresIn, Long sessionId) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.expiresIn = expiresIn;
+        this.refreshExpiresIn = refreshExpiresIn;
+        this.sessionId = sessionId;
+        this.tokenType = "Bearer";
+    }
+}
 
 
 

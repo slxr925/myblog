@@ -6,11 +6,15 @@
     <select id="getUserFoldersWithCount" resultType="com.ryan.myblog.model.vo.CollectionFolderVO">
         SELECT
             cf.id,
+            cf.user_id AS userId,
             cf.name,
             cf.description,
             cf.is_default AS isDefault,
             cf.sort_order AS sortOrder,
             cf.collection_count AS collectionCount,
+            cf.is_public AS isPublic,
+            cf.share_code AS shareCode,
+            cf.share_expire_time AS shareExpireTime,
             cf.create_time AS createTime,
             cf.update_time AS updateTime
         FROM tb_collection_folder cf

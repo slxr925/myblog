@@ -33,6 +33,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private final BlogService blogService;
         private final CategoryService categoryService;
         private final TagService tagService;
+        private final com.ryan.myblog.service.CacheService cacheService;
 
         @Autowired(required = false)
         private OpenAiChatModel chatModel;
@@ -302,28 +303,43 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         }
 
         @Override
-        public String generateTitle(String content) {
+        public String generateTitle(String content, String style) {
                 if (!isAIAvailable()) {
                         // 降级：提取前50字作为标题
                         int length = Math.min(50, content.length());
                         return content.substring(0, length).replaceAll("\\s+", " ").trim() + "...";
                 }
 
+                String cacheKey = buildCacheKey("title", content, style);
+                String cached = getCachedValue(cacheKey);
+                if (cached != null) {
+                        return cached;
+                }
+
                 String prompt = String.format(
                                 "请为以下文章生成一个吸引人的标题，要求：\n" +
                                                 "1. 简洁明了，不超过30字\n" +
                                                 "2. 突出文章核心内容\n" +
+                                                buildStyleHint(style) +
                                                 "3. 只返回标题文本，不要其他说明\n\n" +
                                                 "文章内容：\n%s",
                                 truncateContent(content, 1000));
 
-                return callAI(prompt);
+                String result = callAI(prompt);
+                cacheValue(cacheKey, result);
+                return result;
         }
 
         @Override
-        public String polishContent(String content) {
+        public String polishContent(String content, String style) {
                 if (!isAIAvailable()) {
                         return content; // 降级：返回原文
+                }
+
+                String cacheKey = buildCacheKey("polish", content, style);
+                String cached = getCachedValue(cacheKey);
+                if (cached != null) {
+                        return cached;
                 }
 
                 String prompt = String.format(
@@ -331,53 +347,104 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                                 "1. 保持原意不变\n" +
                                                 "2. 优化语句表达，使其更流畅\n" +
                                                 "3. 修正语法和错别字\n" +
+                                                buildStyleHint(style) +
                                                 "4. 只返回润色后的内容，不要其他说明\n\n" +
                                                 "原文：\n%s",
                                 content);
 
-                return callAI(prompt);
+                String result = callAI(prompt);
+                cacheValue(cacheKey, result);
+                return result;
         }
 
         @Override
-        public String generateSummary(String content) {
+        public String generateSummary(String content, String style) {
                 if (!isAIAvailable()) {
                         // 降级：提取前200字
                         int length = Math.min(200, content.length());
                         return content.substring(0, length).replaceAll("\\s+", " ").trim() + "...";
                 }
 
+                String cacheKey = buildCacheKey("summary", content, style);
+                String cached = getCachedValue(cacheKey);
+                if (cached != null) {
+                        return cached;
+                }
+
                 String prompt = String.format(
                                 "请为以下文章生成摘要，要求：\n" +
                                                 "1. 简洁明了，100-200字\n" +
                                                 "2. 准确概括文章核心内容\n" +
+                                                buildStyleHint(style) +
                                                 "3. 只返回摘要文本，不要其他说明\n\n" +
                                                 "文章内容：\n%s",
                                 content);
 
-                return callAI(prompt);
+                String result = callAI(prompt);
+                cacheValue(cacheKey, result);
+                return result;
         }
 
         @Override
-        public List<String> extractKeywords(String content) {
+        public List<String> extractKeywords(String content, String style) {
                 if (!isAIAvailable()) {
                         // 降级：返回空列表
                         return java.util.Collections.emptyList();
                 }
 
+                String cacheKey = buildCacheKey("keywords", content, style);
+                String cached = getCachedValue(cacheKey);
+                if (cached != null) {
+                        return java.util.Arrays.stream(cached.split("[,，、]"))
+                                        .map(String::trim)
+                                        .filter(s -> !s.isEmpty())
+                                        .limit(8)
+                                        .collect(Collectors.toList());
+                }
+
                 String prompt = String.format(
                                 "请从以下文章中提取5-8个关键词，要求：\n" +
                                                 "1. 关键词需准确反映文章内容\n" +
+                                                buildStyleHint(style) +
                                                 "2. 以逗号分隔\n" +
                                                 "3. 只返回关键词列表，不要其他说明\n\n" +
                                                 "文章内容：\n%s",
                                 truncateContent(content, 2000));
 
                 String result = callAI(prompt);
+                cacheValue(cacheKey, result);
                 return java.util.Arrays.stream(result.split("[,，、]"))
                                 .map(String::trim)
                                 .filter(s -> !s.isEmpty())
                                 .limit(8)
                                 .collect(Collectors.toList());
+        }
+
+        private String buildCacheKey(String action, String content, String style) {
+                String base = action + ":" + (content != null ? content.hashCode() : 0) + ":" + (style != null ? style : "default");
+                return "ai:cache:" + base;
+        }
+
+        private String getCachedValue(String key) {
+                try {
+                        return cacheService.get(key, String.class);
+                } catch (Exception e) {
+                        return null;
+                }
+        }
+
+        private void cacheValue(String key, String value) {
+                try {
+                        cacheService.set(key, value, 60 * 60 * 24); // 24小时
+                } catch (Exception ignored) {
+                }
+        }
+
+        private String buildStyleHint(String style) {
+                if (style == null || style.isBlank()) {
+                        return "";
+                }
+                return "风格要求：" + style + "\n";
         }
 
         /**

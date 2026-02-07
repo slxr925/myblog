@@ -54,6 +54,24 @@ public class CollectionFolder {
     private Integer collectionCount;
 
     /**
+     * 是否公开：0-私密，1-公开
+     */
+    @TableField("is_public")
+    private Boolean isPublic;
+
+    /**
+     * 分享码
+     */
+    @TableField("share_code")
+    private String shareCode;
+
+    /**
+     * 分享过期时间
+     */
+    @TableField("share_expire_time")
+    private LocalDateTime shareExpireTime;
+
+    /**
      * 创建时间
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)

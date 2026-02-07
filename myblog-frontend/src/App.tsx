@@ -16,10 +16,12 @@ import EnhancedBlog from './components/EnhancedBlog'
 import { Admin } from './pages/Admin'
 import SearchPage from './pages/Search'
 import SearchResultsPage from './pages/SearchResults'
+import SharedCollection from './pages/SharedCollection'
 import BlogEditor from './components/editor/BlogEditor'
 import MyDrafts from './pages/MyDrafts'
 import Collections from './pages/user/collections'
 import Notifications from './pages/Notifications'
+import FollowingFeed from './pages/FollowingFeed'
 import { Role } from './types/api'
 import { ModernLayout } from './components/layout/ModernLayout'
 
@@ -56,6 +58,11 @@ const AppWrapper = () => {
                           <SearchResultsPage />
                         </PageTransition>
                       } />
+                      <Route path="/collection/share/:shareCode" element={
+                        <PageTransition>
+                          <SharedCollection />
+                        </PageTransition>
+                      } />
                       <Route path="/about" element={
                         <PageTransition>
                           <About />
@@ -87,6 +94,16 @@ const AppWrapper = () => {
                           <ProtectedRoute>
                             <PageTransition>
                               <Notifications />
+                            </PageTransition>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/following"
+                        element={
+                          <ProtectedRoute>
+                            <PageTransition>
+                              <FollowingFeed />
                             </PageTransition>
                           </ProtectedRoute>
                         }

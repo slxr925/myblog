@@ -32,6 +32,32 @@ const BlogDetail: React.FC = () => {
 
   const blogData = blog || {} as BlogDetailVO;
 
+  const updateMeta = (detail: BlogDetailVO) => {
+    if (!detail) return;
+    document.title = `${detail.title} - MyBlog`;
+    const setMetaTag = (key: string, content: string, property = false) => {
+      const selector = property ? `meta[property=\"${key}\"]` : `meta[name=\"${key}\"]`;
+      let tag = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!tag) {
+        tag = document.createElement('meta');
+        if (property) {
+          tag.setAttribute('property', key);
+        } else {
+          tag.setAttribute('name', key);
+        }
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+    const summary = detail.summary || detail.content?.slice(0, 120) || '';
+    setMetaTag('description', summary);
+    setMetaTag('og:title', detail.title, true);
+    setMetaTag('og:description', summary, true);
+    if (detail.coverImg) {
+      setMetaTag('og:image', detail.coverImg, true);
+    }
+  };
+
   // AI 生成摘要
   const handleGenerateSummary = async () => {
     if (!blog?.content) return;
@@ -71,6 +97,7 @@ const BlogDetail: React.FC = () => {
         setLoading(true);
         const response = await api.blog.getDetail(Number(id));
         setBlog(response);
+        updateMeta(response);
 
         setIsLiked(response.isLiked || false);
         setCommentCount(response.commentCount || 0);
@@ -119,6 +146,26 @@ const BlogDetail: React.FC = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   }, [blogData.title, blogData.summary]);
+
+  const handleReportBlog = async () => {
+    if (!blog) return;
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+    const reason = window.prompt('请输入举报原因（选填）');
+    try {
+      await api.report.create({
+        targetType: 'blog',
+        targetId: blog.id,
+        reason: reason || '',
+        detail: '',
+      });
+      toast.success('举报已提交');
+    } catch (error) {
+      toast.error('举报失败');
+    }
+  };
 
   const handleCommentCountChange = useCallback((count: number) => {
     setCommentCount(count);
@@ -199,6 +246,9 @@ const BlogDetail: React.FC = () => {
               />
               <Button variant="outline" className="rounded-sm w-10 h-10 p-0 flex items-center justify-center" onClick={handleShare}>
                 <Share2 className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" className="rounded-sm w-10 h-10 p-0 flex items-center justify-center" onClick={handleReportBlog}>
+                <MessageCircle className="w-4 h-4" />
               </Button>
             </div>
           </div>

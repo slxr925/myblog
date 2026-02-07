@@ -36,14 +36,7 @@ export const TagManagement: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.admin.getTags();
-
-      const tagData = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.records)
-          ? response.records
-          : [];
-
-      setTags(tagData);
+      setTags(Array.isArray(response) ? response : []);
     } catch (err) {
       setError('获取标签列表失败');
       console.error('获取标签失败:', err);
@@ -187,6 +180,9 @@ export const TagManagement: React.FC = () => {
                 <div>
                   <p className="text-2xl font-bold">
                     {tags.filter(tag => {
+                      if (!tag.createTime) {
+                        return false;
+                      }
                       const createdAt = new Date(tag.createTime);
                       const thirtyDaysAgo = new Date();
                       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -357,7 +353,7 @@ export const TagManagement: React.FC = () => {
                         </div>
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 mr-1" />
-                          {new Date(tag.createTime).toLocaleDateString('zh-CN')}
+                          {tag.createTime ? new Date(tag.createTime).toLocaleDateString('zh-CN') : '-'}
                         </div>
                       </div>
                     </CardContent>

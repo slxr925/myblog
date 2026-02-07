@@ -92,7 +92,8 @@ public class CommentController {
      * 审核评论（管理员功能）
      */
     @PostMapping("/{id}/audit")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
+    @com.ryan.myblog.annotation.AuditLog(action = "AUDIT", resource = "COMMENT")
     public Result<Void> auditComment(@PathVariable Long id,
                                    @RequestParam Integer status) {
         try {

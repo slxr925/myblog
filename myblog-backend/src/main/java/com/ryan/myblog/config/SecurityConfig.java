@@ -29,9 +29,11 @@ import java.io.IOException;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final SecurityHeadersFilter securityHeadersFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, SecurityHeadersFilter securityHeadersFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.securityHeadersFilter = securityHeadersFilter;
     }
 
     @Bean
@@ -70,6 +72,8 @@ public class SecurityConfig {
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         // 允许用户注册和登录
                         .requestMatchers("/api/user/register", "/api/user/login", "/api/user/logout").permitAll()
+                        // 允许刷新token
+                        .requestMatchers("/api/auth/refresh", "/api/auth/validate").permitAll()
                         // 允许生成验证码（登录前需要）
                         .requestMatchers("/api/captcha/**").permitAll()
                         // 允许查看博客列表和详情
@@ -81,7 +85,7 @@ public class SecurityConfig {
                         // 允许搜索博客和根据标签搜索
                         .requestMatchers("/api/blog/search", "/api/blog/search/by-tag").permitAll()
                         // 允许获取最新博客和热门博客
-                        .requestMatchers("/api/blog/latest", "/api/blog/hot").permitAll()
+                        .requestMatchers("/api/blog/latest", "/api/blog/hot", "/api/blog/recommend").permitAll()
                         // 允许根据分类获取博客
                         .requestMatchers("/api/blog/category/*").permitAll()
                         // 允许健康检查和欢迎页面
@@ -98,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/track-visit").permitAll()
                         // 允许访问AI助手接口
                         .requestMatchers("/api/ai/**").permitAll()
+                        // 允许访问分享收藏夹
+                        .requestMatchers("/api/collection/share/**").permitAll()
                         // WebSocket端点（认证在Handler中处理）
                         .requestMatchers("/ws/**").permitAll()
                         // 通知API需要认证
@@ -120,10 +126,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/like/**").authenticated()
                         // 用户信息接口需要认证（包括GET和PUT）
                         .requestMatchers("/api/user/info").authenticated()
+                        // 用户会话管理
+                        .requestMatchers("/api/user/sessions/**").authenticated()
                         // 修改密码接口需要认证
                         .requestMatchers("/api/user/change-password").authenticated()
+                        // 举报接口需要认证
+                        .requestMatchers("/api/report/**").authenticated()
+                        // 管理员审计/举报/AI用量
+                        .requestMatchers("/api/admin/reports/**", "/api/admin/audit-logs/**", "/api/admin/ai-usage/**")
+                        .hasRole("ADMIN")
                         // 其他请求需要认证
                         .anyRequest().authenticated())
+                // 安全响应头过滤器
+                .addFilterBefore(securityHeadersFilter, UsernamePasswordAuthenticationFilter.class)
                 // 添加JWT过滤器
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

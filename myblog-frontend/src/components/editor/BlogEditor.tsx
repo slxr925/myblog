@@ -58,6 +58,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
+  const [aiStyle, setAiStyle] = useState('默认');
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSnapshotRef = useRef<string>('');
 
@@ -191,7 +192,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
     setIsUploading(true);
     try {
       const response = await api.upload.uploadEditorImage(file);
-      handleInputChange('coverImg', response.data.url);
+      handleInputChange('coverImg', response.url);
       toast.success('图片上传成功');
     } catch (error) {
       console.error('图片上传失败:', error);
@@ -332,7 +333,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsGeneratingTitle(true);
     try {
-      const result = await api.ai.generateTitle(formData.content);
+      const result = await api.ai.generateTitle(formData.content, aiStyle === '默认' ? undefined : aiStyle);
       handleInputChange('title', result.title);
       toast.success('标题生成成功');
     } catch (error) {
@@ -352,7 +353,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsPolishing(true);
     try {
-      const result = await api.ai.polishContent(formData.content);
+      const result = await api.ai.polishContent(formData.content, aiStyle === '默认' ? undefined : aiStyle);
       handleInputChange('content', result.polishedContent);
       toast.success('文章润色成功');
     } catch (error) {
@@ -439,6 +440,17 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                 <ClipboardList className="w-4 h-4" />
                 草稿箱
               </Button>
+
+              <select
+                value={aiStyle}
+                onChange={(e) => setAiStyle(e.target.value)}
+                className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+              >
+                <option value="默认">AI风格：默认</option>
+                <option value="简洁专业">简洁专业</option>
+                <option value="技术深度">技术深度</option>
+                <option value="轻松友好">轻松友好</option>
+              </select>
 
               <Button
                 variant="outline"

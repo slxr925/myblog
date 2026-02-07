@@ -10,6 +10,7 @@ import {
   Home,
   User,
   Mail,
+  Users,
   LogIn,
   Menu,
   ArrowRight
@@ -73,6 +74,16 @@ const Navigation: React.FC<NavigationProps> = ({
                 <User className="w-4 h-4 mr-2" />
                 {isAuthenticated ? '我' : '关于'}
               </Button>
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  className="text-foreground hover:bg-accent transition-colors duration-300"
+                  onClick={() => handleNavigation('/following')}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  关注
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 className="text-foreground hover:bg-accent transition-colors duration-300"
@@ -129,6 +140,16 @@ const Navigation: React.FC<NavigationProps> = ({
                 <User className="w-4 h-4 mr-2" />
                 {isAuthenticated ? '我' : '关于'}
               </Button>
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  className="text-foreground hover:bg-accent justify-start transition-colors duration-300"
+                  onClick={() => handleNavigation('/following')}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  关注
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 className="text-foreground hover:bg-accent justify-start transition-colors duration-300"

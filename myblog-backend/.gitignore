@@ -96,4 +96,3 @@ config/secrets.yml
 config/database.yml
 src/main/resources/config-local.properties
 
-.claude/settings*

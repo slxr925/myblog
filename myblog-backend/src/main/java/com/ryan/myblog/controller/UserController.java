@@ -31,6 +31,8 @@ public class UserController {
 
     private final UserService userService;
     private final SessionService sessionService;
+    private final com.ryan.myblog.service.UserSessionService userSessionService;
+    private final com.ryan.myblog.utils.JwtUtils jwtUtils;
 
     /**
      * 注册新用户
@@ -95,7 +97,7 @@ public class UserController {
      * 更新用户信息
      */
     @PutMapping("/info")
-    public Result<Void> updateUserInfo(@RequestBody User updateUser) {
+    public Result<Void> updateUserInfo(@RequestBody com.ryan.myblog.model.dto.UserUpdateDTO updateUser) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Long userId) {
             // 先获取当前用户信息
@@ -106,6 +108,11 @@ public class UserController {
                 currentUser.setNickname(updateUser.getNickname());
             }
             if (updateUser.getEmail() != null) {
+                // 邮箱属于敏感字段，需要校验当前密码
+                if (updateUser.getCurrentPassword() == null || updateUser.getCurrentPassword().isBlank()) {
+                    throw new RuntimeException("修改邮箱需要输入当前密码");
+                }
+                userService.verifyPassword(userId, updateUser.getCurrentPassword());
                 currentUser.setEmail(updateUser.getEmail());
             }
             if (updateUser.getBio() != null) {
@@ -154,10 +161,39 @@ public class UserController {
             if (token != null) {
                 // 删除Redis中的会话
                 sessionService.deleteSession(token);
+                Long sessionId = jwtUtils.getSessionIdFromToken(token);
+                if (sessionId != null) {
+                    userSessionService.revokeSession(sessionId, userId);
+                }
             }
             return Result.success();
         }
         throw new RuntimeException("用户未登录");
+    }
+
+    /**
+     * 获取当前用户会话列表
+     */
+    @GetMapping("/sessions")
+    public Result<java.util.List<com.ryan.myblog.model.vo.UserSessionVO>> listSessions() {
+        Long userId = com.ryan.myblog.utils.SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.error(401, "用户未登录");
+        }
+        return Result.success(userSessionService.listSessions(userId));
+    }
+
+    /**
+     * 下线指定会话
+     */
+    @DeleteMapping("/sessions/{sessionId}")
+    public Result<Void> revokeSession(@PathVariable Long sessionId) {
+        Long userId = com.ryan.myblog.utils.SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.error(401, "用户未登录");
+        }
+        userSessionService.revokeSession(sessionId, userId);
+        return Result.success();
     }
 
     /**

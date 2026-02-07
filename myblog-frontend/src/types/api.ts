@@ -134,11 +134,17 @@ export interface BlogListVO {
 }
 
 export interface PageResult<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
+  // Spring Data Page style
+  content?: T[];
+  totalElements?: number;
+  totalPages?: number;
+  size?: number;
+  number?: number;
+  // MyBatis Plus Page style
+  records?: T[];
+  total?: number;
+  pages?: number;
+  current?: number;
 }
 
 // 博客详情增强VO
@@ -212,6 +218,16 @@ export interface AuthState {
   isLoading: boolean;
 }
 
+// Token响应
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType?: string;
+  expiresIn: number;
+  refreshExpiresIn?: number;
+  sessionId?: number;
+}
+
 // 用户角色枚举
 export enum Role {
   USER = 0,
@@ -232,6 +248,7 @@ export interface CommentVO {
   username: string;
   nickname?: string;  // 添加nickname字段
   userAvatar?: string;
+  avatar?: string;
   content: string;
   likeCount?: number;  // 添加点赞数
   isLiked?: boolean;   // 添加是否点赞
@@ -289,6 +306,9 @@ export interface CollectionFolder {
   isDefault: boolean;
   sortOrder: number;
   collectionCount: number;
+  isPublic?: boolean;
+  shareCode?: string;
+  shareExpireTime?: string;
   createTime?: string;
   updateTime?: string;
 }
@@ -308,11 +328,15 @@ export interface UserCollection {
 // 收藏夹VO（包含收藏数量）
 export interface CollectionFolderVO {
   id: number;
+  userId?: number;
   name: string;
   description?: string;
   isDefault: boolean;
   sortOrder: number;
   collectionCount: number;
+  isPublic?: boolean;
+  shareCode?: string;
+  shareExpireTime?: string;
   createTime?: string;
   updateTime?: string;
 }
@@ -338,6 +362,7 @@ export interface CollectionFolderDTO {
   name: string;
   description?: string;
   sortOrder?: number;
+  isPublic?: boolean;
 }
 
 // 收藏操作DTO
@@ -425,7 +450,7 @@ export interface NotificationVO {
   senderAvatar?: string;
   resourceId?: number;   // 修正为 resourceId
   resourceType?: string; // 修正为 resourceType
-  extraData?: Record<string, any>; // 后端直接返回 Map<String, Object>
+  extraData?: string | Record<string, any>; // 后端可能返回JSON字符串或Map
   status: NotificationStatus; // 这里后端返回的是 isRead (boolean)，或者 status
   isRead?: boolean; // 后端 NotificationVO 用 isRead
   createTime: string;
@@ -441,6 +466,93 @@ export interface NotificationSettingVO {
   likeNotification: boolean;
   followNotification: boolean;
   systemNotification: boolean;
+}
+
+// 用户会话
+export interface UserSessionVO {
+  sessionId: number;
+  ip?: string;
+  userAgent?: string;
+  deviceLabel?: string;
+  lastSeen?: string;
+  createdAt?: string;
+  status?: number;
+}
+
+// 举报
+export interface ReportCreateDTO {
+  targetType: string;
+  targetId: number;
+  reason?: string;
+  detail?: string;
+}
+
+export interface ReportReviewDTO {
+  status: number;
+  action?: string;
+  notes?: string;
+}
+
+export interface ReportVO {
+  id: number;
+  reporterId: number;
+  reporterName?: string;
+  targetType: string;
+  targetId: number;
+  reason?: string;
+  detail?: string;
+  status: number;
+  reviewerId?: number;
+  reviewerName?: string;
+  reviewTime?: string;
+  action?: string;
+  notes?: string;
+  createTime?: string;
+}
+
+// 博客版本
+export interface BlogRevisionVO {
+  id: number;
+  blogId: number;
+  version: number;
+  title: string;
+  summary?: string;
+  authorId: number;
+  createTime?: string;
+}
+
+export interface BlogRevisionDiffVO {
+  fromRevisionId: number;
+  toRevisionId: number;
+  fromTitle?: string;
+  toTitle?: string;
+  fromSummary?: string;
+  toSummary?: string;
+  fromContentSnippet?: string;
+  toContentSnippet?: string;
+  titleChanged?: boolean;
+  summaryChanged?: boolean;
+  contentChanged?: boolean;
+}
+
+// 搜索热词
+export interface SearchTrendVO {
+  keyword: string;
+  count: number;
+}
+
+// AI使用统计
+export interface AiUsageDailyVO {
+  date: string;
+  requestCount: number;
+  tokenCount: number;
+}
+
+export interface AiUsageUserVO {
+  userId: number;
+  username?: string;
+  requestCount: number;
+  tokenCount: number;
 }
 
 // 未读数量响应

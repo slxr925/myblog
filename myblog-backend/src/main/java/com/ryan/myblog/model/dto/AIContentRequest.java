@@ -14,4 +14,9 @@ public class AIContentRequest {
     @NotBlank(message = "内容不能为空")
     @Size(max = 10000, message = "内容长度不能超过10000字符")
     private String content;
+
+    /**
+     * 可选的写作风格/模板
+     */
+    private String style;
 }

@@ -160,6 +160,16 @@ public interface BlogService {
     IPage<BlogDetailVO> getLikedBlogsByUser(PageRequest pageRequest, Long userId);
 
     /**
+     * 获取关注流博客
+     */
+    IPage<BlogDetailVO> getFollowingFeed(PageRequest pageRequest, Long userId);
+
+    /**
+     * 获取推荐博客
+     */
+    List<BlogDetailVO> getRecommendedBlogs(Long userId, int limit);
+
+    /**
      * 获取各状态的博客总数（支持关键词过滤）
      * 
      * @param keyword 搜索关键词

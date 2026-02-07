@@ -12,7 +12,7 @@ interface Category {
 interface Tag {
   id: number;
   name: string;
-  createTime: string;
+  createTime?: string;
 }
 
 interface CategoryNavigationProps {

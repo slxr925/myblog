@@ -19,4 +19,6 @@ public class CollectionFolderDTO {
     private String description;
 
     private Integer sortOrder;
+
+    private Boolean isPublic;
 }

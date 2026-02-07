@@ -129,4 +129,19 @@ public class NotificationEvent extends ApplicationEvent {
         return new NotificationEvent(source, NotificationType.SYSTEM, receiverId, null,
                 title, content, null, null, extraData);
     }
+
+    /**
+     * 创建@提及通知事件
+     */
+    public static NotificationEvent mentionEvent(Object source,
+            Long receiverId,
+            Long senderId,
+            String commentContent,
+            Long commentId,
+            Map<String, Object> extraData) {
+        String title = "有人提及了你";
+        String content = "你在评论中被@提及";
+        return new NotificationEvent(source, NotificationType.MENTION, receiverId, senderId,
+                title, content, ResourceType.COMMENT, commentId, extraData);
+    }
 }

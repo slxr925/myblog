@@ -56,14 +56,22 @@ public class JwtUtils {
      * @param ip 客户端IP（仅对管理员绑定）
      */
     public String generateAccessToken(Long userId, String username, Integer role, String ip) {
+        return generateAccessToken(userId, username, role, ip, null);
+    }
+
+    /**
+     * 生成Access Token（包含会话ID）
+     */
+    public String generateAccessToken(Long userId, String username, Integer role, String ip, Long sessionId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtProperties.getAccessTokenExpiration() * 1000);
-        
+
         var builder = Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", role)
                 .claim("type", "access")
+                .claim("sid", sessionId)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate);
         
@@ -81,12 +89,21 @@ public class JwtUtils {
      * 只包含用户ID，用于刷新Access Token
      */
     public String generateRefreshToken(Long userId) {
+        return generateRefreshToken(userId, null, java.util.UUID.randomUUID().toString());
+    }
+
+    /**
+     * 生成Refresh Token（包含会话ID和JTI）
+     */
+    public String generateRefreshToken(Long userId, Long sessionId, String jti) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtProperties.getRefreshTokenExpiration() * 1000);
-        
+
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("type", "refresh")
+                .claim("sid", sessionId)
+                .claim("jti", jti)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -136,6 +153,34 @@ public class JwtUtils {
         try {
             Claims claims = parseToken(token);
             return claims.get("type", String.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取会话ID
+     */
+    public Long getSessionIdFromToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            Object value = claims.get("sid");
+            if (value == null) return null;
+            if (value instanceof Integer) return ((Integer) value).longValue();
+            if (value instanceof Long) return (Long) value;
+            return Long.parseLong(value.toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取JTI
+     */
+    public String getJtiFromToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return claims.get("jti", String.class);
         } catch (Exception e) {
             return null;
         }

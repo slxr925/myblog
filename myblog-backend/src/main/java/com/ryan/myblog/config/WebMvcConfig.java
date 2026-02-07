@@ -1,6 +1,7 @@
 package com.ryan.myblog.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -15,14 +16,26 @@ public class WebMvcConfig implements WebMvcConfigurer {
     
     private final FileUploadProperties fileUploadProperties;
     
+    @Value("${app.security.cors.allowed-origins:*}")
+    private String allowedOrigins;
+    
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOriginPatterns("*") // 允许所有来源
+        String[] origins = allowedOrigins != null ? allowedOrigins.split(",") : new String[] { "*" };
+        var cors = registry.addMapping("/api/**")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+
+        if (origins.length == 1 && "*".equals(origins[0].trim())) {
+            cors.allowedOriginPatterns("*");
+        } else {
+            for (int i = 0; i < origins.length; i++) {
+                origins[i] = origins[i].trim();
+            }
+            cors.allowedOrigins(origins);
+        }
     }
     
     @Override

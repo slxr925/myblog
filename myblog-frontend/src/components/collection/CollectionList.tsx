@@ -297,10 +297,12 @@ const CollectionList: React.FC<CollectionListProps> = ({ folderId, onRefresh }) 
                             <span>{item.authorName}</span>
                             <span>{item.viewCount} 阅读</span>
                             <span>
-                              {formatDistanceToNow(new Date(item.createTime), {
-                                addSuffix: true,
-                                locale: zhCN
-                              })}
+                              {item.createTime
+                                ? formatDistanceToNow(new Date(item.createTime), {
+                                    addSuffix: true,
+                                    locale: zhCN
+                                  })
+                                : '-'}
                             </span>
                           </div>
 
