@@ -11,9 +11,4 @@ This is a README for My Blog.
 
 ...
 
-## 测试账号 (已移除)
-
-~**默认账号**：`admin` / `admin123`~
-
 ...
-
