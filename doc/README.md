@@ -9,6 +9,7 @@
 | 文档 | 说明 | 适用场景 |
 |------|------|----|
 | [📦 deploy/DEPLOYMENT.md](./deploy/DEPLOYMENT.md) | **完整部署手册** | 首次部署、生产环境部署 ⭐ |
+| [🗄️ deploy/DATABASE.md](./deploy/DATABASE.md) | **数据库部署指南** | 数据库初始化、升级、备份 ⭐⭐ |
 | [🚀 deploy/QUICK-ITERATION.md](./deploy/QUICK-ITERATION.md) | **快速迭代部署** | 日常开发、版本更新 ⭐⭐⭐ |
 | [🔐 deploy/SSH-SETUP.md](./deploy/SSH-SETUP.md) | **SSH 密钥配置** | 实现一键部署 |
 
@@ -96,6 +97,7 @@ docker stats
 
 **🛠️ 运维人员：**
 - DEPLOYMENT.md - 完整部署流程
+- DATABASE.md - 数据库管理指南 ⭐
 - QUICK-ITERATION.md - 快速更新部署
 - MONITORING.md - 监控配置
 - BACKUP-RESTORE.md - 备份恢复
@@ -358,6 +360,13 @@ df -h
 
 ### 🔄 最近更新
 
+**2026-02-07 - v2.0.1 UI优化和数据库同步** ⭐⭐
+- ✅ **UI优化** - 导航栏样式增强、页面风格统一、关注动态页面改进
+- ✅ **收藏分享功能** - 完整实现收藏夹分享功能，支持公开链接和过期时间
+- ✅ **数据库完全同步** - 本地和生产环境数据库100%同步，新增7张管理功能表
+- ✅ **数据库部署文档** - 新增 DATABASE.md 完整的数据库部署和管理指南
+- ✅ **收藏功能修复** - 解决unique key冲突问题，使用物理删除绕过@TableLogic
+
 **2026-01-27 - v2.0.0 版本发布** ⭐⭐⭐
 - ✅ **Editorial Modernism 设计系统** - 全新设计语言，OKLCH 色彩空间，自定义字体（Playfair Display、DM Mono、Crimson Pro）
 - ✅ **验证码功能** - 注册/登录表单添加图形验证码防护，防止机器人攻击
@@ -387,4 +396,4 @@ df -h
 
 **保持文档更新，让协作更高效！** 📚
 
-**最后更新：** 2026-01-27
+**最后更新：** 2026-02-07
