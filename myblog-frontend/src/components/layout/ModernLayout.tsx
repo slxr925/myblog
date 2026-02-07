@@ -145,7 +145,7 @@ export const ModernLayout = () => {
                   <Button
                     variant="ghost"
                     onClick={() => handleNavigation('/following')}
-                    className="justify-start w-full h-12 font-mono-display text-sm uppercase tracking-wider hover:bg-muted"
+                    className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
                   >
                     <Heart className="w-4 h-4 mr-3" /> 动态
                   </Button>
