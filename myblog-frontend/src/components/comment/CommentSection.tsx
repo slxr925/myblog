@@ -5,7 +5,6 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 import { api } from '../../utils/api';
@@ -23,11 +22,12 @@ interface CommentSectionProps {
 
 interface CommentItemProps {
   comment: CommentVO;
-  onReply: (parentId: number, content: string) => void;
+  onReply: (parentId: number, replyUserId: number, content: string) => void;
   onLike: (commentId: number) => void;
   onDelete?: (commentId: number) => void;
   isReply?: boolean;
   user?: any;
+  depth?: number;
 }
 
 const renderCommentContent = (content: string) => {
@@ -51,16 +51,19 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onDelete,
   isReply = false,
   user,
+  depth = 1,
 }) => {
   const [isLiking, setIsLiking] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [showReplyEmojiPicker, setShowReplyEmojiPicker] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const replyTotal = depth === 1 ? (comment.replyCount ?? comment.replies?.length ?? 0) : 0;
 
   const handleReply = () => {
     if (replyContent.trim()) {
-      onReply(comment.id, replyContent.trim());
+      onReply(comment.id, comment.userId, replyContent.trim());
       setReplyContent('');
       setShowReplyInput(false);
       setShowReplyEmojiPicker(false);
@@ -197,6 +200,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
           {/* 评论内容 */}
           <div className="text-foreground mb-3 leading-relaxed whitespace-pre-wrap">
+            {comment.replyUserNickname && (
+              <span className="mr-2 text-muted-foreground">
+                回复 <span className="text-accent font-medium">@{comment.replyUserNickname}</span>
+              </span>
+            )}
             {renderCommentContent(comment.content)}
           </div>
 
@@ -211,10 +219,15 @@ const CommentItem: React.FC<CommentItemProps> = ({
               <Reply className="w-4 h-4 mr-1" />
               回复
             </Button>
-            {comment.replyCount !== undefined && comment.replyCount > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {comment.replyCount} 条回复
-              </Badge>
+            {depth === 1 && replyTotal > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-muted-foreground hover:text-accent"
+              >
+                {isExpanded ? '收起回复' : `展开 ${replyTotal} 条回复`}
+              </Button>
             )}
           </div>
 
@@ -284,7 +297,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           )}
 
           {/* 子评论 */}
-          {comment.replies && comment.replies.length > 0 && (
+          {depth === 1 && isExpanded && comment.replies && comment.replies.length > 0 && (
             <div className="mt-4 space-y-3">
               {comment.replies.map((reply) => (
                 <CommentItem
@@ -295,6 +308,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   onDelete={onDelete}
                   isReply={true}
                   user={user}
+                  depth={2}
                 />
               ))}
             </div>
@@ -316,6 +330,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const countAllComments = (items: CommentVO[]): number =>
+    items.reduce((total, item) => total + 1 + countAllComments(item.replies || []), 0);
+
   // 获取评论列表
   const fetchComments = async () => {
     try {
@@ -325,8 +342,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
       if (response && response.records) {
         setComments(response.records);
         // 通知父组件更新评论计数
-        onCommentCountChange?.(0);
-        onCommentCountChange?.(response.records.length);
+        onCommentCountChange?.(countAllComments(response.records));
       }
     } catch (error: any) {
       console.error('获取评论失败:', error);
@@ -441,7 +457,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
   };
 
   // 回复评论
-  const handleReply = async (parentId: number, content: string) => {
+  const handleReply = async (parentId: number, replyUserId: number, content: string) => {
     if (!content.trim()) {
       setError('请输入回复内容');
       return;
@@ -459,6 +475,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
         blogId,
         content,
         parentId,
+        replyUserId,
       };
 
       await api.comment.create(commentData);
@@ -673,6 +690,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ blogId, classNam
               onLike={handleLikeComment}
               onDelete={handleDeleteComment}
               user={user}
+              depth={1}
             />
           ))}
         </div>

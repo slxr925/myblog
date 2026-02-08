@@ -22,6 +22,13 @@ public interface CommentMapper extends BaseMapper<Comment> {
                         @Param("keyword") String keyword);
 
         /**
+         * 分页查询根评论列表
+         */
+        IPage<Comment> selectRootCommentPage(Page<Comment> page,
+                        @Param("blogId") Long blogId,
+                        @Param("status") Integer status);
+
+        /**
          * 根据用户ID分页查询评论列表（包含博客标题）
          */
         IPage<Comment> selectCommentsByUser(IPage<Comment> page,

@@ -34,6 +34,7 @@ All deployment scripts are located in the `deploy/local/` directory at the proje
 - Fastest way to get the development environment running
 - Stops existing containers, builds images (if needed), and starts all services
 - Performs health checks on MySQL, Redis, Kafka, and backend service
+- Does not create deployment backups (local uses Docker volumes only)
 - Usage: `./deploy/local/quick-deploy.sh [--rebuild]`
 - The `--rebuild` flag forces a full rebuild without cache
 

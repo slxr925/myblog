@@ -199,7 +199,17 @@ else
     echo -e "${YELLOW}⚠ 前端服务检查失败，但容器运行中${NC}"
 fi
 
-# 9. 完成
+# 10. 清理老备份（保留 3 天内）
+echo ""
+echo -e "${BLUE}=== 步骤 10: 清理老备份 ===${NC}"
+if [ -d "backups" ]; then
+    find backups -maxdepth 1 -type d -name "backup-*" -mtime +3 -exec rm -rf {} +
+    echo -e "${GREEN}✓ 已清理 3 天以上的老备份${NC}"
+else
+    echo -e "${YELLOW}⚠ 未找到 backups 目录，跳过清理${NC}"
+fi
+
+# 11. 完成
 echo ""
 echo -e "${GREEN}==================================="
 echo "部署完成！"

@@ -32,6 +32,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,14 +68,27 @@ public class CommentServiceImpl implements CommentService {
         comment.setUserId(userId);
         comment.setContent(commentSaveDTO.getContent());
 
+        Comment parentComment = null;
+
         // 处理父评论ID：如果为0，则设置为null（顶级评论）
         if (commentSaveDTO.getParentId() != null && commentSaveDTO.getParentId() > 0) {
-            comment.setParentId(commentSaveDTO.getParentId());
+            parentComment = commentMapper.selectById(commentSaveDTO.getParentId());
+            if (parentComment == null) {
+                throw new RuntimeException("父评论不存在");
+            }
+            if (!parentComment.getBlogId().equals(commentSaveDTO.getBlogId())) {
+                throw new RuntimeException("父评论不属于该博客");
+            }
+            comment.setParentId(parentComment.getId());
         } else {
             comment.setParentId(null);
         }
 
-        comment.setReplyUserId(commentSaveDTO.getReplyUserId());
+        Long replyUserId = commentSaveDTO.getReplyUserId();
+        if (comment.getParentId() != null && replyUserId == null && parentComment != null) {
+            replyUserId = parentComment.getUserId();
+        }
+        comment.setReplyUserId(replyUserId);
         comment.setStatus(1); // 默认通过审核，如需要审核可设为0
         comment.setCreateTime(LocalDateTime.now());
         comment.setUpdateTime(LocalDateTime.now());
@@ -247,10 +261,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         // 获取所有用户信息
-        List<Long> userIds = comments.stream()
-                .map(Comment::getUserId)
-                .distinct()
-                .collect(Collectors.toList());
+        List<Long> userIds = extractCommentUserIds(comments);
 
         List<User> users = userMapper.selectBatchIds(userIds);
         Map<Long, User> userMap = users.stream()
@@ -262,7 +273,7 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toList());
 
         // 构建树形结构
-        return buildCommentTree(commentVOs);
+        return buildCommentFlatTree(commentVOs);
     }
 
     @Override
@@ -286,10 +297,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         // 获取用户信息
-        List<Long> userIds = commentPage.getRecords().stream()
-                .map(Comment::getUserId)
-                .distinct()
-                .collect(Collectors.toList());
+        List<Long> userIds = extractCommentUserIds(commentPage.getRecords());
 
         List<User> users = userMapper.selectBatchIds(userIds);
         Map<Long, User> userMap = users.stream()
@@ -303,6 +311,66 @@ public class CommentServiceImpl implements CommentService {
         Page<CommentVO> voPage = new Page<>(pageRequest.getPage(), pageRequest.getSize());
         voPage.setRecords(commentVOs);
         voPage.setTotal(commentPage.getTotal());
+
+        return voPage;
+    }
+
+    @Override
+    public IPage<CommentVO> getCommentTreePage(PageRequest pageRequest, Long blogId, Integer status) {
+        Page<Comment> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        IPage<Comment> rootPage = commentMapper.selectRootCommentPage(page, blogId, status);
+
+        if (CollectionUtils.isEmpty(rootPage.getRecords())) {
+            return new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        }
+
+        // 屏蔽用户过滤
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        List<Long> blockedUserIds = currentUserId != null
+            ? userBlockService.getBlockedUserIds(currentUserId)
+            : Collections.emptyList();
+        if (!blockedUserIds.isEmpty()) {
+            rootPage.setRecords(rootPage.getRecords().stream()
+                .filter(comment -> !blockedUserIds.contains(comment.getUserId()))
+                .collect(Collectors.toList()));
+        }
+
+        List<Long> rootIds = rootPage.getRecords().stream()
+                .map(Comment::getId)
+                .collect(Collectors.toList());
+
+        if (rootIds.isEmpty()) {
+            Page<CommentVO> emptyPage = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+            emptyPage.setTotal(rootPage.getTotal());
+            return emptyPage;
+        }
+
+        List<Comment> descendantComments = fetchAllDescendants(rootIds, blogId, status);
+
+        List<Comment> allComments = new ArrayList<>();
+        allComments.addAll(rootPage.getRecords());
+        allComments.addAll(descendantComments);
+
+        if (!blockedUserIds.isEmpty()) {
+            allComments = allComments.stream()
+                    .filter(comment -> !blockedUserIds.contains(comment.getUserId()))
+                    .collect(Collectors.toList());
+        }
+
+        List<Long> userIds = extractCommentUserIds(allComments);
+        List<User> users = userMapper.selectBatchIds(userIds);
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        List<CommentVO> commentVOs = allComments.stream()
+                .map(comment -> convertToVO(comment, userMap))
+                .collect(Collectors.toList());
+
+        List<CommentVO> rootCommentVOs = buildCommentFlatTree(commentVOs);
+
+        Page<CommentVO> voPage = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        voPage.setRecords(rootCommentVOs);
+        voPage.setTotal(rootPage.getTotal());
 
         return voPage;
     }
@@ -390,8 +458,14 @@ public class CommentServiceImpl implements CommentService {
             return null;
         }
 
-        User user = userMapper.selectById(comment.getUserId());
-        Map<Long, User> userMap = Map.of(user.getId(), user);
+        List<Long> userIds = new ArrayList<>();
+        userIds.add(comment.getUserId());
+        if (comment.getReplyUserId() != null) {
+            userIds.add(comment.getReplyUserId());
+        }
+        List<User> users = userMapper.selectBatchIds(userIds);
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
 
         return convertToVO(comment, userMap);
     }
@@ -414,10 +488,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         // 获取用户信息
-        List<Long> userIds = commentPage.getRecords().stream()
-                .map(Comment::getUserId)
-                .distinct()
-                .collect(Collectors.toList());
+        List<Long> userIds = extractCommentUserIds(commentPage.getRecords());
 
         List<User> users = userMapper.selectBatchIds(userIds);
         Map<Long, User> userMap = users.stream()
@@ -493,21 +564,94 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 构建评论树形结构
      */
-    private List<CommentVO> buildCommentTree(List<CommentVO> comments) {
-        List<CommentVO> rootComments = new ArrayList<>();
-        Map<Long, List<CommentVO>> childrenMap = comments.stream()
-                .filter(comment -> comment.getParentId() != null)
-                .collect(Collectors.groupingBy(CommentVO::getParentId));
+    private List<CommentVO> buildCommentFlatTree(List<CommentVO> comments) {
+        Map<Long, CommentVO> commentMap = comments.stream()
+                .collect(Collectors.toMap(CommentVO::getId, comment -> comment));
+        List<CommentVO> roots = comments.stream()
+                .filter(comment -> comment.getParentId() == null)
+                .collect(Collectors.toList());
 
-        for (CommentVO comment : comments) {
-            if (comment.getParentId() == null) {
-                // 根评论
-                comment.setChildren(childrenMap.get(comment.getId()));
-                rootComments.add(comment);
-            }
+        Map<Long, List<CommentVO>> replyMap = comments.stream()
+                .filter(comment -> comment.getParentId() != null)
+                .map(comment -> Map.entry(resolveRootId(comment, commentMap), comment))
+                .filter(entry -> entry.getKey() != null)
+                .collect(Collectors.groupingBy(Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+
+        for (CommentVO root : roots) {
+            List<CommentVO> replies = replyMap.getOrDefault(root.getId(), new ArrayList<>());
+            replies.sort((left, right) -> {
+                if (left.getCreateTime() == null && right.getCreateTime() == null) {
+                    return 0;
+                }
+                if (left.getCreateTime() == null) {
+                    return -1;
+                }
+                if (right.getCreateTime() == null) {
+                    return 1;
+                }
+                return left.getCreateTime().compareTo(right.getCreateTime());
+            });
+            root.setReplies(replies);
+            root.setReplyCount(replies.size());
+            root.setChildren(null);
         }
 
-        return rootComments;
+        return roots;
+    }
+
+    private Long resolveRootId(CommentVO comment, Map<Long, CommentVO> commentMap) {
+        CommentVO current = comment;
+        int guard = 0;
+        while (current != null && current.getParentId() != null && guard < 20) {
+            current = commentMap.get(current.getParentId());
+            guard += 1;
+        }
+        return current != null ? current.getId() : null;
+    }
+
+    private List<Long> extractCommentUserIds(List<Comment> comments) {
+        return comments.stream()
+                .flatMap(comment -> {
+                    List<Long> ids = new ArrayList<>();
+                    ids.add(comment.getUserId());
+                    if (comment.getReplyUserId() != null) {
+                        ids.add(comment.getReplyUserId());
+                    }
+                    return ids.stream();
+                })
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private List<Comment> fetchRepliesByParentIds(List<Long> parentIds, Long blogId, Integer status) {
+        if (parentIds == null || parentIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Comment::getParentId, parentIds);
+        wrapper.eq(Comment::getBlogId, blogId);
+        if (status != null) {
+            wrapper.eq(Comment::getStatus, status);
+        }
+        wrapper.orderByAsc(Comment::getCreateTime);
+        return commentMapper.selectList(wrapper);
+    }
+
+    private List<Comment> fetchAllDescendants(List<Long> rootIds, Long blogId, Integer status) {
+        List<Comment> result = new ArrayList<>();
+        List<Long> parentIds = new ArrayList<>(rootIds);
+        while (!parentIds.isEmpty()) {
+            List<Comment> batch = fetchRepliesByParentIds(parentIds, blogId, status);
+            if (batch.isEmpty()) {
+                break;
+            }
+            result.addAll(batch);
+            parentIds = batch.stream()
+                    .map(Comment::getId)
+                    .collect(Collectors.toList());
+        }
+        return result;
     }
 
     /**

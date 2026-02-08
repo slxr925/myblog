@@ -37,6 +37,34 @@
         ORDER BY c.create_time DESC
     </select>
 
+    <!-- 分页查询根评论列表 -->
+    <select id="selectRootCommentPage" resultType="com.ryan.myblog.model.entity.Comment">
+        SELECT
+            c.id,
+            c.blog_id,
+            c.user_id,
+            c.parent_id,
+            c.reply_user_id,
+            c.content,
+            c.status,
+            (SELECT COUNT(*) FROM tb_user_like ul 
+             WHERE ul.target_type = 'comment' AND ul.target_id = c.id 
+             AND ul.status = 1 AND ul.deleted = 0) AS like_count,
+            c.create_time,
+            c.update_time,
+            c.deleted
+        FROM tb_comment c
+        WHERE c.deleted = 0
+          AND c.parent_id IS NULL
+        <if test="blogId != null">
+            AND c.blog_id = #{blogId}
+        </if>
+        <if test="status != null">
+            AND c.status = #{status}
+        </if>
+        ORDER BY c.create_time DESC
+    </select>
+
 
 
     <!-- 根据用户ID分页查询评论列表（包含博客标题） -->

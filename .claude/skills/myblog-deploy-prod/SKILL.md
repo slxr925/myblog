@@ -53,6 +53,7 @@ All production deployment scripts are located in the `deploy/prod/` directory at
 - Server-side deployment script (run on production server)
 - Checks environment, validates artifacts, builds Docker images
 - Performs health checks with automatic rollback on failure
+- Cleans up deployment backups older than 3 days after a successful deploy
 - Usage (on server): `cd /app/myblog/deploy && ./quick-deploy.sh`
 
 ### Management Operations

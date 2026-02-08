@@ -39,7 +39,11 @@ export interface CommentVO {
   userId: number
   username: string
   userAvatar?: string
+  parentId?: number
+  replyUserId?: number
+  replyUserNickname?: string
   content: string
+  replies?: CommentVO[]
   createTime: string
   updateTime: string
 }
@@ -47,6 +51,8 @@ export interface CommentVO {
 export interface CommentCreateDTO {
   blogId: number
   content: string
+  parentId?: number
+  replyUserId?: number
 }
 
 // 博客状态枚举
