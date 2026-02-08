@@ -15,7 +15,7 @@
 - [ ] Dist directory contains expected files
 
 ### Server Preparation
-- [ ] SSH connection works: `ssh root@49.235.139.118`
+- [ ] SSH connection works: `ssh root@www.ryansblog.club`
 - [ ] Server has sufficient disk space
 - [ ] Backup is recent (or create new backup)
 - [ ] Environment variables are correct in `.env.prod`
@@ -51,31 +51,31 @@ Watch for:
 
 ### Container Status
 ```bash
-ssh root@49.235.139.118 "docker ps -f name=myblog"
+ssh root@www.ryansblog.club "docker ps -f name=myblog"
 ```
 
 Expected: All containers running and healthy
 
 ### Backend Health Check
 ```bash
-curl http://49.235.139.118:8081/actuator/health
+curl http://www.ryansblog.club:8081/actuator/health
 ```
 
 Expected: `{"status":"UP"}`
 
 ### Frontend Access
-Visit: http://49.235.139.118:3000
+Visit: http://www.ryansblog.club:3000
 
 Expected: Homepage loads without errors
 
 ### API Documentation
-Visit: http://49.235.139.118:8081/doc.html
+Visit: http://www.ryansblog.club:8081/doc.html
 
 Expected: Swagger UI loads
 
 ### Log Check
 ```bash
-ssh root@49.235.139.118 "docker logs --tail=100 myblog-backend"
+ssh root@www.ryansblog.club "docker logs --tail=100 myblog-backend"
 ```
 
 Check for:
@@ -91,7 +91,7 @@ If deployment fails:
 2. Automatic rollback may have occurred
 3. Manual rollback if needed:
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 cd /app/myblog/backups
 ls -la  # Find backup
 cp backup-YYYYMMDD-HHMMSS/myblog-backend.jar ../myblog-backend/target/
@@ -103,14 +103,14 @@ docker-compose -f docker-compose.prod.yml restart backend
 ### Port Already in Use
 ```bash
 # Check what's using the port
-ssh root@49.235.139.118 "netstat -tulpn | grep :8081"
+ssh root@www.ryansblog.club "netstat -tulpn | grep :8081"
 ```
 
 ### Out of Memory
 ```bash
 # Check server resources
-ssh root@49.235.139.118 "free -h"
-ssh root@49.235.139.118 "df -h"
+ssh root@www.ryansblog.club "free -h"
+ssh root@www.ryansblog.club "df -h"
 ```
 
 ### Database Connection Failed
@@ -120,6 +120,6 @@ ssh root@49.235.139.118 "df -h"
 
 ## Emergency Contacts
 
-- Server Admin: root@49.235.139.118
+- Server Admin: root@www.ryansblog.club
 - Backup Location: /app/myblog/backups/
 - Log Location: `docker logs myblog-backend` or `docker logs myblog-frontend`

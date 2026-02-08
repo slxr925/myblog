@@ -4,7 +4,7 @@
 
 ### Check All Services
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 docker ps -f name=myblog
 ```
 
@@ -13,10 +13,10 @@ Expected output: All containers running and healthy
 ### Quick Health Check
 ```bash
 # Backend
-curl http://49.235.139.118:8081/actuator/health
+curl http://www.ryansblog.club:8081/actuator/health
 
 # Frontend
-curl -I http://49.235.139.118:3000
+curl -I http://www.ryansblog.club:3000
 
 # MySQL
 docker exec myblog-mysql mysqladmin ping -h localhost
@@ -174,14 +174,14 @@ docker exec myblog-mysql mysql -uroot -p -e "SHOW PROCESSLIST;"
 **Diagnosis:**
 ```bash
 # Check SSH connection
-ssh root@49.235.139.118 "echo 'Connection OK'"
+ssh root@www.ryansblog.club "echo 'Connection OK'"
 
 # Check artifacts exist
 ls -la myblog-backend/target/*.jar
 ls -la myblog-frontend/dist/
 
 # Check server disk space
-ssh root@49.235.139.118 "df -h"
+ssh root@www.ryansblog.club "df -h"
 ```
 
 **Common Causes:**
@@ -212,7 +212,7 @@ ssh root@49.235.139.118 "df -h"
 docker logs myblog-backend
 
 # Application logs (mounted volume)
-ssh root@49.235.139.118 "tail -f /app/myblog/data/backend/logs/spring.log"
+ssh root@www.ryansblog.club "tail -f /app/myblog/data/backend/logs/spring.log"
 ```
 
 ### Frontend Log Locations
@@ -233,14 +233,14 @@ docker logs myblog-mysql
 
 ### Full Service Restart
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 cd /app/myblog
 docker-compose -f docker-compose.prod.yml restart
 ```
 
 ### Rollback to Previous Version
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 cd /app/myblog/backups
 ls -la  # Find backup directory
 cp backup-YYYYMMDD-HHMMSS/myblog-backend.jar ../myblog-backend/target/
@@ -249,7 +249,7 @@ docker-compose -f docker-compose.prod.yml restart backend
 
 ### Database Restore
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 cd /app/myblog/backups
 gunzip myblog_db_YYYYMMDD_HHMMSS.sql.gz
 docker exec -i myblog-mysql mysql -uroot -p myblog < myblog_db_YYYYMMDD_HHMMSS.sql
@@ -257,7 +257,7 @@ docker exec -i myblog-mysql mysql -uroot -p myblog < myblog_db_YYYYMMDD_HHMMSS.s
 
 ### Reset Everything (Destructive)
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 cd /app/myblog
 docker-compose -f docker-compose.prod.yml down -v
 # This removes all data - only use as last resort
@@ -311,7 +311,7 @@ Use external services:
 
 ## Contact Information
 
-- Server: root@49.235.139.118
+- Server: root@www.ryansblog.club
 - Project Path: /app/myblog
 - Backup Location: /app/myblog/backups/
 - Deploy Logs: Check `deploy-update.sh` output

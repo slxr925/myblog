@@ -61,11 +61,11 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 # 一路回车即可
 
 # 2. 复制公钥到服务器
-ssh-copy-id root@49.235.139.118
+ssh-copy-id root@www.ryansblog.club
 # 输入一次密码即可
 
 # 3. 测试免密登录
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 # 如果不需要密码直接登录，说明配置成功
 ```
 
@@ -73,17 +73,17 @@ ssh root@49.235.139.118
 
 ```powershell
 # 使用 PowerShell
-type $env:USERPROFILE\.ssh\id_rsa.pub | ssh root@49.235.139.118 "cat >> .ssh/authorized_keys"
+type $env:USERPROFILE\.ssh\id_rsa.pub | ssh root@www.ryansblog.club "cat >> .ssh/authorized_keys"
 ```
 
 **macOS/Linux 用户：**
 
 ```bash
 # 方法一：使用 ssh-copy-id（推荐）
-ssh-copy-id root@49.235.139.118
+ssh-copy-id root@www.ryansblog.club
 
 # 方法二：手动复制
-cat ~/.ssh/id_rsa.pub | ssh root@49.235.139.118 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
+cat ~/.ssh/id_rsa.pub | ssh root@www.ryansblog.club 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
 ```
 
 ### 2. 首次部署完成
@@ -149,10 +149,10 @@ cd /path/to/myblog
 **方法一：使用 SCP**
 ```bash
 # 上传后端 JAR
-scp myblog-backend/target/*.jar root@49.235.139.118:/app/myblog/myblog-backend/target/
+scp myblog-backend/target/*.jar root@www.ryansblog.club:/app/myblog/myblog-backend/target/
 
 # 上传前端 dist
-scp -r myblog-frontend/dist/* root@49.235.139.118:/app/myblog/myblog-frontend/dist/
+scp -r myblog-frontend/dist/* root@www.ryansblog.club:/app/myblog/myblog-frontend/dist/
 ```
 
 **方法二：使用宝塔面板**
@@ -166,7 +166,7 @@ scp -r myblog-frontend/dist/* root@49.235.139.118:/app/myblog/myblog-frontend/di
 
 ```bash
 # 登录服务器
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 执行部署脚本
 cd /app/myblog/deploy
@@ -197,7 +197,7 @@ cd /app/myblog/deploy
 
 **默认服务器配置：**
 ```bash
-SERVER_HOST="49.235.139.118"
+SERVER_HOST="www.ryansblog.club"
 SERVER_USER="root"
 SERVER_PATH="/app/myblog"
 ```
@@ -343,7 +343,7 @@ npm run build
 
 ```bash
 # 登录服务器查看日志
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 docker logs myblog-backend
 
 # 常见原因
@@ -390,7 +390,7 @@ git status
 git pull
 
 # 检查服务器状态
-ssh root@49.235.139.118 "docker ps && df -h"
+ssh root@www.ryansblog.club "docker ps && df -h"
 ```
 
 ### 4. 保留备份

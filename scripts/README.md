@@ -70,9 +70,9 @@
 - Elasticsearch: http://localhost:9200
 
 ### 生产环境
-- 前端: http://49.235.139.118:3000
-- 后端 API: http://49.235.139.118:8081
-- API 文档: http://49.235.139.118:8081/doc.html
+- 前端: http://www.ryansblog.club:3000
+- 后端 API: http://www.ryansblog.club:8081
+- API 文档: http://www.ryansblog.club:8081/doc.html
 
 ## 默认账号
 
@@ -120,7 +120,7 @@
 
 ```bash
 # SSH 到服务器
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 查看备份
 cd /app/myblog/backups

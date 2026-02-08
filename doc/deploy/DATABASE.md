@@ -253,7 +253,7 @@ cat myblog-backend/database/upgrade_v1_to_v2.sql
 docker exec myblog-mysql mysql -uroot -pxr123321 myblog < myblog-backend/database/upgrade_v1_to_v2.sql
 
 # 生产环境
-ssh root@49.235.139.118 "docker exec mysql_cns2-mysql_cNs2-1 mysql -uroot -p\${MYSQL_PASSWORD} myblog" < myblog-backend/database/upgrade_v1_to_v2.sql
+ssh root@www.ryansblog.club "docker exec mysql_cns2-mysql_cNs2-1 mysql -uroot -p\${MYSQL_PASSWORD} myblog" < myblog-backend/database/upgrade_v1_to_v2.sql
 ```
 
 #### 3. 验证升级
@@ -363,7 +363,7 @@ docker exec myblog-mysql mysqldump -uroot -pxr123321 \
   myblog > backup/myblog_full_$(date +%Y%m%d_%H%M%S).sql
 
 # 生产环境备份
-ssh root@49.235.139.118 "docker exec mysql_cns2-mysql_cNs2-1 mysqldump -uroot -p\${MYSQL_PASSWORD} \
+ssh root@www.ryansblog.club "docker exec mysql_cns2-mysql_cNs2-1 mysqldump -uroot -p\${MYSQL_PASSWORD} \
   --single-transaction \
   --routines \
   --triggers \
@@ -408,7 +408,7 @@ docker run --rm \
   alpine tar czf /backup/mysql_data_$(date +%Y%m%d_%H%M%S).tar.gz -C /data .
 
 # 生产环境数据卷备份
-ssh root@49.235.139.118 "docker run --rm \
+ssh root@www.ryansblog.club "docker run --rm \
   -v mysql_cns2-mysql_cNs2-1_data:/data \
   -v /app/myblog/backups:/backup \
   alpine tar czf /backup/mysql_data_$(date +%Y%m%d_%H%M%S).tar.gz -C /data ."

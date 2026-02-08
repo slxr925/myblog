@@ -82,7 +82,7 @@ All production deployment scripts are located in the `deploy/prod/` directory at
 ## Server Configuration
 
 **Production Server:**
-- Host: `49.235.139.118`
+- Host: `www.ryansblog.club`
 - User: `root`
 - Path: `/app/myblog`
 
@@ -97,9 +97,9 @@ JWT_SECRET=your_jwt_secret
 
 | Service | URL | Notes |
 |---------|-----|-------|
-| Frontend | http://49.235.139.118:3000 | Production frontend |
-| Backend API | http://49.235.139.118:8081 | Production API |
-| API Docs | http://49.235.139.118:8081/doc.html | Swagger documentation |
+| Frontend | http://www.ryansblog.club:3000 | Production frontend |
+| Backend API | http://www.ryansblog.club:8081 | Production API |
+| API Docs | http://www.ryansblog.club:8081/doc.html | Swagger documentation |
 
 ## Deployment Workflow
 
@@ -123,16 +123,16 @@ This interactive command will:
 **Manual first-time setup** (if you prefer full control):
 ```bash
 # 1. SSH to server and create directories
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 mkdir -p /app/myblog/{deploy,myblog-backend/target,myblog-frontend/dist,data/{backend/{logs,uploads},backups}}
 
 # 2. Upload config and scripts
-scp .env.prod docker-compose.prod.yml root@49.235.139.118:/app/myblog/
-scp deploy/prod/*.sh root@49.235.139.118:/app/myblog/deploy/
-scp myblog-backend/Dockerfile.prod root@49.235.139.118:/app/myblog/myblog-backend/
+scp .env.prod docker-compose.prod.yml root@www.ryansblog.club:/app/myblog/
+scp deploy/prod/*.sh root@www.ryansblog.club:/app/myblog/deploy/
+scp myblog-backend/Dockerfile.prod root@www.ryansblog.club:/app/myblog/myblog-backend/
 
 # 3. Initialize database
-ssh root@49.235.139.118 "cd /app/myblog/deploy && ./init-database.sh"
+ssh root@www.ryansblog.club "cd /app/myblog/deploy && ./init-database.sh"
 
 # 4. Deploy application
 ./scripts/deploy-prod.sh deploy
@@ -171,11 +171,11 @@ If you need more control:
 ./deploy/prod/build-local.sh
 
 # 2. Upload artifacts manually
-scp myblog-backend/target/*.jar root@49.235.139.118:/app/myblog/myblog-backend/target/
-scp -r myblog-frontend/dist/* root@49.235.139.118:/app/myblog/myblog-frontend/dist/
+scp myblog-backend/target/*.jar root@www.ryansblog.club:/app/myblog/myblog-backend/target/
+scp -r myblog-frontend/dist/* root@www.ryansblog.club:/app/myblog/myblog-frontend/dist/
 
 # 3. SSH to server and deploy
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 cd /app/myblog/deploy
 ./quick-deploy.sh
 ```
@@ -192,7 +192,7 @@ Production uses `docker-compose.prod.yml` with optimized configurations:
 
 For passwordless deployment:
 ```bash
-ssh-copy-id root@49.235.139.118
+ssh-copy-id root@www.ryansblog.club
 ```
 
 ## Troubleshooting

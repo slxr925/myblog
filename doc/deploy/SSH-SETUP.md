@@ -57,18 +57,18 @@ Your public key has been saved in /Users/you/.ssh/id_rsa.pub
 
 **方法一：使用 ssh-copy-id（推荐）**
 ```bash
-ssh-copy-id root@49.235.139.118
+ssh-copy-id root@www.ryansblog.club
 ```
 
 **方法二：手动复制**
 ```bash
-cat ~/.ssh/id_rsa.pub | ssh root@49.235.139.118 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
+cat ~/.ssh/id_rsa.pub | ssh root@www.ryansblog.club 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
 ```
 
 #### 步骤 3：测试免密登录
 
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 ```
 
 如果不需要输入密码直接登录，说明配置成功！ 🎉
@@ -104,14 +104,14 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 
 ```powershell
 # 方法一：一键复制
-type $env:USERPROFILE\.ssh\id_rsa.pub | ssh root@49.235.139.118 "cat >> .ssh/authorized_keys"
+type $env:USERPROFILE\.ssh\id_rsa.pub | ssh root@www.ryansblog.club "cat >> .ssh/authorized_keys"
 
 # 方法二：手动复制
 # 1. 查看公钥
 Get-Content $env:USERPROFILE\.ssh\id_rsa.pub
 
 # 2. 登录服务器
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 3. 在服务器上执行
 mkdir -p ~/.ssh
@@ -126,13 +126,13 @@ chmod 600 ~/.ssh/authorized_keys
 **使用 Git Bash：**
 
 ```bash
-cat ~/.ssh/id_rsa.pub | ssh root@49.235.139.118 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
+cat ~/.ssh/id_rsa.pub | ssh root@www.ryansblog.club 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
 ```
 
 #### 步骤 3：测试免密登录
 
 ```powershell
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 ```
 
 如果不需要输入密码直接登录，说明配置成功！ 🎉
@@ -190,7 +190,7 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDExampleKeyContent... your_email@example.c
 #### 方法一：ssh-copy-id（Linux/macOS 推荐）
 
 ```bash
-ssh-copy-id -i ~/.ssh/id_rsa.pub root@49.235.139.118
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@www.ryansblog.club
 ```
 
 **首次需要输入服务器密码**
@@ -204,7 +204,7 @@ cat ~/.ssh/id_rsa.pub
 # 2. 复制输出内容
 
 # 3. 登录服务器
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 4. 在服务器上创建目录和文件
 mkdir -p ~/.ssh
@@ -220,13 +220,13 @@ chmod 600 ~/.ssh/authorized_keys
 #### 方法三：一键命令（Linux/macOS）
 
 ```bash
-cat ~/.ssh/id_rsa.pub | ssh root@49.235.139.118 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys'
+cat ~/.ssh/id_rsa.pub | ssh root@www.ryansblog.club 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys'
 ```
 
 ### 4. 测试连接
 
 ```bash
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 ```
 
 **成功：**
@@ -250,7 +250,7 @@ ssh root@49.235.139.118
 
 ```bash
 # 登录服务器检查
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 检查 authorized_keys 文件
 cat ~/.ssh/authorized_keys
@@ -306,7 +306,7 @@ vim ~/.ssh/config
 
 # 添加配置
 Host myblog-server
-    HostName 49.235.139.118
+    HostName www.ryansblog.club
     User root
     IdentityFile ~/.ssh/id_rsa_myblog
 
@@ -379,7 +379,7 @@ mv ~/.ssh/id_rsa_new.pub ~/.ssh/id_rsa.pub
 
 ```bash
 # 登录服务器
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 编辑 SSH 配置
 sudo vim /etc/ssh/sshd_config
@@ -403,7 +403,7 @@ sudo systemctl restart sshd
 ```bash
 # MyBlog 生产服务器
 Host myblog-prod
-    HostName 49.235.139.118
+    HostName www.ryansblog.club
     User root
     IdentityFile ~/.ssh/id_rsa
     ServerAliveInterval 60
@@ -452,10 +452,10 @@ scp file.jar myblog-prod:/path/
 ./deploy/deploy-update.sh
 
 # 免密登录
-ssh root@49.235.139.118
+ssh root@www.ryansblog.club
 
 # 快速传输文件
-scp file.jar root@49.235.139.118:/path/
+scp file.jar root@www.ryansblog.club:/path/
 ```
 
 **享受一键部署的便捷！** 🚀
