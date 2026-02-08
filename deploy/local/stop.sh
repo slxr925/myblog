@@ -15,7 +15,28 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # 项目根目录
-PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+resolve_project_root() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local root_candidate
+    root_candidate="$(cd "$script_dir/../.." && pwd)"
+    if [ -f "$root_candidate/docker-compose.yml" ]; then
+        echo "$root_candidate"
+        return
+    fi
+    local current="$script_dir"
+    local i
+    for i in 1 2 3 4 5; do
+        if [ -f "$current/docker-compose.yml" ]; then
+            echo "$current"
+            return
+        fi
+        current="$(cd "$current/.." && pwd)"
+    done
+    echo "$root_candidate"
+}
+
+PROJECT_ROOT="$(resolve_project_root)"
 cd "${PROJECT_ROOT}"
 
 # 检查是否有运行的容器

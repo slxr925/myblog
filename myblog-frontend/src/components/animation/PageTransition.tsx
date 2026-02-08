@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 interface PageTransitionProps {
@@ -19,8 +18,6 @@ const pageTransition = {
 };
 
 export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
-  const location = useLocation();
-
   // 检测用户是否偏好减少动画
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -39,17 +36,15 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   }
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.pathname}
-        variants={pageVariants}
-        initial="initial"
-        animate="enter"
-        exit="exit"
-        transition={pageTransition}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate="enter"
+      exit="exit"
+      transition={pageTransition}
+      style={{ opacity: 0 }}
+    >
+      {children}
+    </motion.div>
   );
 };

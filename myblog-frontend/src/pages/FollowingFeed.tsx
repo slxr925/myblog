@@ -4,7 +4,6 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { api } from '../utils/api';
 import BlogListItem from '../components/BlogListItem';
-import { motion } from 'framer-motion';
 import { Heart, Users } from 'lucide-react';
 
 interface BlogPost {
@@ -123,12 +122,7 @@ const FollowingFeed: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-muted/30 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 max-w-4xl"
-      >
+      <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -216,7 +210,7 @@ const FollowingFeed: React.FC = () => {
             </div>
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 };
