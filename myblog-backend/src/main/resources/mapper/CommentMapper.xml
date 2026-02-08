@@ -54,8 +54,8 @@
             c.update_time,
             c.deleted
         FROM tb_comment c
-        WHERE c.deleted = 0
-          AND c.parent_id IS NULL
+                WHERE c.deleted = 0
+                    AND (c.parent_id IS NULL OR c.parent_id = 0)
         <if test="blogId != null">
             AND c.blog_id = #{blogId}
         </if>

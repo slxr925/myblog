@@ -193,7 +193,7 @@ done
 # 检查前端
 echo ""
 echo "检查前端服务..."
-if docker exec myblog-frontend wget --no-verbose --tries=1 --spider http://localhost:80/ &>/dev/null; then
+if docker exec myblog-frontend wget --no-verbose --tries=1 --spider http://localhost:8080/health &>/dev/null; then
     echo -e "${GREEN}✓ 前端服务健康${NC}"
 else
     echo -e "${YELLOW}⚠ 前端服务检查失败，但容器运行中${NC}"

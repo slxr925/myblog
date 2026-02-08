@@ -568,11 +568,11 @@ public class CommentServiceImpl implements CommentService {
         Map<Long, CommentVO> commentMap = comments.stream()
                 .collect(Collectors.toMap(CommentVO::getId, comment -> comment));
         List<CommentVO> roots = comments.stream()
-                .filter(comment -> comment.getParentId() == null)
+            .filter(comment -> comment.getParentId() == null || comment.getParentId() == 0)
                 .collect(Collectors.toList());
 
         Map<Long, List<CommentVO>> replyMap = comments.stream()
-                .filter(comment -> comment.getParentId() != null)
+            .filter(comment -> comment.getParentId() != null && comment.getParentId() != 0)
                 .map(comment -> Map.entry(resolveRootId(comment, commentMap), comment))
                 .filter(entry -> entry.getKey() != null)
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
@@ -603,7 +603,10 @@ public class CommentServiceImpl implements CommentService {
     private Long resolveRootId(CommentVO comment, Map<Long, CommentVO> commentMap) {
         CommentVO current = comment;
         int guard = 0;
-        while (current != null && current.getParentId() != null && guard < 20) {
+        while (current != null
+            && current.getParentId() != null
+            && current.getParentId() != 0
+            && guard < 20) {
             current = commentMap.get(current.getParentId());
             guard += 1;
         }
