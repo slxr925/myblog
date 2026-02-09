@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
@@ -10,21 +10,28 @@ import { WebSocketProvider } from './contexts/WebSocketContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import AuthErrorHandler from './components/auth/AuthErrorHandler'
 import { PageTransition } from './components/animation'
-import Profile from './pages/Profile'
-import About from './pages/About'
-import BlogDetail from './pages/BlogDetail'
-import EnhancedBlog from './components/EnhancedBlog'
-import { Admin } from './pages/Admin'
-import SearchPage from './pages/Search'
-import SearchResultsPage from './pages/SearchResults'
-import SharedCollection from './pages/SharedCollection'
-import BlogEditor from './components/editor/BlogEditor'
-import MyDrafts from './pages/MyDrafts'
-import Collections from './pages/user/collections'
-import Notifications from './pages/Notifications'
-import FollowingFeed from './pages/FollowingFeed'
 import { Role } from './types/api'
 import { ModernLayout } from './components/layout/ModernLayout'
+
+const EnhancedBlog = lazy(() => import('./components/EnhancedBlog'))
+const BlogDetail = lazy(() => import('./pages/BlogDetail'))
+const SearchPage = lazy(() => import('./pages/Search'))
+const SearchResultsPage = lazy(() => import('./pages/SearchResults'))
+const SharedCollection = lazy(() => import('./pages/SharedCollection'))
+const About = lazy(() => import('./pages/About'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Collections = lazy(() => import('./pages/user/collections'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const FollowingFeed = lazy(() => import('./pages/FollowingFeed'))
+const BlogEditor = lazy(() => import('./components/editor/BlogEditor'))
+const MyDrafts = lazy(() => import('./pages/MyDrafts'))
+const Admin = lazy(() => import('./pages/Admin').then((module) => ({ default: module.Admin })))
+
+const RouteFallback = () => (
+  <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+    <div className="text-sm text-muted-foreground animate-pulse">Loading...</div>
+  </div>
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -181,7 +188,9 @@ const AppWrapper = () => {
               <AuthModalProvider>
                 <Router>
                   <AuthErrorHandler />
-                  <AppRoutes />
+                  <Suspense fallback={<RouteFallback />}>
+                    <AppRoutes />
+                  </Suspense>
                 </Router>
               </AuthModalProvider>
             </WebSocketProvider>

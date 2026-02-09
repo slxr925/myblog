@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState, lazy } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
@@ -6,10 +6,11 @@ import { Button } from '../ui/button';
 import { UserMenu } from '../auth/UserMenu';
 import ThemeToggle from '../theme/ThemeToggle';
 import RealTimeSearch from '../search/RealTimeSearch';
-import { AIAssistant } from '../ai/AIAssistant';
 import { Menu, X, Home, FileText, User, Heart, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBadge from '../notification/NotificationBadge';
+
+const AIAssistant = lazy(() => import('../ai/AIAssistant').then((module) => ({ default: module.AIAssistant })));
 
 export const ModernLayout = () => {
   const { isAuthenticated } = useAuth();
@@ -260,7 +261,9 @@ export const ModernLayout = () => {
       </footer>
 
       {/* AI助手 */}
-      <AIAssistant />
+      <Suspense fallback={null}>
+        <AIAssistant />
+      </Suspense>
     </div>
   );
 };
