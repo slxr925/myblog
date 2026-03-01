@@ -132,7 +132,7 @@ show_usage() {
     echo ""
     echo "Commands:"
     echo "  init           First-time setup (creates directories, uploads config, initializes DB)"
-    echo "  deploy         Update deployment (build + upload + deploy to existing environment)"
+    echo "  deploy [mode]  Update deployment (incremental by default)"
     echo "  build          Build release artifacts locally"
     echo "  upload         Upload artifacts to server"
     echo "  server-deploy  Deploy on server only"
@@ -143,7 +143,8 @@ show_usage() {
     echo ""
     echo "Examples:"
     echo "  ./scripts/deploy-prod.sh init      # First-time setup"
-    echo "  ./scripts/deploy-prod.sh deploy   # Update existing deployment"
+    echo "  ./scripts/deploy-prod.sh deploy                # Incremental deploy"
+    echo "  ./scripts/deploy-prod.sh deploy --full         # Full deploy"
     echo "  ./scripts/deploy-prod.sh backup"
     echo ""
 }
@@ -162,10 +163,15 @@ cmd_build() {
 
 # Full deployment
 cmd_deploy() {
+    local deploy_mode="${1:-}"
     echo -e "${BLUE}Starting full deployment...${NC}"
     if [ -f "deploy/prod/deploy-update.sh" ]; then
         chmod +x deploy/prod/deploy-update.sh
-        ./deploy/prod/deploy-update.sh
+        if [ -n "$deploy_mode" ]; then
+            ./deploy/prod/deploy-update.sh "$deploy_mode"
+        else
+            ./deploy/prod/deploy-update.sh
+        fi
     else
         echo -e "${RED}Error: deploy/prod/deploy-update.sh not found${NC}"
         exit 1
@@ -201,7 +207,7 @@ cmd_upload() {
 # Deploy on server
 cmd_server_deploy() {
     echo -e "${BLUE}Triggering server deployment...${NC}"
-    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/deploy && ./quick-deploy.sh"
+    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/deploy && ./quick-deploy.sh --incremental"
 }
 
 # Backup on server
@@ -256,7 +262,7 @@ case "${1:-help}" in
         cmd_build
         ;;
     deploy)
-        cmd_deploy
+        cmd_deploy "${2:-}"
         ;;
     upload)
         cmd_upload

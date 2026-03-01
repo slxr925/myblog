@@ -15,6 +15,15 @@ docker compose ps                 # List running containers
 docker compose build              # Build images
 docker compose build --no-cache   # Build without cache
 docker compose up -d --build      # Build and start
+docker compose up -d --build backend frontend  # Incremental app-only deploy
+```
+
+### Deployment Scripts
+```bash
+./deploy/local/deploy-update.sh               # Incremental deploy (default)
+./deploy/local/deploy-update.sh --rebuild     # Full rebuild deploy
+./deploy/local/quick-deploy.sh --incremental  # App-only incremental deploy
+./deploy/local/apply-migrations.sh            # Apply pending DB migrations
 ```
 
 ### Logs

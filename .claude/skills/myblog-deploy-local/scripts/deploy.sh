@@ -24,6 +24,7 @@ show_usage() {
     echo ""
     echo "Commands:"
     echo "  start [--rebuild]     Start the local environment"
+    echo "  deploy [--rebuild]    Deploy update (default incremental)"
     echo "  stop                  Stop all services"
     echo "  restart               Restart all services"
     echo "  logs [service]        View logs (backend, frontend, mysql, redis, kafka, es, all)"
@@ -33,6 +34,8 @@ show_usage() {
     echo ""
     echo "Examples:"
     echo "  ./scripts/deploy.sh start"
+    echo "  ./scripts/deploy.sh deploy"
+    echo "  ./scripts/deploy.sh deploy --rebuild"
     echo "  ./scripts/deploy.sh start --rebuild"
     echo "  ./scripts/deploy.sh logs backend"
     echo ""
@@ -56,6 +59,10 @@ case "${1:-help}" in
     start)
         echo -e "${BLUE}Starting MyBlog local environment...${NC}"
         run_deploy_script start "${@:2}"
+        ;;
+    deploy)
+        echo -e "${BLUE}Deploying MyBlog local environment...${NC}"
+        run_deploy_script deploy-update "${@:2}"
         ;;
     stop)
         echo -e "${BLUE}Stopping MyBlog local environment...${NC}"

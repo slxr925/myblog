@@ -2,7 +2,9 @@
 
 # MyBlog 本地环境完整部署脚本
 # 用途: 构建镜像 + 部署所有服务（Backend + Frontend + 基础设施）
-# 使用: ./deploy/local/deploy-update.sh [--rebuild]
+# 使用:
+#   ./deploy/local/deploy-update.sh            # 增量部署（默认）
+#   ./deploy/local/deploy-update.sh --rebuild  # 强制全量重建
 
 set -e
 
@@ -120,11 +122,11 @@ fi
 
 chmod +x deploy/local/quick-deploy.sh
 
-# 传递 rebuild 参数（如果有）
+# 传递部署模式
 if [ "$REBUILD_FLAG" = "--rebuild" ]; then
     ./deploy/local/quick-deploy.sh --rebuild
 else
-    ./deploy/local/quick-deploy.sh
+    ./deploy/local/quick-deploy.sh --incremental
 fi
 
 # ============================================

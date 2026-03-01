@@ -14,7 +14,8 @@ This skill manages the production deployment workflow for the MyBlog project. It
 Use the convenience wrapper script `scripts/deploy-prod.sh` for common operations:
 ```bash
 ./scripts/deploy-prod.sh init           # First-time setup (new server)
-./scripts/deploy-prod.sh deploy         # Update deployment (existing server)
+./scripts/deploy-prod.sh deploy         # Incremental deploy (default)
+./scripts/deploy-prod.sh deploy --full  # Full deploy (down/up all services)
 ./scripts/deploy-prod.sh build          # Build release artifacts locally
 ./scripts/deploy-prod.sh upload         # Upload artifacts to server
 ./scripts/deploy-prod.sh server-deploy  # Deploy on server only
@@ -26,7 +27,8 @@ Use the convenience wrapper script `scripts/deploy-prod.sh` for common operation
 
 **Deployment Types:**
 - **First-time setup**: Use `init` command for new servers
-- **Update deployment**: Use `deploy` command for existing deployments
+- **Incremental update (default)**: Use `deploy` for app-only rollout
+- **Full redeploy**: Use `deploy --full` when infra/network reset is required
 
 ## Production Deployment Scripts
 
@@ -39,7 +41,9 @@ All production deployment scripts are located in the `deploy/prod/` directory at
 - Checks SSH connection, builds artifacts, uploads to server, triggers deployment
 - Supports both SSH key and password authentication
 - Automatically uploads deployment scripts and configurations
-- Usage: `./deploy/prod/deploy-update.sh`
+- Usage:
+  - `./deploy/prod/deploy-update.sh` (incremental, default)
+  - `./deploy/prod/deploy-update.sh --full` (full)
 
 **Build Local** - `deploy/prod/build-local.sh`
 - Builds backend JAR and frontend dist artifacts
@@ -51,10 +55,20 @@ All production deployment scripts are located in the `deploy/prod/` directory at
 
 **Quick Deploy** - `deploy/prod/quick-deploy.sh`
 - Server-side deployment script (run on production server)
+- Supports `--incremental` and `--full` modes
+- Runs DB migrations automatically via `deploy/prod/apply-migrations.sh`
 - Checks environment, validates artifacts, builds Docker images
 - Performs health checks with automatic rollback on failure
 - Cleans up deployment backups older than 3 days after a successful deploy
-- Usage (on server): `cd /app/myblog/deploy && ./quick-deploy.sh`
+- Usage (on server):
+  - `cd /app/myblog/deploy && ./quick-deploy.sh --incremental`
+  - `cd /app/myblog/deploy && ./quick-deploy.sh --full`
+
+**Apply Migrations** - `deploy/prod/apply-migrations.sh`
+- Applies SQL files in `myblog-backend/database/migrations/*.sql` in sorted order
+- Tracks executed migrations in `tb_schema_migrations`
+- Skips already applied migrations and fails on checksum drift
+- Usage (on server): `cd /app/myblog && ./deploy/prod/apply-migrations.sh .env`
 
 ### Management Operations
 
@@ -146,12 +160,12 @@ Use this for deploying updates to an already-running server:
 ./scripts/deploy-prod.sh deploy
 ```
 
-This is equivalent to the original `deploy-update.sh` workflow.
+This triggers incremental deployment by default.
 
 ### Full Deployment (Recommended)
 ```bash
 # From local machine
-./deploy/prod/deploy-update.sh
+./deploy/prod/deploy-update.sh --full
 ```
 
 This executes:
@@ -160,7 +174,7 @@ This executes:
 3. Uploads JAR to server
 4. Uploads frontend dist to server
 5. Uploads deployment scripts and configs
-6. Triggers server deployment (`quick-deploy.sh`)
+6. Triggers server deployment (`quick-deploy.sh --incremental` by default)
 
 ### Manual Deployment Steps
 

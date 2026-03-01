@@ -14,6 +14,7 @@ This skill manages the local Docker development environment for the MyBlog proje
 Use the convenience wrapper script `scripts/deploy.sh` for common operations:
 ```bash
 ./scripts/deploy.sh start [--rebuild]   # Start environment
+./scripts/deploy.sh deploy [--rebuild]  # Deploy update (default incremental)
 ./scripts/deploy.sh stop                # Stop all services
 ./scripts/deploy.sh restart             # Restart services
 ./scripts/deploy.sh logs [service]      # View logs (backend/frontend/mysql/redis/kafka/es/all)
@@ -32,11 +33,14 @@ All deployment scripts are located in the `deploy/local/` directory at the proje
 
 **Quick Deploy** - `deploy/local/quick-deploy.sh`
 - Fastest way to get the development environment running
-- Stops existing containers, builds images (if needed), and starts all services
+- Supports full and incremental deployment modes
+- Runs database migrations automatically before backend health check
 - Performs health checks on MySQL, Redis, Kafka, and backend service
 - Does not create deployment backups (local uses Docker volumes only)
-- Usage: `./deploy/local/quick-deploy.sh [--rebuild]`
-- The `--rebuild` flag forces a full rebuild without cache
+- Usage:
+  - `./deploy/local/quick-deploy.sh` (full deploy)
+  - `./deploy/local/quick-deploy.sh --incremental` (app-only incremental deploy)
+  - `./deploy/local/quick-deploy.sh --rebuild` (full rebuild without cache)
 
 **Start** - `deploy/local/start.sh`
 - Starts the local Docker environment
@@ -48,8 +52,16 @@ All deployment scripts are located in the `deploy/local/` directory at the proje
 
 **Deploy Update** - `deploy/local/deploy-update.sh`
 - Complete deployment workflow: builds images then deploys
-- Calls `quick-deploy.sh` after building images
-- Usage: `./deploy/local/deploy-update.sh [--rebuild]`
+- Default behavior is incremental deploy (`quick-deploy.sh --incremental`)
+- Usage:
+  - `./deploy/local/deploy-update.sh` (incremental)
+  - `./deploy/local/deploy-update.sh --rebuild` (full rebuild)
+
+**Apply Migrations** - `deploy/local/apply-migrations.sh`
+- Applies SQL files in `myblog-backend/database/migrations/*.sql` in sorted order
+- Tracks executed migrations in `tb_schema_migrations`
+- Skips already applied migrations and fails on checksum drift
+- Usage: `./deploy/local/apply-migrations.sh`
 
 ### Management Operations
 
@@ -152,7 +164,7 @@ This skill includes the following bundled resources:
 
 **scripts/deploy.sh**
 - Convenience wrapper for common deployment operations
-- Unified interface for start, stop, restart, logs, status, clean, rebuild commands
+- Unified interface for start, deploy, stop, restart, logs, status, clean, rebuild commands
 - Simplifies service-specific log viewing
 
 **scripts/health-check.sh**

@@ -19,6 +19,7 @@
 - [ ] Server has sufficient disk space
 - [ ] Backup is recent (or create new backup)
 - [ ] Environment variables are correct in `.env.prod`
+- [ ] Migration SQL files are added under `myblog-backend/database/migrations/` (if schema changed)
 
 ## Deployment Steps
 
@@ -33,6 +34,11 @@ cd /app/myblog/deploy
 ```bash
 # From local machine
 ./deploy/prod/deploy-update.sh
+```
+
+Full deployment (when needed):
+```bash
+./deploy/prod/deploy-update.sh --full
 ```
 
 Or use wrapper:

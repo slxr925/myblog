@@ -54,10 +54,10 @@ if [ -d "myblog-frontend/dist" ]; then
     rsync -avz --delete --progress myblog-frontend/dist/ ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/myblog-frontend/dist/
 fi
 
-# Deploy on server
+# Deploy on server (incremental mode)
 echo ""
 echo -e "${BLUE}Step 3: Triggering deployment${NC}"
-ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/deploy && ./quick-deploy.sh"
+ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/deploy && ./quick-deploy.sh --incremental"
 
 echo ""
 echo -e "${GREEN}✓ Deployment complete${NC}"

@@ -118,6 +118,12 @@ MAX_FILE_SIZE=10MB
 # Start production services
 docker-compose -f docker-compose.prod.yml up -d
 
+# Incremental deploy on server (recommended for routine updates)
+cd /app/myblog/deploy && ./quick-deploy.sh --incremental
+
+# Full deploy on server (when infra needs reset)
+cd /app/myblog/deploy && ./quick-deploy.sh --full
+
 # Stop services
 docker-compose -f docker-compose.prod.yml down
 

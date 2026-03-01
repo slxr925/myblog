@@ -2,6 +2,10 @@
 
 # 服务器端快速部署脚本
 # 用途：在服务器上部署已上传的jar和dist
+# 使用：
+#   ./quick-deploy.sh               # 全量部署（默认）
+#   ./quick-deploy.sh --full        # 显式全量部署
+#   ./quick-deploy.sh --incremental # 增量部署（仅更新应用容器）
 
 set -e
 
@@ -21,6 +25,18 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 echo "项目目录: ${PROJECT_ROOT}"
+
+# 部署模式
+DEPLOY_MODE="full"
+if [ "${1:-}" = "--incremental" ]; then
+    DEPLOY_MODE="incremental"
+elif [ "${1:-}" = "--full" ]; then
+    DEPLOY_MODE="full"
+fi
+
+if [ "$DEPLOY_MODE" = "incremental" ]; then
+    echo -e "${YELLOW}部署模式: 增量部署${NC}"
+fi
 
 # 1. 检查环境
 echo ""
@@ -92,6 +108,11 @@ if [ ! -d "myblog-frontend/dist" ] || [ -z "$(ls -A myblog-frontend/dist 2>/dev/
 fi
 echo -e "${GREEN}✓ 找到Dist目录${NC}"
 
+if [ "$DEPLOY_MODE" = "incremental" ] && ! docker ps -a --format '{{.Names}}' | grep -q '^myblog-backend$'; then
+    echo -e "${YELLOW}提示: 未检测到现有后端容器，增量模式自动切换为全量部署${NC}"
+    DEPLOY_MODE="full"
+fi
+
 # 4. 备份当前版本
 echo ""
 echo -e "${BLUE}=== 步骤 4: 备份当前版本 ===${NC}"
@@ -109,16 +130,20 @@ fi
 
 echo -e "${GREEN}✓ 备份完成: ${BACKUP_DIR}${NC}"
 
-# 5. 停止旧容器
+# 5. 停止旧容器（仅全量模式）
 echo ""
 echo -e "${BLUE}=== 步骤 5: 停止旧容器 ===${NC}"
 
-if docker ps -a | grep -q myblog; then
-    echo "停止运行中的容器..."
-    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" down
-    echo -e "${GREEN}✓ 旧容器已停止${NC}"
+if [ "$DEPLOY_MODE" = "incremental" ]; then
+    echo "增量模式，跳过 down"
 else
-    echo "没有运行中的容器"
+    if docker ps -a | grep -q myblog; then
+        echo "停止运行中的容器..."
+        docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" down
+        echo -e "${GREEN}✓ 旧容器已停止${NC}"
+    else
+        echo "没有运行中的容器"
+    fi
 fi
 
 # 6. 准备数据目录
@@ -130,9 +155,19 @@ mkdir -p data/backend/logs data/backend/uploads
 chmod -R 777 data/backend/logs data/backend/uploads
 echo -e "${GREEN}✓ 数据目录已准备${NC}"
 
-# 7. 构建新镜像
+# 7. 执行数据库迁移
 echo ""
-echo -e "${BLUE}=== 步骤 7: 构建Docker镜像 ===${NC}"
+echo -e "${BLUE}=== 步骤 7: 执行数据库迁移 ===${NC}"
+if [ -f "deploy/prod/apply-migrations.sh" ]; then
+    chmod +x deploy/prod/apply-migrations.sh
+    ./deploy/prod/apply-migrations.sh "$ENV_FILE"
+else
+    echo -e "${YELLOW}⚠ 未找到 deploy/prod/apply-migrations.sh，跳过迁移${NC}"
+fi
+
+# 8. 构建新镜像
+echo ""
+echo -e "${BLUE}=== 步骤 8: 构建Docker镜像 ===${NC}"
 
 # 构建后端镜像
 echo "构建后端镜像..."
@@ -140,18 +175,25 @@ docker-compose -f docker-compose.prod.yml build backend
 
 echo -e "${GREEN}✓ 镜像构建完成${NC}"
 
-# 8. 启动服务
+# 9. 启动服务
 echo ""
-echo -e "${BLUE}=== 步骤 8: 启动服务 ===${NC}"
+echo -e "${BLUE}=== 步骤 9: 启动服务 ===${NC}"
 
-docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d
+if [ "$DEPLOY_MODE" = "incremental" ]; then
+    echo "增量更新 backend（保留基础设施容器）..."
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d kafka elasticsearch
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d --no-deps --force-recreate backend
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d frontend nginx
+else
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d
+fi
 
 echo "等待服务启动..."
 sleep 10
 
-# 9. 健康检查
+# 10. 健康检查
 echo ""
-echo -e "${BLUE}=== 步骤 9: 健康检查 ===${NC}"
+echo -e "${BLUE}=== 步骤 10: 健康检查 ===${NC}"
 
 # 检查容器状态
 echo "检查容器状态..."
@@ -199,9 +241,9 @@ else
     echo -e "${YELLOW}⚠ 前端服务检查失败，但容器运行中${NC}"
 fi
 
-# 10. 清理老备份（保留 3 天内）
+# 11. 清理老备份（保留 3 天内）
 echo ""
-echo -e "${BLUE}=== 步骤 10: 清理老备份 ===${NC}"
+echo -e "${BLUE}=== 步骤 11: 清理老备份 ===${NC}"
 if [ -d "backups" ]; then
     find backups -maxdepth 1 -type d -name "backup-*" -mtime +3 -exec rm -rf {} +
     echo -e "${GREEN}✓ 已清理 3 天以上的老备份${NC}"
@@ -209,7 +251,7 @@ else
     echo -e "${YELLOW}⚠ 未找到 backups 目录，跳过清理${NC}"
 fi
 
-# 11. 完成
+# 12. 完成
 echo ""
 echo -e "${GREEN}==================================="
 echo "部署完成！"

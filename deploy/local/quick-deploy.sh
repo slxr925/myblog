@@ -2,7 +2,10 @@
 
 # MyBlog 本地环境快速部署脚本
 # 用途: 一键构建并部署所有服务（Backend + Frontend + 基础设施）
-# 使用: ./deploy/local/quick-deploy.sh [--rebuild]
+# 使用:
+#   ./deploy/local/quick-deploy.sh              # 全量部署（默认）
+#   ./deploy/local/quick-deploy.sh --incremental # 增量部署（仅更新应用容器）
+#   ./deploy/local/quick-deploy.sh --rebuild     # 强制全量重建
 
 set -e
 
@@ -45,10 +48,17 @@ cd "${PROJECT_ROOT}"
 echo "项目目录: ${PROJECT_ROOT}"
 
 # 检查参数
-REBUILD=false
-if [ "$1" = "--rebuild" ]; then
-    REBUILD=true
-    echo -e "${YELLOW}注意: 将重新构建所有镜像${NC}"
+MODE="full"
+if [ "${1:-}" = "--incremental" ]; then
+    MODE="incremental"
+elif [ "${1:-}" = "--rebuild" ]; then
+    MODE="rebuild"
+fi
+
+if [ "$MODE" = "incremental" ]; then
+    echo -e "${YELLOW}模式: 增量部署（保留基础设施容器）${NC}"
+elif [ "$MODE" = "rebuild" ]; then
+    echo -e "${YELLOW}模式: 强制全量重建${NC}"
 fi
 
 # 1. 检查Docker环境
@@ -74,28 +84,35 @@ fi
 
 echo -e "${GREEN}✓ Docker 正在运行${NC}"
 
-# 2. 停止旧容器
+# 2. 停止旧容器（仅全量模式）
 echo ""
 echo -e "${BLUE}=== 步骤 2: 停止旧容器 ===${NC}"
-if ${DOCKER_CMD} ps | grep -q myblog; then
-    echo "停止运行中的容器..."
-    ${DOCKER_CMD} compose -f docker-compose.yml down
-    echo -e "${GREEN}✓ 旧容器已停止${NC}"
+if [ "$MODE" = "incremental" ]; then
+    echo "增量模式，跳过 down"
 else
-    echo "没有运行中的容器"
+    if ${DOCKER_CMD} ps | grep -q myblog; then
+        echo "停止运行中的容器..."
+        ${DOCKER_CMD} compose -f docker-compose.yml down
+        echo -e "${GREEN}✓ 旧容器已停止${NC}"
+    else
+        echo "没有运行中的容器"
+    fi
 fi
 
 # 3. 构建并启动服务
 echo ""
 echo -e "${BLUE}=== 步骤 3: 构建并启动服务 ===${NC}"
 
-if [ "$REBUILD" = true ]; then
+if [ "$MODE" = "rebuild" ]; then
     echo "重新构建所有镜像..."
     ${DOCKER_CMD} compose -f docker-compose.yml build --no-cache backend frontend
     echo -e "${GREEN}✓ 镜像构建完成${NC}"
     echo ""
     echo "启动所有服务..."
     ${DOCKER_CMD} compose -f docker-compose.yml up -d
+elif [ "$MODE" = "incremental" ]; then
+    echo "增量更新应用服务（backend/frontend）..."
+    ${DOCKER_CMD} compose -f docker-compose.yml up -d --build backend frontend
 else
     echo "启动所有服务（使用已有镜像）..."
     ${DOCKER_CMD} compose -f docker-compose.yml up -d --build
@@ -146,6 +163,21 @@ if ${DOCKER_CMD} exec myblog-kafka /opt/kafka/bin/kafka-broker-api-versions.sh -
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
+fi
+
+# 执行数据库迁移
+echo -n "执行 数据库迁移... "
+if [ -f "deploy/local/apply-migrations.sh" ]; then
+    chmod +x deploy/local/apply-migrations.sh
+    if ./deploy/local/apply-migrations.sh >/tmp/myblog-local-migrations.log 2>&1; then
+        echo -e "${GREEN}✓${NC}"
+    else
+        echo -e "${RED}✗${NC}"
+        cat /tmp/myblog-local-migrations.log
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⚠ 未找到迁移脚本，跳过${NC}"
 fi
 
 # 检查后端服务

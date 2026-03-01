@@ -2,7 +2,10 @@
 
 # MyBlog 一键迭代部署脚本
 # 用途: 本地构建 + 上传到服务器 + 自动部署
-# 使用: ./deploy-update.sh
+# 使用:
+#   ./deploy-update.sh                # 增量部署（默认）
+#   ./deploy-update.sh --full         # 全量部署
+#   ./deploy-update.sh --incremental  # 显式增量部署
 
 set -e
 
@@ -18,9 +21,22 @@ SERVER_HOST="49.235.139.118"
 SERVER_USER="root"
 SERVER_PATH="/app/myblog"
 
+DEPLOY_MODE="incremental"
+if [ "${1:-}" = "--full" ]; then
+    DEPLOY_MODE="full"
+elif [ "${1:-}" = "--incremental" ] || [ -z "${1:-}" ]; then
+    DEPLOY_MODE="incremental"
+else
+    echo -e "${RED}✗ 不支持的参数: ${1}${NC}"
+    echo "可选参数: --full | --incremental"
+    exit 1
+fi
+
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║     MyBlog 一键迭代部署               ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${BLUE}部署模式: ${DEPLOY_MODE}${NC}"
 echo ""
 
 # ============================================
@@ -154,7 +170,7 @@ echo ""
 echo -e "${BLUE}=== 步骤 5/5: 服务器部署 ===${NC}"
 if [ "$USE_SCP" = true ]; then
     echo "执行远程部署脚本..."
-    if ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/deploy && ./quick-deploy.sh"; then
+    if ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/deploy && ./quick-deploy.sh --${DEPLOY_MODE}"; then
         echo ""
         echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
         echo -e "${GREEN}║     🎉 部署成功！                     ║${NC}"
@@ -176,7 +192,7 @@ else
     echo -e "${YELLOW}请登录服务器执行部署:${NC}"
     echo "  ssh ${SERVER_USER}@${SERVER_HOST}"
     echo "  cd ${SERVER_PATH}/deploy"
-    echo "  ./quick-deploy.sh"
+    echo "  ./quick-deploy.sh --${DEPLOY_MODE}"
 fi
 
 # ============================================
@@ -192,4 +208,3 @@ echo -e "${BLUE}💡 提示:${NC}"
 echo "  - 如需回滚: cd ${SERVER_PATH}/backups && 查看备份"
 echo "  - 如需配置SSH密钥: ssh-copy-id ${SERVER_USER}@${SERVER_HOST}"
 echo ""
-

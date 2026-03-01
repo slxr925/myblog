@@ -199,10 +199,18 @@ ssh root@www.ryansblog.club "df -h"
    - Large file size
    - Try rsync deploy instead: `./scripts/rsync-deploy.sh`
 
+4. **Database Migration Failed**
+   - Check migration output in deployment logs
+   - Verify SQL compatibility with target MySQL version
+   - Ensure migration files are append-only (do not edit applied files)
+
 **Solution:**
 - Fix underlying issue
 - Re-run deployment
 - Check logs: `./scripts/deploy-prod.sh logs`
+- If needed, switch deploy mode:
+  - Incremental: `./scripts/deploy-prod.sh deploy`
+  - Full: `./scripts/deploy-prod.sh deploy --full`
 
 ## Log Analysis
 
