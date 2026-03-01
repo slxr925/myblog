@@ -27,12 +27,24 @@ interface AIChatResponse {
   relatedArticles?: RelatedArticle[];
 }
 
+interface PersistedMessage {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: string;
+  relatedArticles?: RelatedArticle[];
+}
+
+const AI_ASSISTANT_STORAGE_KEY = 'myblog:ai-assistant:state:v1';
+const AI_ASSISTANT_MAX_PERSISTED_MESSAGES = 60;
+
 export const AIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
+  const [isSessionReady, setIsSessionReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -43,6 +55,75 @@ export const AIAssistant: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 路由切换会重建组件，这里恢复上次会话状态
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(AI_ASSISTANT_STORAGE_KEY);
+      if (!raw) {
+        setIsSessionReady(true);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        isOpen?: boolean;
+        conversationId?: string;
+        messages?: PersistedMessage[];
+      };
+
+      if (typeof parsed.isOpen === 'boolean') {
+        setIsOpen(parsed.isOpen);
+      }
+      if (typeof parsed.conversationId === 'string') {
+        setConversationId(parsed.conversationId);
+      }
+      if (Array.isArray(parsed.messages)) {
+        const restoredMessages = parsed.messages
+          .filter((msg) => msg && typeof msg.id === 'string' && typeof msg.content === 'string')
+          .map((msg) => ({
+            id: msg.id,
+            content: msg.content,
+            isUser: !!msg.isUser,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            relatedArticles: msg.relatedArticles,
+          }));
+        setMessages(restoredMessages);
+      }
+    } catch (error) {
+      console.warn('恢复AI助手会话失败:', error);
+      sessionStorage.removeItem(AI_ASSISTANT_STORAGE_KEY);
+    } finally {
+      setIsSessionReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isSessionReady) {
+      return;
+    }
+    try {
+      const persistedMessages: PersistedMessage[] = messages
+        .slice(-AI_ASSISTANT_MAX_PERSISTED_MESSAGES)
+        .map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          isUser: msg.isUser,
+          timestamp: msg.timestamp.toISOString(),
+          relatedArticles: msg.relatedArticles,
+        }));
+
+      sessionStorage.setItem(
+        AI_ASSISTANT_STORAGE_KEY,
+        JSON.stringify({
+          isOpen,
+          conversationId,
+          messages: persistedMessages,
+        }),
+      );
+    } catch (error) {
+      console.warn('保存AI助手会话失败:', error);
+    }
+  }, [isOpen, conversationId, messages, isSessionReady]);
 
   // 获取介绍信息
   useEffect(() => {
