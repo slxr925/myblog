@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchController {
 
+    private static final int MYSQL_FALLBACK_MAX_FETCH = 1000;
+
     private final SearchService searchService;
     private final BlogService blogService;
     private final com.ryan.myblog.service.SearchLogService searchLogService;
@@ -38,7 +40,9 @@ public class SearchController {
     public Result<?> searchBlogs(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "true") boolean track,
+            @RequestParam(defaultValue = "result") String source) {
 
         // 尝试ES搜索
         if (searchService.isAvailable()) {
@@ -49,7 +53,9 @@ public class SearchController {
                         .searchBlogsWithHighlight(keyword, pageable);
                 if (result.getTotalElements() > 0) {
                     log.debug("使用ES搜索 - 关键词: '{}', 结果数: {}", keyword, result.getTotalElements());
-                    recordSearch(keyword, page, size, (int) result.getTotalElements());
+                    if (track) {
+                        recordSearch(keyword, page, size, (int) result.getTotalElements(), source);
+                    }
                     return Result.success(result);
                 }
             } catch (Exception e) {
@@ -60,7 +66,9 @@ public class SearchController {
         // 降级到MySQL搜索
         log.debug("使用MySQL搜索 - 关键词: '{}'", keyword);
         var fallback = fallbackToMySQLSearch(keyword, page, size);
-        recordSearch(keyword, page, size, (int) fallback.getTotalElements());
+        if (track) {
+            recordSearch(keyword, page, size, (int) fallback.getTotalElements(), source);
+        }
         return Result.success(fallback);
     }
 
@@ -81,7 +89,7 @@ public class SearchController {
                 Pageable pageable = PageRequest.of(page, size);
                 Page<BlogDocument> result = searchService.advancedSearch(keyword, categoryId, tags, pageable);
                 if (result.getTotalElements() > 0) {
-                    recordSearch(keyword, page, size, (int) result.getTotalElements());
+                    recordSearch(keyword, page, size, (int) result.getTotalElements(), "advanced");
                     return Result.success(result);
                 }
             } catch (Exception e) {
@@ -92,7 +100,7 @@ public class SearchController {
         // 降级到MySQL搜索
         if (keyword != null && !keyword.trim().isEmpty()) {
             var fallback = fallbackToMySQLSearch(keyword, page, size);
-            recordSearch(keyword, page, size, (int) fallback.getTotalElements());
+            recordSearch(keyword, page, size, (int) fallback.getTotalElements(), "advanced");
             return Result.success(fallback);
         }
 
@@ -103,8 +111,8 @@ public class SearchController {
      * MySQL降级搜索（带分页）
      */
     private Page<BlogListVO> fallbackToMySQLSearch(String keyword, int page, int size) {
-        int mysqlLimit = page * size + size;
-        List<BlogListVO> mysqlResults = blogService.searchBlogs(keyword, mysqlLimit);
+        // fallback 查询需要稳定的 total，避免分页场景下第一页总数被 limit 截断
+        List<BlogListVO> mysqlResults = blogService.searchBlogs(keyword, MYSQL_FALLBACK_MAX_FETCH);
 
         int fromIndex = Math.min(page * size, mysqlResults.size());
         int toIndex = Math.min(fromIndex + size, mysqlResults.size());
@@ -132,9 +140,10 @@ public class SearchController {
         return Result.success(searchLogService.getTrending(days, limit));
     }
 
-    private void recordSearch(String keyword, int page, int size, int total) {
+    private void recordSearch(String keyword, int page, int size, int total, String source) {
+        String normalizedSource = (source == null || source.isBlank()) ? "result" : source.trim().toLowerCase();
         Long userId = com.ryan.myblog.utils.SecurityUtils.getCurrentUserId();
-        String filters = String.format("{\"page\":%d,\"size\":%d}", page, size);
+        String filters = String.format("{\"page\":%d,\"size\":%d,\"source\":\"%s\"}", page, size, normalizedSource);
         searchLogService.recordSearch(userId, keyword, filters, total);
     }
 

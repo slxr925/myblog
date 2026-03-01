@@ -163,6 +163,8 @@ export interface BlogPost {
   id: number;
   title: string;
   excerpt: string;
+  highlightedTitle?: string;
+  highlightedExcerpt?: string;
   content: string;
   author: string;
   date: string;

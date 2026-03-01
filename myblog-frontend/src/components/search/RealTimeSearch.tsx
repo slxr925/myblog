@@ -5,11 +5,28 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { api } from '../../utils/api';
 
+const escapeHtml = (input: string): string => {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+const sanitizeHighlightHtml = (raw: string): string => {
+  const escaped = escapeHtml(raw || '');
+  return escaped
+    .replace(/&lt;(?:span|mark)\s+class=['"]search-highlight['"]&gt;/gi, '<span class="search-highlight">')
+    .replace(/&lt;\/(?:span|mark)&gt;/gi, '</span>');
+};
+
 // 高亮搜索关键字的辅助函数
 const highlightText = (text: string, keyword: string): string => {
   if (!text || !keyword) return text;
+  const safeText = escapeHtml(text);
   const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+  return safeText.replace(regex, '<span class="search-highlight">$1</span>');
 };
 
 interface SearchSuggestion {
@@ -40,6 +57,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const [isComposing, setIsComposing] = useState(false);
   const [clickedSuggestion, setClickedSuggestion] = useState<number | null>(null);
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
@@ -96,7 +114,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
     try {
       setLoading(true);
-      const response = await api.search.searchBlogs(term, 8);
+      const response = await api.search.searchBlogs(term, 8, 0, { track: false, source: 'suggest' });
       const searchData = (response as any)?.content ?? (response as any)?.records ?? [];
 
       const formattedSuggestions = searchData.map((doc: any) => {
@@ -143,6 +161,10 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
     setSelectedIndex(-1);
     onSearchTermChange?.(value);
 
+    if (isComposing) {
+      return;
+    }
+
     if (value.trim()) {
       fetchSuggestions(value);
     } else {
@@ -153,6 +175,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.nativeEvent as any).isComposing || isComposing) return;
     if (!isOpen || suggestions.length === 0) return;
 
     switch (e.key) {
@@ -176,6 +199,21 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
         setIsOpen(false);
         setSelectedIndex(-1);
         break;
+    }
+  };
+
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const value = e.currentTarget.value;
+    setIsComposing(false);
+    if (value.trim()) {
+      fetchSuggestions(value);
+    } else {
+      setSuggestions([]);
+      setIsOpen(false);
     }
   };
 
@@ -234,6 +272,8 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
           placeholder={placeholder}
           value={searchTerm}
           onChange={handleInputChange}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           onKeyDown={handleKeyDown}
           onFocus={() => searchTerm.length >= 2 && setIsOpen(true)}
           className="w-64 md:w-80 pl-3 pr-10 py-2 bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-lg transition-colors duration-300"
@@ -294,7 +334,9 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                   <div className="flex items-center justify-between">
                     <h4
                       className="font-medium text-sm line-clamp-1 flex-1"
-                      dangerouslySetInnerHTML={{ __html: suggestion.highlightedTitle || suggestion.title }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHighlightHtml(suggestion.highlightedTitle || suggestion.title)
+                      }}
                     />
                     <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 ml-2" />
                   </div>
@@ -303,11 +345,13 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
                   <p
                     className="text-xs text-muted-foreground line-clamp-2"
                     dangerouslySetInnerHTML={{
-                      __html: (suggestion.highlightedSummary && suggestion.highlightedSummary.includes('search-highlight'))
-                        ? suggestion.highlightedSummary
-                        : (suggestion.highlightedContent && suggestion.highlightedContent.includes('search-highlight'))
-                          ? suggestion.highlightedContent
-                          : suggestion.summary
+                      __html: sanitizeHighlightHtml(
+                        (suggestion.highlightedSummary && suggestion.highlightedSummary.includes('search-highlight'))
+                          ? suggestion.highlightedSummary
+                          : (suggestion.highlightedContent && suggestion.highlightedContent.includes('search-highlight'))
+                            ? suggestion.highlightedContent
+                            : suggestion.summary
+                      )
                     }}
                   />
 

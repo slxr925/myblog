@@ -308,6 +308,11 @@ const normalizeArrayResponse = <T>(payload: unknown): T[] => {
   return [];
 };
 
+type SearchRequestOptions = {
+  track?: boolean;
+  source?: 'result' | 'suggest';
+};
+
 // API 请求工具
 export const api = {
   blog: {
@@ -509,9 +514,16 @@ export const api = {
   },
 
   search: {
-    searchBlogs: async (keyword: string, size: number = 10, page: number = 0) => {
+    searchBlogs: async (
+      keyword: string,
+      size: number = 10,
+      page: number = 0,
+      options?: SearchRequestOptions
+    ) => {
+      const track = options?.track ?? true;
+      const source = options?.source ?? 'result';
       return apiClient.get('/search/blogs', {
-        params: { keyword, size, page }
+        params: { keyword, size, page, track, source }
       });
     },
 

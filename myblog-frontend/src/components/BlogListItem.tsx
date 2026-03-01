@@ -8,10 +8,29 @@ interface BlogListItemProps {
     onClick: (postId: number | string) => void;
 }
 
+const escapeHtml = (input: string): string => {
+    return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+const sanitizeHighlightHtml = (raw: string): string => {
+    const escaped = escapeHtml(raw || '');
+    return escaped
+        .replace(/&lt;(?:span|mark)\s+class=['"]search-highlight['"]&gt;/gi, '<span class="search-highlight">')
+        .replace(/&lt;\/(?:span|mark)&gt;/gi, '</span>');
+};
+
 const BlogListItem = memo(({ post, index, onClick }: BlogListItemProps) => {
     const handleClick = () => {
         onClick(post.id);
     };
+
+    const safeHighlightedTitle = post.highlightedTitle ? sanitizeHighlightHtml(post.highlightedTitle) : '';
+    const safeHighlightedExcerpt = post.highlightedExcerpt ? sanitizeHighlightHtml(post.highlightedExcerpt) : '';
 
     return (
         <div
@@ -51,11 +70,19 @@ const BlogListItem = memo(({ post, index, onClick }: BlogListItemProps) => {
                     </div>
 
                     <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-1 md:line-clamp-1">
-                        {post.title}
+                        {safeHighlightedTitle ? (
+                            <span dangerouslySetInnerHTML={{ __html: safeHighlightedTitle }} />
+                        ) : (
+                            post.title
+                        )}
                     </h3>
 
                     <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 md:line-clamp-2 font-light">
-                        {post.excerpt}
+                        {safeHighlightedExcerpt ? (
+                            <span dangerouslySetInnerHTML={{ __html: safeHighlightedExcerpt }} />
+                        ) : (
+                            post.excerpt
+                        )}
                     </p>
                 </div>
 
