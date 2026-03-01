@@ -45,6 +45,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private static final int TAGS_IN_CONTEXT_LIMIT = 40;
         private static final int RELATED_ARTICLES_SCAN_LIMIT = 50;
         private static final int CHAT_CACHE_TTL_SECONDS = 300;
+        private static final int DEFAULT_CACHE_TTL_SECONDS = 60 * 60 * 24;
         private static final long CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000L;
         private static final long RELATED_ARTICLES_CACHE_TTL_MS = 5 * 60 * 1000L;
 
@@ -104,8 +105,8 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                         // 使用AI处理
                         String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), context);
-                        String cachedAnswer = getCachedValue(chatCacheKey);
-                        if (cachedAnswer != null && !cachedAnswer.isBlank()) {
+                        String cachedAnswer = getCachedValue(chatCacheKey, CHAT_CACHE_TTL_SECONDS);
+                        if (cachedAnswer != null) {
                                 List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(cachedAnswer);
                                 return AIChatResponse.builder()
                                                 .answer(cachedAnswer)
@@ -280,7 +281,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 if (!rawResult.equals(result)) {
                         log.warn("检测到聊天回答包含模型思考内容并已过滤，原始长度={}, 过滤后长度={}", rawResult.length(), result.length());
                 }
-                return result;
+                return ensureNonBlankAiResult(result, "聊天回复");
         }
 
         /**
@@ -402,7 +403,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 String cacheKey = buildCacheKey("title", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
-                        return sanitizeAiOutput(cached);
+                        return cached;
                 }
 
                 String prompt = String.format(
@@ -415,6 +416,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 truncateContent(content, 1000));
 
                 String result = callAI(prompt);
+                result = ensureNonBlankAiResult(result, "标题");
                 cacheValue(cacheKey, result);
                 return result;
         }
@@ -428,7 +430,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 String cacheKey = buildCacheKey("polish", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
-                        return sanitizeAiOutput(cached);
+                        return cached;
                 }
 
                 String prompt = String.format(
@@ -442,6 +444,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 truncateContent(content, POLISH_MAX_CONTENT_CHARS));
 
                 String result = callAI(prompt);
+                result = ensureNonBlankAiResult(result, "润色内容");
                 cacheValue(cacheKey, result);
                 return result;
         }
@@ -457,7 +460,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 String cacheKey = buildCacheKey("summary", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
-                        return sanitizeAiOutput(cached);
+                        return cached;
                 }
 
                 String prompt = String.format(
@@ -470,6 +473,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 truncateContent(content, SUMMARY_MAX_CONTENT_CHARS));
 
                 String result = callAI(prompt);
+                result = ensureNonBlankAiResult(result, "摘要");
                 cacheValue(cacheKey, result);
                 return result;
         }
@@ -477,14 +481,19 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         @Override
         public List<String> extractKeywords(String content, String style) {
                 if (!isAIAvailable()) {
-                        // 降级：返回空列表
-                        return java.util.Collections.emptyList();
+                        // 降级：基于规则提取关键词，避免前端出现“成功但为空”
+                        return extractKeywordsByRules(content, 8);
                 }
 
                 String cacheKey = buildCacheKey("keywords", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
-                        return parseKeywords(sanitizeAiOutput(cached));
+                        List<String> cachedKeywords = parseKeywords(cached);
+                        if (!cachedKeywords.isEmpty()) {
+                                return cachedKeywords;
+                        }
+                        log.warn("检测到关键词缓存无有效内容，已清理: key={}", cacheKey);
+                        deleteCacheQuietly(cacheKey);
                 }
 
                 String prompt = String.format(
@@ -497,8 +506,18 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 truncateContent(content, 2000));
 
                 String result = callAI(prompt);
+                result = ensureNonBlankAiResult(result, "关键词");
+                List<String> parsedKeywords = parseKeywords(result);
+                if (parsedKeywords.isEmpty()) {
+                        List<String> fallbackKeywords = extractKeywordsByRules(content, 8);
+                        if (!fallbackKeywords.isEmpty()) {
+                                log.warn("AI关键词解析为空，已回退规则提取: key={}", cacheKey);
+                                return fallbackKeywords;
+                        }
+                        throw new RuntimeException("AI提取关键词结果为空，请重试");
+                }
                 cacheValue(cacheKey, result);
-                return parseKeywords(result);
+                return parsedKeywords;
         }
 
         private List<String> parseKeywords(String rawText) {
@@ -535,12 +554,24 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         }
 
         private String getCachedValue(String key) {
+                return getCachedValue(key, DEFAULT_CACHE_TTL_SECONDS);
+        }
+
+        private String getCachedValue(String key, int ttlSeconds) {
                 try {
                         String cached = cacheService.get(key, String.class);
+                        if (cached == null) {
+                                return null;
+                        }
                         String sanitized = sanitizeAiOutput(cached);
-                        if (cached != null && !cached.equals(sanitized)) {
+                        if (sanitized.isBlank()) {
+                                log.warn("检测到AI缓存仅包含无效内容，已清理: key={}", key);
+                                deleteCacheQuietly(key);
+                                return null;
+                        }
+                        if (!cached.equals(sanitized)) {
                                 // 避免历史脏缓存持续污染输出，读取时回写净化结果
-                                cacheValue(key, sanitized);
+                                cacheValue(key, sanitized, ttlSeconds);
                         }
                         return sanitized;
                 } catch (Exception e) {
@@ -549,12 +580,19 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         }
 
         private void cacheValue(String key, String value) {
-                cacheValue(key, value, 60 * 60 * 24);
+                cacheValue(key, value, DEFAULT_CACHE_TTL_SECONDS);
         }
 
         private void cacheValue(String key, String value, int ttlSeconds) {
                 try {
                         cacheService.set(key, value, ttlSeconds);
+                } catch (Exception ignored) {
+                }
+        }
+
+        private void deleteCacheQuietly(String key) {
+                try {
+                        cacheService.delete(key);
                 } catch (Exception ignored) {
                 }
         }
@@ -627,6 +665,65 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 sanitized = THINK_TAG_PATTERN.matcher(sanitized).replaceAll("");
                 sanitized = sanitized.trim();
                 return sanitized;
+        }
+
+        private String ensureNonBlankAiResult(String text, String action) {
+                if (text == null || text.isBlank()) {
+                        throw new RuntimeException("AI生成" + action + "为空，请重试");
+                }
+                return text;
+        }
+
+        private List<String> extractKeywordsByRules(String content, int limit) {
+                if (content == null || content.isBlank()) {
+                        return java.util.Collections.emptyList();
+                }
+
+                String normalized = content
+                                .replaceAll("```[\\s\\S]*?```", " ")
+                                .replaceAll("`[^`]*`", " ")
+                                .replaceAll("[^\\p{IsHan}A-Za-z0-9#\\+\\-]", " ");
+
+                java.util.LinkedHashSet<String> results = new java.util.LinkedHashSet<>();
+
+                // 提取英文技术词（如 redis、springboot、docker、k8s、mysql8）
+                java.util.regex.Matcher enMatcher = Pattern.compile("\\b[a-zA-Z][a-zA-Z0-9_+\\-#]{2,24}\\b")
+                                .matcher(normalized);
+                while (enMatcher.find() && results.size() < limit) {
+                        String token = enMatcher.group().toLowerCase();
+                        if (isEnglishKeywordNoise(token)) {
+                                continue;
+                        }
+                        results.add(token);
+                }
+
+                // 提取中文词块（2-8字）
+                java.util.regex.Matcher zhMatcher = Pattern.compile("[\\p{IsHan}]{2,8}")
+                                .matcher(normalized);
+                while (zhMatcher.find() && results.size() < limit) {
+                        String token = zhMatcher.group().trim();
+                        if (isChineseKeywordNoise(token)) {
+                                continue;
+                        }
+                        results.add(token);
+                }
+
+                return results.stream().limit(limit).collect(Collectors.toList());
+        }
+
+        private boolean isEnglishKeywordNoise(String token) {
+                return token.length() < 3 ||
+                                java.util.Set.of(
+                                                "the", "and", "for", "with", "this", "that", "from", "into", "http",
+                                                "https", "www", "com", "org", "net", "null", "true", "false")
+                                                .contains(token);
+        }
+
+        private boolean isChineseKeywordNoise(String token) {
+                return java.util.Set.of(
+                                "我们", "你们", "他们", "以及", "如果", "因为", "所以", "然后", "就是", "这个", "那个",
+                                "需要", "进行", "通过", "一个", "一些", "可以", "没有", "自己", "这里", "如何")
+                                .contains(token);
         }
 
         /**

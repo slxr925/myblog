@@ -89,6 +89,10 @@ export const AIAssistant: React.FC = () => {
         conversationId: conversationId || undefined,
         history: history.length > 0 ? history : undefined,
       });
+      const answer = (response.answer || '').trim();
+      if (!answer) {
+        throw new Error('AI返回内容为空');
+      }
 
       if (!conversationId) {
         setConversationId(response.conversationId);
@@ -96,7 +100,7 @@ export const AIAssistant: React.FC = () => {
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response.answer,
+        content: answer,
         isUser: false,
         timestamp: new Date(),
         relatedArticles: response.relatedArticles,

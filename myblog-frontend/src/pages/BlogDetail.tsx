@@ -64,7 +64,12 @@ const BlogDetail: React.FC = () => {
     setIsGeneratingSummary(true);
     try {
       const result = await api.ai.generateSummary(blog.content);
-      setAiSummary(result.summary);
+      const summary = (result.summary || '').trim();
+      if (!summary) {
+        toast.error('摘要内容为空，请重试');
+        return;
+      }
+      setAiSummary(summary);
       toast.success('摘要生成成功');
     } catch (error) {
       console.error('摘要生成失败:', error);
@@ -80,7 +85,14 @@ const BlogDetail: React.FC = () => {
     setIsExtractingKeywords(true);
     try {
       const result = await api.ai.extractKeywords(blog.content);
-      setAiKeywords(result.keywords);
+      const keywords = (result.keywords || [])
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+      if (keywords.length === 0) {
+        toast.error('关键词内容为空，请重试');
+        return;
+      }
+      setAiKeywords(keywords);
       toast.success('关键词提取成功');
     } catch (error) {
       console.error('关键词提取失败:', error);

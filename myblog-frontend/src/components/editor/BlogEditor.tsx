@@ -334,7 +334,12 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
     setIsGeneratingTitle(true);
     try {
       const result = await api.ai.generateTitle(formData.content, aiStyle === '默认' ? undefined : aiStyle);
-      handleInputChange('title', result.title);
+      const title = (result.title || '').trim();
+      if (!title) {
+        toast.error('标题内容为空，请重试');
+        return;
+      }
+      handleInputChange('title', title);
       toast.success('标题生成成功');
     } catch (error) {
       console.error('标题生成失败:', error);
@@ -354,7 +359,12 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
     setIsPolishing(true);
     try {
       const result = await api.ai.polishContent(formData.content, aiStyle === '默认' ? undefined : aiStyle);
-      handleInputChange('content', result.polishedContent);
+      const polishedContent = (result.polishedContent || '').trim();
+      if (!polishedContent) {
+        toast.error('润色内容为空，请重试');
+        return;
+      }
+      handleInputChange('content', polishedContent);
       toast.success('文章润色成功');
     } catch (error) {
       console.error('文章润色失败:', error);
