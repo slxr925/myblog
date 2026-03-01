@@ -135,6 +135,8 @@ services:
       target: dev # 使用开发阶段构建
     container_name: myblog-backend
     restart: unless-stopped
+    env_file:
+      - ./.env.local
     ports:
       - "8081:8081"
     environment:
@@ -149,9 +151,8 @@ services:
       JWT_SECRET: myBlogSecretKeyForJWTTokenGeneration2024!@#$%
       # AI配置
       AI_ENABLED: "true"
-      OPENAI_API_KEY: 78c617eb96904306975a7a9317a37e8e.whZoxTQSTy81AQb6
-      OPENAI_BASE_URL: https://open.bigmodel.cn/api/coding/paas/v4
-      OPENAI_MODEL: GLM-4.7
+      OPENAI_BASE_URL: https://api.minimaxi.com/v1
+      OPENAI_MODEL: MiniMax-M2.5
       OPENAI_COMPLETIONS_PATH: /chat/completions
     volumes:
       - ./myblog-backend:/app:rw
