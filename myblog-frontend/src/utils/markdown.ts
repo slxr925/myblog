@@ -71,6 +71,20 @@ export function extractSummary(content: string, maxLength: number = 200): string
 }
 
 /**
+ * 生成标题 slug
+ * @param text 标题文本
+ * @returns slug
+ */
+export function generateHeadingSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5\s-]/g, '') // 保留字母、数字、中文、空格和连字符
+    .replace(/\s+/g, '-') // 空格替换为连字符
+    .replace(/-+/g, '-') // 多个连字符合并为一个
+    .replace(/^-|-$/g, '') // 移除首尾连字符
+}
+
+/**
  * 提取文章中的标题列表（目录）
  * @param content Markdown内容
  * @returns 标题列表
@@ -87,12 +101,7 @@ export function extractHeadings(content: string): Array<{
   while ((match = headingRegex.exec(content)) !== null) {
     const level = match[1].length
     const text = match[2].trim()
-    const id = text
-      .toLowerCase()
-      .replace(/[^\w\u4e00-\u9fa5\s-]/g, '') // 保留字母、数字、中文、空格和连字符
-      .replace(/\s+/g, '-') // 空格替换为连字符
-      .replace(/-+/g, '-') // 多个连字符合并为一个
-      .replace(/^-|-$/g, '') // 移除首尾连字符
+    const id = generateHeadingSlug(text)
 
     headings.push({ level, text, id })
   }
@@ -107,12 +116,7 @@ export function extractHeadings(content: string): Array<{
  */
 export function addHeadingIds(content: string): string {
   return content.replace(/^(#{1,6})\s+(.+)$/gm, (hashes, title) => {
-    const id = title
-      .toLowerCase()
-      .replace(/[^\w\u4e00-\u9fa5\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
+    const id = generateHeadingSlug(title)
     
     return `${hashes} ${title} {#${id}}`
   })

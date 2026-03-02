@@ -10,6 +10,7 @@ export {
   estimateReadingTime, 
   extractSummary, 
   extractHeadings, 
+  generateHeadingSlug,
   addHeadingIds,
   copyToClipboard 
 } from '../../utils/markdown'

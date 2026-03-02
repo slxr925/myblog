@@ -8,6 +8,7 @@ import { useAuthModal } from '../contexts/AuthModalContext';
 import { api } from '../utils/api';
 import type { BlogDetailVO, BlogDetailEnhancedVO, LikeResultDTO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
+import { TableOfContents } from '../components/markdown/TableOfContents';
 import { CommentSection } from '../components/comment/CommentSection';
 import CollectButton from '../components/blog/CollectButton';
 import FollowButton from '../components/user/FollowButton';
@@ -19,17 +20,25 @@ const normalizeRecommendBlogs = (items: BlogDetailVO[] | undefined, currentBlogI
     return [];
   }
 
-  const seen = new Set<number>();
+  const seenId = new Set<number>();
+  const seenTitle = new Set<string>();
   const result: BlogDetailVO[] = [];
 
   for (const item of items) {
     if (!item || typeof item.id !== 'number') {
       continue;
     }
-    if (item.id === currentBlogId || seen.has(item.id)) {
+    const titleKey = (item.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (item.id === currentBlogId || seenId.has(item.id)) {
       continue;
     }
-    seen.add(item.id);
+    if (titleKey && seenTitle.has(titleKey)) {
+      continue;
+    }
+    seenId.add(item.id);
+    if (titleKey) {
+      seenTitle.add(titleKey);
+    }
     result.push(item);
   }
 
@@ -63,6 +72,7 @@ const BlogDetail: React.FC = () => {
   const [categoryBlogs, setCategoryBlogs] = useState<BlogDetailVO[]>([]);
   const [previousBlog, setPreviousBlog] = useState<BlogDetailVO | null>(null);
   const [nextBlog, setNextBlog] = useState<BlogDetailVO | null>(null);
+  const [showMobileToc, setShowMobileToc] = useState(false);
   const requestSeqRef = useRef(0);
 
   // AI 功能状态
@@ -155,6 +165,7 @@ const BlogDetail: React.FC = () => {
       setLoading(false);
       return;
     }
+    setShowMobileToc(false);
 
     const blogId = Number(id);
     if (!Number.isFinite(blogId)) {
@@ -499,6 +510,24 @@ const BlogDetail: React.FC = () => {
             <PrevNextNav previousBlog={previousBlog} nextBlog={nextBlog} onNavigate={handleNavigateToBlog} />
 
             <div className="space-y-6 mt-8 lg:hidden">
+              {blogData.content && (
+                <div className="border border-border rounded-sm bg-card">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileToc((prev) => !prev)}
+                    className="w-full px-4 py-3 flex items-center justify-between text-xs font-mono-display uppercase tracking-wider text-muted-foreground"
+                  >
+                    <span>TABLE OF CONTENTS</span>
+                    <span>{showMobileToc ? '-' : '+'}</span>
+                  </button>
+                  {showMobileToc && (
+                    <div className="px-4 pb-4">
+                      <TableOfContents content={blogData.content} maxDepth={3} className="border-0 p-0 bg-transparent" />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
               <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
             </div>
@@ -513,9 +542,12 @@ const BlogDetail: React.FC = () => {
             </div>
           </main>
 
-          <aside className="hidden lg:block space-y-6">
-            <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
-            <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
+          <aside className="hidden lg:block">
+            <div className="sticky top-24 space-y-6">
+              {blogData.content && <TableOfContents content={blogData.content} maxDepth={3} />}
+              <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
+              <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
+            </div>
           </aside>
         </div>
       </div>

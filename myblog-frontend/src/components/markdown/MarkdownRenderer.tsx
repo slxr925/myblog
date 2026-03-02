@@ -1,9 +1,26 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import { generateHeadingSlug } from '../../utils/markdown'
 
 interface MarkdownRendererProps {
   content: string
   className?: string
+}
+
+function extractTextFromChildren(children: React.ReactNode): string {
+  if (children === null || children === undefined || typeof children === 'boolean') {
+    return ''
+  }
+  if (typeof children === 'string' || typeof children === 'number') {
+    return String(children)
+  }
+  if (Array.isArray(children)) {
+    return children.map(extractTextFromChildren).join('')
+  }
+  if (React.isValidElement(children)) {
+    return extractTextFromChildren((children.props as { children?: React.ReactNode }).children)
+  }
+  return ''
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
@@ -33,21 +50,38 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               </pre>
             )
           },
-          h1: ({ node, children, ...props }) => (
-            <h1 className="text-3xl font-bold mt-8 mb-4 text-foreground" {...props}>
-              {children}
-            </h1>
-          ),
-          h2: ({ node, children, ...props }) => (
-            <h2 className="text-2xl font-semibold mt-6 mb-3 text-foreground" {...props}>
-              {children}
-            </h2>
-          ),
-          h3: ({ node, children, ...props }) => (
-            <h3 className="text-xl font-medium mt-4 mb-2 text-foreground" {...props}>
-              {children}
-            </h3>
-          ),
+          h1: ({ node, children, ...props }) => {
+            const id = generateHeadingSlug(extractTextFromChildren(children))
+            return (
+              <h1 id={id || undefined} className="text-3xl font-bold mt-8 mb-4 text-foreground scroll-mt-20" {...props}>
+                {children}
+              </h1>
+            )
+          },
+          h2: ({ node, children, ...props }) => {
+            const id = generateHeadingSlug(extractTextFromChildren(children))
+            return (
+              <h2 id={id || undefined} className="text-2xl font-semibold mt-6 mb-3 text-foreground scroll-mt-20" {...props}>
+                {children}
+              </h2>
+            )
+          },
+          h3: ({ node, children, ...props }) => {
+            const id = generateHeadingSlug(extractTextFromChildren(children))
+            return (
+              <h3 id={id || undefined} className="text-xl font-medium mt-4 mb-2 text-foreground scroll-mt-20" {...props}>
+                {children}
+              </h3>
+            )
+          },
+          h4: ({ node, children, ...props }) => {
+            const id = generateHeadingSlug(extractTextFromChildren(children))
+            return (
+              <h4 id={id || undefined} className="text-lg font-medium mt-3 mb-2 text-foreground scroll-mt-20" {...props}>
+                {children}
+              </h4>
+            )
+          },
           p: ({ node, children, ...props }) => (
             <p className="mb-4 leading-relaxed text-foreground/90" {...props}>
               {children}

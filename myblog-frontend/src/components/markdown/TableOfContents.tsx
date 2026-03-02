@@ -80,34 +80,38 @@ export const TableOfContents: React.FC<TableOfContentsProps> = memo(({
   }
 
   return (
-    <nav className={`table-of-contents ${className}`}>
-      <h4 className="text-sm font-semibold text-foreground mb-3">目录</h4>
-      <ul className="space-y-1">
-        {headings.map(({ level, text, id }) => (
-          <li key={id}>
-            <button
-              onClick={() => handleHeadingClick(id)}
-              className={`
-                block w-full text-left text-sm transition-colors duration-200 hover:text-primary
-                ${currentActiveId === id 
-                  ? 'text-primary font-medium' 
-                  : 'text-muted-foreground'
-                }
-              `}
-              style={{ 
-                paddingLeft: `${(level - 1) * 0.75}rem`,
-                paddingTop: '0.25rem',
-                paddingBottom: '0.25rem'
-              }}
-              title={text}
-            >
-              <span className="line-clamp-2 leading-tight">
-                {text}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    <nav className={`table-of-contents border border-border rounded-sm p-4 bg-card ${className}`}>
+      <h4 className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground mb-3">
+        TABLE OF CONTENTS
+      </h4>
+      <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+        <ul className="space-y-1">
+          {headings.map(({ level, text, id }) => (
+            <li key={id}>
+              <button
+                onClick={() => handleHeadingClick(id)}
+                className={`
+                  block w-full text-left text-xs font-mono-display tracking-wide transition-colors duration-200 hover:text-primary
+                  ${currentActiveId === id
+                    ? 'text-primary font-medium'
+                    : 'text-muted-foreground'
+                  }
+                `}
+                style={{
+                  paddingLeft: `${(level - 1) * 0.75}rem`,
+                  paddingTop: '0.25rem',
+                  paddingBottom: '0.25rem'
+                }}
+                title={text}
+              >
+                <span className="line-clamp-2 leading-tight">
+                  {text}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
   )
 })
