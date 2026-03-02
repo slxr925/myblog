@@ -539,7 +539,11 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public BlogDetailVO getPreviousBlog(Long blogId, Long categoryId) {
+        // 同分类优先，查不到时回退全站上一篇，避免详情页两侧都为空。
         BlogDetailVO previousBlog = blogMapper.selectPreviousBlog(blogId, categoryId);
+        if (previousBlog == null && categoryId != null) {
+            previousBlog = blogMapper.selectPreviousBlog(blogId, null);
+        }
         if (previousBlog != null) {
             previousBlog.setTags(tagMapper.selectTagsByBlogId(previousBlog.getId()));
         }
@@ -548,7 +552,11 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public BlogDetailVO getNextBlog(Long blogId, Long categoryId) {
+        // 同分类优先，查不到时回退全站下一篇，避免详情页两侧都为空。
         BlogDetailVO nextBlog = blogMapper.selectNextBlog(blogId, categoryId);
+        if (nextBlog == null && categoryId != null) {
+            nextBlog = blogMapper.selectNextBlog(blogId, null);
+        }
         if (nextBlog != null) {
             nextBlog.setTags(tagMapper.selectTagsByBlogId(nextBlog.getId()));
         }

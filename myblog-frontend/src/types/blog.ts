@@ -1,69 +1,10 @@
-// 博客相关的TypeScript类型定义
+// 兼容层：统一类型定义来源到 types/api.ts，避免重复定义漂移。
 
-export interface BlogDetailVO {
-  id: number
-  title: string
-  content: string
-  summary: string
-  coverImg?: string
-  authorId: number
-  authorName: string
-  authorAvatar?: string
-  categoryId?: number
-  categoryName?: string
-  tags: string[]
-  status: number
-  visibility?: number
-  viewCount: number
-  likeCount: number
-  commentCount: number
-  publishTime: string
-  createTime: string
-  updateTime: string
-  statusChangedTime?: string
-}
+export type {
+  BlogDetailVO,
+  BlogDetailEnhancedVO,
+  CommentVO,
+  CommentCreateDTO,
+} from './api';
 
-export interface BlogDetailEnhancedVO {
-  blog: BlogDetailVO
-  relatedBlogs: BlogDetailVO[]
-  previousBlog?: BlogDetailVO
-  nextBlog?: BlogDetailVO
-  hotBlogs: BlogDetailVO[]
-  latestBlogs: BlogDetailVO[]
-  categoryBlogs: BlogDetailVO[]
-}
-
-export interface CommentVO {
-  id: number
-  blogId: number
-  userId: number
-  username: string
-  userAvatar?: string
-  parentId?: number
-  replyUserId?: number
-  replyUserNickname?: string
-  content: string
-  replies?: CommentVO[]
-  createTime: string
-  updateTime: string
-}
-
-export interface CommentCreateDTO {
-  blogId: number
-  content: string
-  parentId?: number
-  replyUserId?: number
-}
-
-// 博客状态枚举
-export enum BlogStatus {
-  DRAFT = 0,
-  PUBLISHED = 1,
-  OFFLINE = 2
-}
-
-// 用户角色枚举
-export enum UserRole {
-  USER = 0,
-  ADMIN = 1
-}
+export { BlogStatus, Role as UserRole } from './api';
