@@ -6,6 +6,7 @@ interface TableOfContentsProps {
   className?: string
   maxDepth?: number
   activeId?: string
+  showTitle?: boolean
 }
 
 // interface Heading {
@@ -22,7 +23,8 @@ export const TableOfContents: React.FC<TableOfContentsProps> = memo(({
   content,
   className = '',
   maxDepth = 4,
-  activeId
+  activeId,
+  showTitle = true
 }) => {
   const [currentActiveId, setCurrentActiveId] = useState<string>(activeId || '')
 
@@ -81,10 +83,12 @@ export const TableOfContents: React.FC<TableOfContentsProps> = memo(({
 
   return (
     <nav className={`table-of-contents border border-border rounded-sm p-4 bg-card ${className}`}>
-      <h4 className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground mb-3">
-        TABLE OF CONTENTS
-      </h4>
-      <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+      {showTitle && (
+        <h4 className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground mb-3">
+          TABLE OF CONTENTS
+        </h4>
+      )}
+      <div className="max-h-56 sm:max-h-64 lg:max-h-[34vh] overflow-y-auto pr-1">
         <ul className="space-y-1">
           {headings.map(({ level, text, id }) => (
             <li key={id}>

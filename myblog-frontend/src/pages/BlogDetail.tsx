@@ -73,6 +73,7 @@ const BlogDetail: React.FC = () => {
   const [previousBlog, setPreviousBlog] = useState<BlogDetailVO | null>(null);
   const [nextBlog, setNextBlog] = useState<BlogDetailVO | null>(null);
   const [showMobileToc, setShowMobileToc] = useState(false);
+  const [showDesktopToc, setShowDesktopToc] = useState(true);
   const requestSeqRef = useRef(0);
 
   // AI 功能状态
@@ -166,6 +167,7 @@ const BlogDetail: React.FC = () => {
       return;
     }
     setShowMobileToc(false);
+    setShowDesktopToc(true);
 
     const blogId = Number(id);
     if (!Number.isFinite(blogId)) {
@@ -414,6 +416,29 @@ const BlogDetail: React.FC = () => {
       <div className="container mx-auto px-4 py-12 max-w-[1120px]">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,760px)_320px] lg:justify-center gap-8">
           <main className="min-w-0">
+            {blogData.content && (
+              <div className="lg:hidden sticky top-20 z-20 mb-6 border border-border rounded-sm bg-background/95 backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowMobileToc((prev) => !prev)}
+                  className="w-full px-4 py-3 flex items-center justify-between text-xs font-mono-display uppercase tracking-wider text-muted-foreground"
+                >
+                  <span>TABLE OF CONTENTS</span>
+                  <span>{showMobileToc ? '-' : '+'}</span>
+                </button>
+                {showMobileToc && (
+                  <div className="px-4 pb-4">
+                    <TableOfContents
+                      content={blogData.content}
+                      maxDepth={3}
+                      showTitle={false}
+                      className="border-0 p-0 bg-transparent"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <article className="prose prose-lg prose-neutral dark:prose-invert max-w-none">
               {blogData.coverImg && (
                 <img src={blogData.coverImg} alt={blogData.title} className="w-full aspect-video object-cover mb-10" />
@@ -510,24 +535,6 @@ const BlogDetail: React.FC = () => {
             <PrevNextNav previousBlog={previousBlog} nextBlog={nextBlog} onNavigate={handleNavigateToBlog} />
 
             <div className="space-y-6 mt-8 lg:hidden">
-              {blogData.content && (
-                <div className="border border-border rounded-sm bg-card">
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileToc((prev) => !prev)}
-                    className="w-full px-4 py-3 flex items-center justify-between text-xs font-mono-display uppercase tracking-wider text-muted-foreground"
-                  >
-                    <span>TABLE OF CONTENTS</span>
-                    <span>{showMobileToc ? '-' : '+'}</span>
-                  </button>
-                  {showMobileToc && (
-                    <div className="px-4 pb-4">
-                      <TableOfContents content={blogData.content} maxDepth={3} className="border-0 p-0 bg-transparent" />
-                    </div>
-                  )}
-                </div>
-              )}
-
               <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
               <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
             </div>
@@ -544,7 +551,28 @@ const BlogDetail: React.FC = () => {
 
           <aside className="hidden lg:block">
             <div className="sticky top-24 space-y-6">
-              {blogData.content && <TableOfContents content={blogData.content} maxDepth={3} />}
+              {blogData.content && (
+                <div className="border border-border rounded-sm bg-card">
+                  <button
+                    type="button"
+                    onClick={() => setShowDesktopToc((prev) => !prev)}
+                    className="w-full px-4 py-3 flex items-center justify-between text-xs font-mono-display uppercase tracking-wider text-muted-foreground"
+                  >
+                    <span>TABLE OF CONTENTS</span>
+                    <span>{showDesktopToc ? '-' : '+'}</span>
+                  </button>
+                  {showDesktopToc && (
+                    <div className="px-4 pb-4">
+                      <TableOfContents
+                        content={blogData.content}
+                        maxDepth={3}
+                        showTitle={false}
+                        className="border-0 p-0 bg-transparent"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
               <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
               <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
             </div>
