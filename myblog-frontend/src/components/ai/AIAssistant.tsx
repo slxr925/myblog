@@ -5,6 +5,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { api } from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAuthModal } from '../../contexts/AuthModalContext';
 
 interface RelatedArticle {
   id: number;
@@ -47,6 +49,8 @@ export const AIAssistant: React.FC = () => {
   const [isSessionReady, setIsSessionReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { openAuthModal } = useAuthModal();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -127,7 +131,7 @@ export const AIAssistant: React.FC = () => {
 
   // 获取介绍信息
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && messages.length === 0 && isAuthenticated) {
       api.ai.getIntroduction().then(intro => {
         setMessages([{
           id: Date.now().toString(),
@@ -139,7 +143,7 @@ export const AIAssistant: React.FC = () => {
         console.error('获取AI介绍失败:', err);
       });
     }
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -286,61 +290,84 @@ export const AIAssistant: React.FC = () => {
 
               {/* 消息列表 */}
               <div className="h-96 overflow-y-auto p-4 space-y-4 bg-card">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[85%] rounded-sm px-4 py-2.5 ${message.isUser
-                        ? 'bg-foreground text-background rounded-br-none'
-                        : 'bg-muted border border-border rounded-bl-none'
-                        }`}
+                {/* 未登录提示 */}
+                {!isAuthenticated ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div className="w-12 h-12 bg-muted flex items-center justify-center mb-4">
+                      <Sparkles className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium mb-1">
+                      您未登录，请登录后使用AI问答助手
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      登录后即可与AI助手对话
+                    </p>
+                    <Button
+                      onClick={openAuthModal}
+                      className="rounded-sm bg-foreground text-background hover:bg-foreground/90 font-mono-display uppercase tracking-wider text-xs px-6"
                     >
-                      <p className={`text-sm whitespace-pre-wrap font-light ${message.isUser ? 'text-background' : 'text-foreground'
-                        }`}>
-                        {message.content}
-                      </p>
-
-                      {/* 相关文章链接 */}
-                      {!message.isUser && message.relatedArticles && message.relatedArticles.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-border/50">
-                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 font-mono-display uppercase tracking-wider">
-                            <ExternalLink className="w-3 h-3" />
-                            相关文章
+                      去登录
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-sm px-4 py-2.5 ${message.isUser
+                            ? 'bg-foreground text-background rounded-br-none'
+                            : 'bg-muted border border-border rounded-bl-none'
+                            }`}
+                        >
+                          <p className={`text-sm whitespace-pre-wrap font-light ${message.isUser ? 'text-background' : 'text-foreground'
+                            }`}>
+                            {message.content}
                           </p>
-                          <div className="space-y-1.5">
-                            {message.relatedArticles.map((article) => (
-                              <button
-                                key={article.id}
-                                onClick={() => handleArticleClick(article.id)}
-                                className="block w-full text-left text-xs text-accent hover:underline truncate transition-colors font-mono-display"
-                              >
-                                {article.title}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
 
-                      <p className={`text-xs mt-1 font-mono-display uppercase tracking-wider ${message.isUser ? 'text-background/60' : 'text-muted-foreground'
-                        }`}>
-                        {message.timestamp.toLocaleTimeString('zh-CN', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted border border-border rounded-sm rounded-bl-none px-4 py-2.5">
-                      <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                    </div>
-                  </div>
+                          {/* 相关文章链接 */}
+                          {!message.isUser && message.relatedArticles && message.relatedArticles.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-border/50">
+                              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 font-mono-display uppercase tracking-wider">
+                                <ExternalLink className="w-3 h-3" />
+                                相关文章
+                              </p>
+                              <div className="space-y-1.5">
+                                {message.relatedArticles.map((article) => (
+                                  <button
+                                    key={article.id}
+                                    onClick={() => handleArticleClick(article.id)}
+                                    className="block w-full text-left text-xs text-accent hover:underline truncate transition-colors font-mono-display"
+                                  >
+                                    {article.title}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <p className={`text-xs mt-1 font-mono-display uppercase tracking-wider ${message.isUser ? 'text-background/60' : 'text-muted-foreground'
+                            }`}>
+                            {message.timestamp.toLocaleTimeString('zh-CN', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted border border-border rounded-sm rounded-bl-none px-4 py-2.5">
+                          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               {/* 输入框 */}
@@ -350,13 +377,13 @@ export const AIAssistant: React.FC = () => {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="问我任何问题..."
-                    disabled={isLoading}
+                    placeholder={!isAuthenticated ? '请先登录' : '问我任何问题...'}
+                    disabled={isLoading || !isAuthenticated}
                     className="flex-1 rounded-sm border-border focus:border-accent focus:ring-accent/20"
                   />
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isLoading}
+                    disabled={!inputValue.trim() || isLoading || !isAuthenticated}
                     size="icon"
                     className="rounded-sm bg-foreground text-background hover:bg-foreground/90"
                   >
