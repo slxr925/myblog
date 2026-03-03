@@ -1,6 +1,27 @@
-# MyBlog
+# MyBlog - 现代化全栈博客系统
+
+<div align="center">
+
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+### 可部署、可扩展、可维护的内容社区工程模板
+
+[功能概览](#功能概览) • [快速开始](#快速开始) • [部署说明](#部署说明) • [文档导航](#文档导航)
+
+</div>
+
+---
 
 一个基于 **Spring Boot + React + Docker** 的全栈博客系统，支持内容管理、互动、搜索、通知与 AI 辅助能力。
+
+## 发布页亮点
+
+- 🚀 **全栈一体交付**：后端服务、前端应用、搜索与缓存组件开箱即用
+- 🧱 **工程化优先**：类型约束、脚本化部署、迁移流程与健康检查完整
+- 🔍 **业务链路完整**：内容发布、互动、搜索、通知与 AI 辅助闭环
 
 ## 项目目标
 
