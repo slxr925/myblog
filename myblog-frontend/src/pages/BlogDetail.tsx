@@ -440,10 +440,6 @@ const BlogDetail: React.FC = () => {
             )}
 
             <article className="prose prose-lg prose-neutral dark:prose-invert max-w-none">
-              {blogData.coverImg && (
-                <img src={blogData.coverImg} alt={blogData.title} className="w-full aspect-video object-cover mb-10" />
-              )}
-
               {/* AI功能区域 */}
               <div className="mb-10 p-6 border border-border bg-card">
                 <h3 className="text-sm font-mono-display uppercase tracking-wider mb-6 flex items-center gap-2">
