@@ -11,7 +11,9 @@ import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogDetailEnhancedVO;
+import com.ryan.myblog.model.vo.BlogRecommendationVO;
 import com.ryan.myblog.model.vo.BlogListVO;
+import com.ryan.myblog.model.vo.RecommendationSectionVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.mapper.BlogMapper;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 /**
  * 博客控制器
@@ -172,15 +176,10 @@ public class BlogController {
             CompletableFuture<List<BlogDetailVO>> latestBlogsFuture = CompletableFuture.supplyAsync(
                     () -> blogService.getLatestBlogs(5), executor);
 
-            CompletableFuture<List<BlogDetailVO>> categoryBlogsFuture = blog.getCategoryId() != null
-                    ? CompletableFuture.supplyAsync(() -> blogService.getBlogsByCategory(blog.getCategoryId(), 5),
-                            executor)
-                    : CompletableFuture.completedFuture(null);
-
             // 等待所有任务完成，设置超时时间为5秒
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(
                     relatedBlogsFuture, previousBlogFuture, nextBlogFuture,
-                    hotBlogsFuture, latestBlogsFuture, categoryBlogsFuture);
+                    hotBlogsFuture, latestBlogsFuture);
 
             allFutures.get(5, TimeUnit.SECONDS);
 
@@ -190,10 +189,9 @@ public class BlogController {
             enhancedVO.setNextBlog(nextBlogFuture.get());
             enhancedVO.setHotBlogs(hotBlogsFuture.get());
             enhancedVO.setLatestBlogs(latestBlogsFuture.get());
-
-            if (blog.getCategoryId() != null) {
-                enhancedVO.setCategoryBlogs(categoryBlogsFuture.get());
-            }
+            enhancedVO.setRelatedSection(buildRecommendationSection(
+                    "相关推荐", "related", relatedBlogsFuture.get(),
+                    "热门推荐", "hot", hotBlogsFuture.get(), id, 5));
 
         } catch (Exception e) {
             log.error("并行获取博客详情数据失败", e);
@@ -203,13 +201,63 @@ public class BlogController {
             enhancedVO.setNextBlog(blogService.getNextBlog(id, blog.getCategoryId()));
             enhancedVO.setHotBlogs(blogService.getHotBlogs(5));
             enhancedVO.setLatestBlogs(blogService.getLatestBlogs(5));
-
-            if (blog.getCategoryId() != null) {
-                enhancedVO.setCategoryBlogs(blogService.getBlogsByCategory(blog.getCategoryId(), 5));
-            }
+            enhancedVO.setRelatedSection(buildRecommendationSection(
+                    "相关推荐", "related", enhancedVO.getRelatedBlogs(),
+                    "热门推荐", "hot", enhancedVO.getHotBlogs(), id, 5));
         }
 
         return Result.success(enhancedVO);
+    }
+
+    private RecommendationSectionVO buildRecommendationSection(
+            String primaryTitle,
+            String primarySource,
+            List<BlogDetailVO> primaryItems,
+            String fallbackTitle,
+            String fallbackSource,
+            List<BlogDetailVO> fallbackItems,
+            Long currentBlogId,
+            int limit) {
+        List<BlogRecommendationVO> primary = toRecommendationItems(primaryItems, currentBlogId, limit);
+        RecommendationSectionVO section = new RecommendationSectionVO();
+        if (!primary.isEmpty()) {
+            section.setTitle(primaryTitle);
+            section.setSource(primarySource);
+            section.setItems(primary);
+            return section;
+        }
+
+        section.setTitle(fallbackTitle);
+        section.setSource(fallbackSource);
+        section.setItems(toRecommendationItems(fallbackItems, currentBlogId, limit));
+        return section;
+    }
+
+    private List<BlogRecommendationVO> toRecommendationItems(List<BlogDetailVO> items, Long currentBlogId, int limit) {
+        if (items == null || items.isEmpty()) {
+            return List.of();
+        }
+
+        LinkedHashSet<Long> seenIds = new LinkedHashSet<>();
+        List<BlogRecommendationVO> result = new ArrayList<>();
+        for (BlogDetailVO item : items) {
+            if (item == null || item.getId() == null || item.getId().equals(currentBlogId) || !seenIds.add(item.getId())) {
+                continue;
+            }
+
+            BlogRecommendationVO recommendation = new BlogRecommendationVO();
+            recommendation.setId(item.getId());
+            recommendation.setTitle(item.getTitle());
+            recommendation.setCategoryId(item.getCategoryId());
+            recommendation.setCategoryName(item.getCategoryName());
+            recommendation.setPublishTime(item.getPublishTime());
+            result.add(recommendation);
+
+            if (result.size() >= limit) {
+                break;
+            }
+        }
+        return result;
     }
 
     /**

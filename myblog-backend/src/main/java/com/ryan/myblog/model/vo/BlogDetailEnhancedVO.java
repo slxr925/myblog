@@ -38,9 +38,9 @@ public class BlogDetailEnhancedVO {
      * 最新博客
      */
     private List<BlogDetailVO> latestBlogs;
-    
+
     /**
-     * 同分类推荐
+     * 相关推荐区块
      */
-    private List<BlogDetailVO> categoryBlogs;
+    private RecommendationSectionVO relatedSection;
 }

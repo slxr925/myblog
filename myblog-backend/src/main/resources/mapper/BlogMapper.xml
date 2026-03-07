@@ -461,6 +461,88 @@
         LIMIT #{limit}
     </select>
 
+    <select id="selectRelatedBlogIds" resultType="java.lang.Long">
+        SELECT candidate.id
+        FROM (
+            SELECT
+                b.id,
+                CASE
+                    WHEN #{categoryId} IS NOT NULL AND b.category_id = #{categoryId} THEN 1
+                    ELSE 0
+                END AS same_category,
+                <choose>
+                    <when test="tagIds != null and tagIds.size() > 0">
+                        COUNT(DISTINCT CASE WHEN bt.tag_id IN
+                        <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">
+                            #{tagId}
+                        </foreach>
+                        THEN bt.tag_id END) AS tag_overlap_count,
+                    </when>
+                    <otherwise>
+                        0 AS tag_overlap_count,
+                    </otherwise>
+                </choose>
+                b.publish_time,
+                b.view_count
+            FROM tb_blog b
+            LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
+            WHERE b.deleted = 0
+              AND b.status = 1
+              AND b.id != #{blogId}
+              AND (
+                <trim suffixOverrides="OR">
+                    <if test="categoryId != null">
+                        b.category_id = #{categoryId} OR
+                    </if>
+                    <if test="tagIds != null and tagIds.size() > 0">
+                        bt.tag_id IN
+                        <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">
+                            #{tagId}
+                        </foreach>
+                        OR
+                    </if>
+                </trim>
+              )
+            GROUP BY b.id, b.category_id, b.publish_time, b.view_count
+        ) candidate
+        ORDER BY
+            candidate.same_category DESC,
+            candidate.tag_overlap_count DESC,
+            candidate.publish_time DESC,
+            candidate.view_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectBlogsByIdsWithTags" resultMap="BlogListWithTagsMap">
+        SELECT
+            b.id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.visibility, b.is_top, b.view_count,
+            (SELECT COUNT(*) FROM tb_user_like ul
+             WHERE ul.target_type = 'blog' AND ul.target_id = b.id
+             AND ul.status = 1 AND ul.deleted = 0) AS like_count,
+            (SELECT COUNT(*) FROM tb_comment c
+             WHERE c.blog_id = b.id AND c.status = 1 AND c.deleted = 0) AS comment_count,
+            b.publish_time, b.create_time, b.update_time, b.status_changed_time,
+            u.nickname as author_name, u.avatar as author_avatar, c.name as category_name,
+            t.id as tag_id, t.name as tag_name, t.color as tag_color
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
+        LEFT JOIN tb_tag t ON bt.tag_id = t.id AND t.deleted = 0
+        WHERE b.deleted = 0
+          AND b.status = 1
+          AND b.id IN
+          <foreach collection="ids" item="id" open="(" separator="," close=")">
+              #{id}
+          </foreach>
+        ORDER BY FIELD(b.id,
+          <foreach collection="ids" item="id" separator=",">
+              #{id}
+          </foreach>
+        )
+    </select>
+
     <!-- 查询用户点赞的博客 -->
     <select id="selectLikedBlogsByUser" resultMap="BlogDetailMap">
         SELECT 

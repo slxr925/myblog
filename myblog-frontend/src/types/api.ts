@@ -147,6 +147,20 @@ export interface PageResult<T> {
   current?: number;
 }
 
+export interface BlogRecommendationVO {
+  id: number;
+  title: string;
+  categoryId?: number;
+  categoryName?: string;
+  publishTime?: string;
+}
+
+export interface RecommendationSectionVO {
+  title: string;
+  source: 'related' | 'hot' | 'category' | 'latest';
+  items: BlogRecommendationVO[];
+}
+
 // 博客详情增强VO
 export interface BlogDetailEnhancedVO {
   blog: BlogDetailVO;
@@ -155,7 +169,7 @@ export interface BlogDetailEnhancedVO {
   nextBlog?: BlogDetailVO;
   hotBlogs: BlogDetailVO[];
   latestBlogs: BlogDetailVO[];
-  categoryBlogs: BlogDetailVO[];
+  relatedSection?: RecommendationSectionVO;
 }
 
 // 前端博客文章类型

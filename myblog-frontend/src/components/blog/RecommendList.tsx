@@ -1,12 +1,12 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
-import type { BlogDetailVO } from '../../types/api';
+import type { BlogRecommendationVO } from '../../types/api';
 
 type EmptyBehavior = 'hide' | 'showEmpty';
 
 interface RecommendListProps {
   title: string;
-  items: BlogDetailVO[];
+  items: BlogRecommendationVO[];
   onNavigate: (blogId: number) => void;
   emptyBehavior?: EmptyBehavior;
 }

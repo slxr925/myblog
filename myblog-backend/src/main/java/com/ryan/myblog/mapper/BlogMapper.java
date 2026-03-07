@@ -114,6 +114,19 @@ public interface BlogMapper extends BaseMapper<Blog> {
                         @Param("limit") int limit);
 
         /**
+         * 查询相关推荐的文章ID（按文章粒度排序）
+         */
+        List<Long> selectRelatedBlogIds(@Param("blogId") Long blogId,
+                        @Param("categoryId") Long categoryId,
+                        @Param("tagIds") List<Long> tagIds,
+                        @Param("limit") int limit);
+
+        /**
+         * 根据文章ID集合查询推荐博客列表（包含标签，不包含content）
+         */
+        List<BlogDetailVO> selectBlogsByIdsWithTags(@Param("ids") List<Long> ids);
+
+        /**
          * 查询用户点赞的博客
          */
         IPage<BlogDetailVO> selectLikedBlogsByUser(IPage<BlogDetailVO> page,

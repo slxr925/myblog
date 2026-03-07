@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthModal } from '../contexts/AuthModalContext';
 import { api } from '../utils/api';
-import type { BlogDetailVO, BlogDetailEnhancedVO, LikeResultDTO } from '../types/api';
+import type { BlogDetailVO, BlogDetailEnhancedVO, LikeResultDTO, RecommendationSectionVO } from '../types/api';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { TableOfContents } from '../components/markdown/TableOfContents';
 import { CommentSection } from '../components/comment/CommentSection';
@@ -15,46 +15,27 @@ import FollowButton from '../components/user/FollowButton';
 import PrevNextNav from '../components/blog/PrevNextNav';
 import RecommendList from '../components/blog/RecommendList';
 
-const normalizeRecommendBlogs = (items: BlogDetailVO[] | undefined, currentBlogId: number): BlogDetailVO[] => {
-  if (!Array.isArray(items)) {
-    return [];
+const normalizeRecommendationSection = (
+  section: RecommendationSectionVO | undefined,
+  currentBlogId: number,
+): RecommendationSectionVO | null => {
+  if (!section || !Array.isArray(section.items)) {
+    return null;
   }
 
   const seenId = new Set<number>();
-  const seenTitle = new Set<string>();
-  const result: BlogDetailVO[] = [];
-
-  for (const item of items) {
-    if (!item || typeof item.id !== 'number') {
-      continue;
-    }
-    const titleKey = (item.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
-    if (item.id === currentBlogId || seenId.has(item.id)) {
-      continue;
-    }
-    if (titleKey && seenTitle.has(titleKey)) {
-      continue;
+  const items = section.items.filter((item) => {
+    if (!item || typeof item.id !== 'number' || item.id === currentBlogId || seenId.has(item.id)) {
+      return false;
     }
     seenId.add(item.id);
-    if (titleKey) {
-      seenTitle.add(titleKey);
-    }
-    result.push(item);
-  }
+    return true;
+  });
 
-  return result;
-};
-
-const pickRecommendBlogs = (
-  primary: BlogDetailVO[] | undefined,
-  fallback: BlogDetailVO[] | undefined,
-  currentBlogId: number,
-): BlogDetailVO[] => {
-  const primaryList = normalizeRecommendBlogs(primary, currentBlogId);
-  if (primaryList.length > 0) {
-    return primaryList;
-  }
-  return normalizeRecommendBlogs(fallback, currentBlogId);
+  return {
+    ...section,
+    items,
+  };
 };
 
 const BlogDetail: React.FC = () => {
@@ -68,8 +49,7 @@ const BlogDetail: React.FC = () => {
   const [commentCount, setCommentCount] = useState(0);
   const { openAuthModal } = useAuthModal();
 
-  const [relatedBlogs, setRelatedBlogs] = useState<BlogDetailVO[]>([]);
-  const [categoryBlogs, setCategoryBlogs] = useState<BlogDetailVO[]>([]);
+  const [relatedSection, setRelatedSection] = useState<RecommendationSectionVO | null>(null);
   const [previousBlog, setPreviousBlog] = useState<BlogDetailVO | null>(null);
   const [nextBlog, setNextBlog] = useState<BlogDetailVO | null>(null);
   const [showMobileToc, setShowMobileToc] = useState(false);
@@ -85,8 +65,7 @@ const BlogDetail: React.FC = () => {
   const blogData = blog || ({} as BlogDetailVO);
 
   const resetEnhancedSections = useCallback(() => {
-    setRelatedBlogs([]);
-    setCategoryBlogs([]);
+    setRelatedSection(null);
     setPreviousBlog(null);
     setNextBlog(null);
   }, []);
@@ -200,8 +179,7 @@ const BlogDetail: React.FC = () => {
         const detail = (enhanced as BlogDetailEnhancedVO).blog;
         applyBaseDetail(detail);
 
-        setRelatedBlogs(pickRecommendBlogs(enhanced.relatedBlogs, enhanced.hotBlogs, detail.id));
-        setCategoryBlogs(pickRecommendBlogs(enhanced.categoryBlogs, enhanced.latestBlogs, detail.id));
+        setRelatedSection(normalizeRecommendationSection(enhanced.relatedSection, detail.id));
         setPreviousBlog(
           enhanced.previousBlog && enhanced.previousBlog.id !== detail.id ? enhanced.previousBlog : null,
         );
@@ -220,19 +198,7 @@ const BlogDetail: React.FC = () => {
           }
 
           applyBaseDetail(basicDetail);
-          const [relatedFallback, categoryFallback] = await Promise.all([
-            api.blog.getRelated(blogId, 5).catch(() => []),
-            basicDetail.categoryId
-              ? api.blog.getByCategoryPublic(basicDetail.categoryId, 5).catch(() => [])
-              : Promise.resolve([]),
-          ]);
-
-          if (requestSeq !== requestSeqRef.current) {
-            return;
-          }
-
-          setRelatedBlogs(normalizeRecommendBlogs(relatedFallback, basicDetail.id));
-          setCategoryBlogs(normalizeRecommendBlogs(categoryFallback, basicDetail.id));
+          setRelatedSection(null);
           setPreviousBlog(null);
           setNextBlog(null);
 
@@ -531,8 +497,9 @@ const BlogDetail: React.FC = () => {
             <PrevNextNav previousBlog={previousBlog} nextBlog={nextBlog} onNavigate={handleNavigateToBlog} />
 
             <div className="space-y-6 mt-8 lg:hidden">
-              <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
-              <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
+              {relatedSection && (
+                <RecommendList title={relatedSection.title} items={relatedSection.items} onNavigate={handleNavigateToBlog} />
+              )}
             </div>
 
             {/* Comments */}
@@ -569,8 +536,9 @@ const BlogDetail: React.FC = () => {
                   )}
                 </div>
               )}
-              <RecommendList title="相关推荐" items={relatedBlogs} onNavigate={handleNavigateToBlog} />
-              <RecommendList title="同分类推荐" items={categoryBlogs} onNavigate={handleNavigateToBlog} />
+              {relatedSection && (
+                <RecommendList title={relatedSection.title} items={relatedSection.items} onNavigate={handleNavigateToBlog} />
+              )}
             </div>
           </aside>
         </div>

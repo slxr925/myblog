@@ -518,23 +518,28 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public List<BlogDetailVO> getRelatedBlogs(Long blogId, int limit) {
-        // 获取当前博客信息
         Blog currentBlog = blogMapper.selectById(blogId);
         if (currentBlog == null) {
             return List.of();
         }
 
-        // 获取当前博客的标签
         List<Long> tagIds = tagMapper.selectTagsByBlogId(blogId)
                 .stream()
                 .map(tag -> tag.getId())
                 .collect(Collectors.toList());
 
-        // 使用新的查询方法，已经包含标签信息
-        List<BlogDetailVO> relatedBlogs = blogMapper.selectRelatedBlogsWithTags(
+        if (currentBlog.getCategoryId() == null && tagIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> relatedBlogIds = blogMapper.selectRelatedBlogIds(
                 blogId, currentBlog.getCategoryId(), tagIds, limit);
 
-        return relatedBlogs;
+        if (relatedBlogIds == null || relatedBlogIds.isEmpty()) {
+            return List.of();
+        }
+
+        return blogMapper.selectBlogsByIdsWithTags(relatedBlogIds);
     }
 
     @Override
