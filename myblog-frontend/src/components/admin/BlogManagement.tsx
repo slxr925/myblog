@@ -223,7 +223,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
 
       <AdminSectionCard
         title="内容工作流"
-        description="搜索、筛选并管理文章状态。搜索只刷新列表区域，不再重建输入框。"
+        description="搜索、筛选并管理文章状态。"
       >
         <AdminToolbar>
           <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">

@@ -206,7 +206,7 @@ export const MonitoringDashboard: React.FC = () => {
             </p>
             <h3 className="mt-3 text-xl font-semibold">系统与业务态势</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Arthas 指标、请求表现和业务脉冲统一汇总。标题图标保持单色，风险仅通过数值与进度条呈现。
+              查看 Arthas 指标、请求状态和业务数据。
             </p>
           </div>
           <div className="rounded-sm border border-border/70 bg-card/75 px-4 py-3 text-right">

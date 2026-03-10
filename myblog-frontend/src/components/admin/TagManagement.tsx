@@ -185,7 +185,7 @@ export const TagManagement: React.FC = () => {
 
       <AdminSectionCard
         title="标签工作台"
-        description="保持标签命名一致，让搜索、列表过滤和推荐使用更稳定的词汇。"
+        description="维护标签名称和说明。"
         action={
           <Button size="sm" onClick={handleCreate}>
             <Plus className="h-4 w-4" />

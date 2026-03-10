@@ -105,7 +105,7 @@ const MyDrafts: React.FC = () => {
     <AdminShell
       activeMenu="blogs"
       title="草稿箱"
-      description="统一管理草稿、已发布和已下线文章，把继续创作和状态切换放回后台工作流。"
+      description="查看草稿、已发布和已下线文章。"
       actions={
         <>
           <Button variant="outline" onClick={() => navigate('/dashboard?tab=blogs')}>
@@ -133,7 +133,7 @@ const MyDrafts: React.FC = () => {
 
         <AdminSectionCard
           title="文章状态中心"
-          description="切换不同状态查看文章，并快速继续编辑或查看线上版本。"
+          description="按状态查看文章并继续编辑。"
         >
           <AdminToolbar>
             <div className="flex flex-wrap gap-2">

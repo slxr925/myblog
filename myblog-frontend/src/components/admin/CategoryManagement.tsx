@@ -195,7 +195,7 @@ export const CategoryManagement: React.FC = () => {
 
       <AdminSectionCard
         title="分类工作台"
-        description="维护前台内容结构，统一分类名称和说明，避免出现重复命名。"
+        description="维护文章分类和说明。"
         action={
           <Button size="sm" onClick={handleCreate}>
             <Plus className="h-4 w-4" />

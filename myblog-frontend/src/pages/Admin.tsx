@@ -233,7 +233,7 @@ export const Admin: React.FC = () => {
       {
         eyebrow: 'Intelligence Lane',
         title: 'AI 与审计',
-        description: '查看 AI 请求热点、后台操作轨迹和系统风险，保持控制台首页既有内容效率也有治理视角。',
+        description: '查看 AI 请求热点、审计记录和系统状态。',
         icon: Sparkles,
         primaryLabel: 'AI 用量',
         primaryAction: () => navigate('/dashboard?tab=ai'),
@@ -255,9 +255,7 @@ export const Admin: React.FC = () => {
                   <h2 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] md:text-[2.4rem]">
                     控制台总览
                   </h2>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {today}。把内容发布、互动治理、系统健康和增长趋势集中在同一块主舞台，后台首页改成更稳定的运营工作台。
-                  </p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{today}。查看内容、互动、系统状态和趋势概况。</p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:flex-nowrap xl:ml-6 xl:flex-none">
                   <Button size="sm" onClick={() => navigate('/blog/new')}>
@@ -355,7 +353,7 @@ export const Admin: React.FC = () => {
               </div>
             </AdminSectionCard>
 
-            <AdminSectionCard title="快速入口" description="把高频动作收进一列，减少首页错位和扫描成本。">
+            <AdminSectionCard title="快速入口" description="常用后台入口。">
               <div className="grid gap-3">
                 <Button variant="outline" className="justify-start" onClick={() => navigate('/dashboard?tab=blogs')}>
                   <FileText className="h-4 w-4" />
@@ -378,7 +376,7 @@ export const Admin: React.FC = () => {
           </div>
         </div>
 
-        <AdminSectionCard title="系统态势" description="实时指标、风险阈值和业务脉冲集中展示。">
+        <AdminSectionCard title="系统态势" description="查看系统指标和业务数据。">
           <MonitoringDashboard />
         </AdminSectionCard>
 
@@ -390,7 +388,7 @@ export const Admin: React.FC = () => {
             </div>
           </AdminSectionCard>
 
-          <AdminSectionCard title="工作流入口" description="把内容、社区、结构和治理四条工作流放进统一节奏。">
+          <AdminSectionCard title="工作流入口" description="常用内容和治理操作。">
             <div className="grid gap-3 sm:grid-cols-2">
               {workflowLanes.map((lane) => {
                 const Icon = lane.icon
@@ -433,7 +431,7 @@ export const Admin: React.FC = () => {
       title={currentView === 'dashboard' ? '控制台' : renderTitle(currentView)}
       description={
         currentView === 'dashboard'
-          ? '后台所有 tab 统一到运营驾驶舱风格，内容发布、互动治理、系统健康和趋势分析收进同一套控制台。'
+          ? '查看站点概况、运营数据和系统状态。'
           : `欢迎回来，${user?.nickname || '管理员'}。`
       }
     >

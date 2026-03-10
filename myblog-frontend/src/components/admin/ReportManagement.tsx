@@ -109,7 +109,7 @@ export const ReportManagement: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <AdminSectionCard title="举报队列" description="集中处理用户举报，保持审核动作和状态一目了然。">
+      <AdminSectionCard title="举报队列" description="查看和处理用户举报。">
         {reports.length === 0 ? (
           <AdminEmptyState
             title="暂无举报"

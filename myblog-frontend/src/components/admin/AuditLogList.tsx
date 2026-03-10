@@ -63,7 +63,7 @@ export const AuditLogList: React.FC = () => {
         <AdminStatCard label="操作人数量" value={uniqueOperators} detail="当前页内涉及的操作者数" icon={Fingerprint} />
       </div>
 
-      <AdminSectionCard title="审计轨迹" description="查看后台关键动作的时间线，便于追查谁在什么时间操作了什么资源。">
+      <AdminSectionCard title="审计轨迹" description="查看后台关键操作时间线。">
         {logs.length === 0 ? (
           <AdminEmptyState
             title="暂无审计日志"

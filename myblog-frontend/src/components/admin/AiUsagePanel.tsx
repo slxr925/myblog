@@ -45,7 +45,7 @@ export const AiUsagePanel: React.FC = () => {
         <AdminStatCard label="最高活跃用户" value={busiestUser?.username || '-'} detail={busiestUser ? `${busiestUser.requestCount} 次请求` : '暂无活跃用户'} icon={UserCircle2} />
       </div>
 
-      <AdminSectionCard title="AI 使用排行榜" description="聚焦最近 7 天最活跃的 AI 使用者，帮助观察资源消耗热点。">
+      <AdminSectionCard title="AI 使用排行榜" description="查看最近 7 天的 AI 使用情况。">
         {topUsers.length === 0 ? (
           <AdminEmptyState
             title="暂无 AI 使用数据"

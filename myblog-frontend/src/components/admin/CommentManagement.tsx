@@ -136,7 +136,7 @@ export const CommentManagement: React.FC = () => {
 
       <AdminSectionCard
         title="评论检索"
-        description="服务端搜索评论内容与用户信息，输入时只刷新列表区。"
+        description="搜索评论内容和用户信息。"
       >
         <AdminToolbar>
           <div className="relative flex-1">

@@ -162,7 +162,7 @@ export const UserManagement: React.FC = () => {
 
       <AdminSectionCard
         title="用户检索"
-        description="服务端搜索用户名、邮箱与昵称，输入时只刷新列表区。"
+        description="搜索用户名、邮箱与昵称。"
       >
         <AdminToolbar>
           <div className="relative flex-1">

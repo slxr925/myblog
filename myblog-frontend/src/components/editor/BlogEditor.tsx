@@ -384,7 +384,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
     <AdminShell
       activeMenu="blogs"
       title={mode === 'create' ? '写文章' : '编辑文章'}
-      description="把正文创作、发布设置、AI 辅助和草稿管理收在同一工作台里，不再混用前台导航和默认第三方皮肤。"
+      description="编辑正文并设置分类、封面和发布信息。"
       actions={
         <>
           <Button variant="outline" onClick={() => navigate('/dashboard?tab=blogs')}>
@@ -403,7 +403,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
       <div className="space-y-6">
         {message && <AdminNotice type={message.type}>{message.text}</AdminNotice>}
 
-        <AdminSectionCard title="创作状态" description="自动保存、预览模式和当前创作状态会集中显示在这里。">
+        <AdminSectionCard title="创作状态" description="自动保存和当前编辑状态。">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-lg font-semibold">{formatSavedTime}</p>
@@ -454,7 +454,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
             <AdminSectionCard
               title="正文编辑"
-              description="保留 Markdown 存储格式，用后台自有的分栏编辑与预览工作台替代默认第三方外观。"
+              description="Markdown 编辑与预览。"
               action={<MarkdownShortcutsDialog />}
               contentClassName="px-0 py-0"
             >
@@ -610,7 +610,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
               </div>
             </AdminSectionCard>
 
-            <AdminSectionCard title="AI 辅助" description="把生成标题和润色作为辅助动作，下沉到设置面板。">
+            <AdminSectionCard title="AI 辅助" description="生成标题和润色。">
               <div className="space-y-4">
                 <div>
                   <Label>AI 风格</Label>
