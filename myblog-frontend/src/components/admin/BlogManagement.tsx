@@ -1,525 +1,398 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
+import React, { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
-  Search,
-  Eye,
-  Trash2,
-  FileText,
-  AlertCircle,
-  CheckCircle,
-  TrendingUp,
   Archive,
-  PenTool,
+  Calendar,
+  CheckCircle,
   ClipboardList,
+  Eye,
+  FileText,
   Loader2,
-  User,
-  Calendar
-} from 'lucide-react';
-import { BlogStatus, type BlogDetailVO } from '../../types/api';
-import { api } from '../../utils/api';
-import { useNavigate } from 'react-router-dom';
+  PenTool,
+  Search,
+  Trash2,
+  TrendingUp,
+} from 'lucide-react'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { BlogStatus, type BlogDetailVO } from '../../types/api'
+import { api } from '../../utils/api'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import {
+  AdminEmptyState,
+  AdminNotice,
+  AdminSectionCard,
+  AdminStatCard,
+  AdminToolbar,
+} from './AdminUI'
 
 interface BlogManagementProps {
-  initialStatusFilter?: BlogStatus;
+  initialStatusFilter?: BlogStatus
 }
 
+type MessageState = { type: 'success' | 'error'; text: string } | null
+
+const PAGE_SIZE = 12
+
 export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFilter }) => {
-  const navigate = useNavigate();
-  const [blogs, setBlogs] = useState<BlogDetailVO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<number | undefined>(initialStatusFilter);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalBlogs, setTotalBlogs] = useState(0);
-  const [draftCount, setDraftCount] = useState(0);
-  const [publishedCount, setPublishedCount] = useState(0);
-  const [offlineCount, setOfflineCount] = useState(0);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [loadingBlogId, setLoadingBlogId] = useState<number | null>(null);
+  const navigate = useNavigate()
+  const [blogs, setBlogs] = useState<BlogDetailVO[]>([])
+  const [isBootstrapping, setIsBootstrapping] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<number | undefined>(initialStatusFilter)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalBlogs, setTotalBlogs] = useState(0)
+  const [draftCount, setDraftCount] = useState(0)
+  const [publishedCount, setPublishedCount] = useState(0)
+  const [offlineCount, setOfflineCount] = useState(0)
+  const [message, setMessage] = useState<MessageState>(null)
+  const [loadingBlogId, setLoadingBlogId] = useState<number | null>(null)
+
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 350)
 
   useEffect(() => {
-    fetchBlogs();
-  }, [currentPage, searchTerm, statusFilter]);
+    setStatusFilter(initialStatusFilter)
+  }, [initialStatusFilter])
 
   useEffect(() => {
-    setStatusFilter(initialStatusFilter);
-  }, [initialStatusFilter]);
+    fetchBlogs(isBootstrapping)
+  }, [currentPage, debouncedSearchTerm, statusFilter])
 
-  const fetchBlogs = async () => {
+  const fetchBlogs = async (firstLoad = false) => {
     try {
-      setLoading(true);
+      if (firstLoad) {
+        setIsBootstrapping(true)
+      } else {
+        setIsRefreshing(true)
+      }
+
       const response = await api.admin.getBlogs({
         page: currentPage,
-        size: 12,
-        keyword: searchTerm,
-        status: statusFilter
-      });
+        size: PAGE_SIZE,
+        keyword: debouncedSearchTerm || undefined,
+        status: statusFilter,
+      })
 
-      // Handle new API response structure (cast to any for new fields)
-      const responseData: any = response;
-      const pageResult = responseData.pageResult || response;
-      const blogData = Array.isArray(pageResult?.records) ? pageResult.records : (Array.isArray(pageResult?.content) ? pageResult.content : []);
-      const totalCount = pageResult?.total ?? pageResult?.totalElements ?? blogData.length;
+      const responseData = response as any
+      const pageResult = responseData.pageResult || response
+      const records = Array.isArray(pageResult?.records)
+        ? pageResult.records
+        : Array.isArray(pageResult?.content)
+          ? pageResult.content
+          : []
 
-      setBlogs(blogData);
-      setTotalBlogs(totalCount);
-
-      // Update status counts from backend
-      setDraftCount(Number(responseData.draftCount) || 0);
-      setPublishedCount(Number(responseData.publishedCount) || 0);
-      setOfflineCount(Number(responseData.offlineCount) || 0);
+      setBlogs(records)
+      setTotalBlogs(pageResult?.total ?? pageResult?.totalElements ?? records.length)
+      setDraftCount(Number(responseData.draftCount) || 0)
+      setPublishedCount(Number(responseData.publishedCount) || 0)
+      setOfflineCount(Number(responseData.offlineCount) || 0)
     } catch (error) {
-      console.error('获取文章列表失败:', error);
-      setMessage({ type: 'error', text: '获取文章列表失败' });
-      setBlogs([]);
-      setTotalBlogs(0);
-      setDraftCount(0);
-      setPublishedCount(0);
-      setOfflineCount(0);
+      console.error('获取文章列表失败:', error)
+      setBlogs([])
+      setTotalBlogs(0)
+      setDraftCount(0)
+      setPublishedCount(0)
+      setOfflineCount(0)
+      setMessage({ type: 'error', text: '获取文章列表失败，请稍后重试。' })
     } finally {
-      setLoading(false);
+      setIsBootstrapping(false)
+      setIsRefreshing(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!message) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setMessage(null), 2800)
+    return () => window.clearTimeout(timeoutId)
+  }, [message])
+
+  const totalPages = Math.max(1, Math.ceil(totalBlogs / PAGE_SIZE))
+
+  const handleStatusFilter = (nextStatus?: BlogStatus) => {
+    setCurrentPage(1)
+    setStatusFilter(nextStatus)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(1)
+  }
 
   const handleToggleBlogStatus = async (blogId: number, currentStatus: number) => {
     try {
-      setLoadingBlogId(blogId);
-      let newStatus: number;
-      let statusText: string;
+      setLoadingBlogId(blogId)
+      const nextStatus =
+        currentStatus === BlogStatus.PUBLISHED
+          ? BlogStatus.OFFLINE
+          : BlogStatus.PUBLISHED
 
-      if (currentStatus === BlogStatus.PUBLISHED) {
-        newStatus = BlogStatus.OFFLINE;
-        statusText = '文章已下线';
-      } else if (currentStatus === BlogStatus.OFFLINE) {
-        newStatus = BlogStatus.PUBLISHED;
-        statusText = '文章已发布';
-      } else {
-        newStatus = BlogStatus.PUBLISHED;
-        statusText = '文章已发布';
-      }
-
-      await api.admin.updateBlogStatus(blogId, newStatus);
-      setMessage({ type: 'success', text: statusText });
-      await fetchBlogs();
-      setTimeout(() => setMessage(null), 3000);
+      await api.admin.updateBlogStatus(blogId, nextStatus)
+      setMessage({
+        type: 'success',
+        text: nextStatus === BlogStatus.PUBLISHED ? '文章已重新发布。' : '文章已下线。',
+      })
+      await fetchBlogs()
     } catch (error: any) {
-      console.error('更新文章状态失败:', error);
+      console.error('更新文章状态失败:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.message || '更新文章状态失败'
-      });
-      setTimeout(() => setMessage(null), 3000);
+        text: error.response?.data?.message || '更新文章状态失败。',
+      })
     } finally {
-      setLoadingBlogId(null);
+      setLoadingBlogId(null)
     }
-  };
+  }
 
   const handleDeleteBlog = async (blogId: number, title: string) => {
-    if (!window.confirm(`确定要删除这篇文章吗？\n标题："${title}"\n此操作不可撤销。`)) {
-      return;
+    if (!window.confirm(`确定要删除这篇文章吗？\n标题：“${title}”\n此操作不可撤销。`)) {
+      return
     }
 
     try {
-      setLoadingBlogId(blogId);
-      await api.admin.deleteBlog(blogId);
-      setMessage({ type: 'success', text: '文章删除成功' });
-      await fetchBlogs();
-      setTimeout(() => setMessage(null), 3000);
+      setLoadingBlogId(blogId)
+      await api.admin.deleteBlog(blogId)
+      setMessage({ type: 'success', text: '文章已删除。' })
+      await fetchBlogs()
     } catch (error: any) {
-      console.error('删除文章失败:', error);
+      console.error('删除文章失败:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.message || '删除文章失败'
-      });
-      setTimeout(() => setMessage(null), 3000);
+        text: error.response?.data?.message || '删除文章失败。',
+      })
     } finally {
-      setLoadingBlogId(null);
+      setLoadingBlogId(null)
     }
-  };
+  }
 
-  const getStatusBadgeVariant = (status: number) => {
+  const statusButtons = useMemo(() => ([
+    { label: '全部', value: undefined },
+    { label: '已发布', value: BlogStatus.PUBLISHED },
+    { label: '草稿', value: BlogStatus.DRAFT },
+    { label: '已下线', value: BlogStatus.OFFLINE },
+  ]), [])
+
+  const getStatusLabel = (status?: number) => {
     switch (status) {
       case BlogStatus.PUBLISHED:
-        return 'default';
-      case BlogStatus.DRAFT:
-        return 'secondary';
+        return '已发布'
       case BlogStatus.OFFLINE:
-        return 'destructive';
+        return '已下线'
       default:
-        return 'secondary';
+        return '草稿'
     }
-  };
+  }
 
-  const getStatusText = (status: number) => {
+  const getStatusVariant = (status?: number): 'default' | 'secondary' | 'destructive' => {
     switch (status) {
       case BlogStatus.PUBLISHED:
-        return '已发布';
-      case BlogStatus.DRAFT:
-        return '草稿';
+        return 'default'
       case BlogStatus.OFFLINE:
-        return '已下线';
+        return 'destructive'
       default:
-        return '未知';
+        return 'secondary'
     }
-  };
+  }
 
-  const getStatusIcon = (status: number) => {
-    switch (status) {
-      case BlogStatus.PUBLISHED:
-        return <FileText className="w-4 h-4" />;
-      case BlogStatus.DRAFT:
-        return <PenTool className="w-4 h-4" />;
-      case BlogStatus.OFFLINE:
-        return <Archive className="w-4 h-4" />;
-      default:
-        return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const filteredBlogs = blogs.filter(blog =>
-    blog.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    blog.summary?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) {
+  if (isBootstrapping) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
+      <div className="flex min-h-[420px] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载中...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-muted-foreground">正在加载文章工作台...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-    >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-muted-foreground">管理系统中的所有博客文章</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard label="总文章数" value={totalBlogs} detail="当前筛选结果总数" icon={FileText} />
+        <AdminStatCard label="已发布" value={publishedCount} detail="已上线内容" icon={TrendingUp} tone="success" />
+        <AdminStatCard label="草稿" value={draftCount} detail="待继续创作" icon={PenTool} tone="accent" />
+        <AdminStatCard label="已下线" value={offlineCount} detail="已撤回内容" icon={Archive} tone="danger" />
+      </div>
+
+      <AnimatePresence>{message && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><AdminNotice type={message.type}>{message.text}</AdminNotice></motion.div>}</AnimatePresence>
+
+      <AdminSectionCard
+        title="内容工作流"
+        description="搜索、筛选并管理文章状态。搜索只刷新列表区域，不再重建输入框。"
+      >
+        <AdminToolbar>
+          <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                placeholder="搜索文章标题或摘要..."
+                className="h-11 rounded-sm border-border/80 bg-background/70 pl-10 pr-10"
+              />
+              {isRefreshing && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {statusButtons.map((button) => (
+                <Button
+                  key={button.label}
+                  size="sm"
+                  variant={statusFilter === button.value ? 'default' : 'outline'}
+                  onClick={() => handleStatusFilter(button.value as BlogStatus | undefined)}
+                >
+                  {button.label}
+                </Button>
+              ))}
+            </div>
           </div>
+
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/blog/drafts?status=draft')}
-              className="flex items-center gap-2"
-            >
-              <ClipboardList className="w-4 h-4" />
+            <Button variant="outline" onClick={() => navigate('/blog/drafts?status=draft')}>
+              <ClipboardList className="h-4 w-4" />
               草稿箱
             </Button>
-            <Button onClick={() => navigate('/blog/new')} className="flex items-center gap-2">
-              <PenTool className="w-4 h-4" />
+            <Button onClick={() => navigate('/blog/new')}>
+              <PenTool className="h-4 w-4" />
               写文章
             </Button>
           </div>
-        </div>
+        </AdminToolbar>
+      </AdminSectionCard>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalBlogs}</p>
-                  <p className="text-muted-foreground text-sm">总文章数</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {publishedCount}
-                  </p>
-                  <p className="text-muted-foreground text-sm">已发布</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <PenTool className="w-6 h-6 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {draftCount}
-                  </p>
-                  <p className="text-muted-foreground text-sm">草稿</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Archive className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {offlineCount}
-                  </p>
-                  <p className="text-muted-foreground text-sm">已下线</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alerts */}
-        <AnimatePresence>
-          {message && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <Card className={`border-${message.type === 'success' ? 'green' : 'red'}-200 bg-${message.type === 'success' ? 'green' : 'red'}-50`}>
-                <CardContent className="p-4 flex items-center gap-3">
-                  {message.type === 'success' ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                  )}
-                  <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
-                    {message.text}
-                  </span>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Search and Filter Bar */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="搜索文章标题或内容..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={statusFilter === undefined ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter(undefined)}
-                >
-                  全部
-                </Button>
-                <Button
-                  variant={statusFilter === BlogStatus.PUBLISHED ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter(BlogStatus.PUBLISHED)}
-                >
-                  已发布
-                </Button>
-                <Button
-                  variant={statusFilter === BlogStatus.DRAFT ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter(BlogStatus.DRAFT)}
-                >
-                  草稿
-                </Button>
-                <Button
-                  variant={statusFilter === BlogStatus.OFFLINE ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter(BlogStatus.OFFLINE)}
-                >
-                  已下线
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Blogs List - Vertical */}
-        <div className="space-y-4">
-          {filteredBlogs.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="text-muted-foreground mb-4">
-                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">暂无文章数据</p>
-                  <p>
-                    {searchTerm || statusFilter !== undefined ? '没有找到匹配的文章' : '系统中还没有文章'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {filteredBlogs.map((blog) => {
-                const isLoading = loadingBlogId === blog.id;
-                return (
-                  <motion.div
-                    key={blog.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.01 }}
-                  >
-                    <Card className="hover:shadow-md transition-all duration-200">
-                      <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2 gap-2">
-                            <h3 className="font-semibold text-base line-clamp-1 flex-1">
-                              {blog.title || '无标题'}
-                            </h3>
-                            <Badge variant={getStatusBadgeVariant(blog.status || 1)} className="text-xs flex items-center gap-1 shrink-0">
-                              {getStatusIcon(blog.status || 1)}
-                              {getStatusText(blog.status || 1)}
-                            </Badge>
-                          </div>
-                          <div className="h-10 mb-2">
-                            {blog.summary && (
-                              <p className="text-sm text-muted-foreground line-clamp-2">
-                                {blog.summary}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-1">
-                                <User className="w-3 h-3" />
-                                <span className="text-xs">{blog.authorName || '未知作者'}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                <span className="text-xs">
-                                  {blog.publishTime ?
-                                    new Date(blog.publishTime).toLocaleDateString('zh-CN') :
-                                    '未发布'
-                                  }
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 text-xs">
-                              <span>ID: {blog.id}</span>
-                              <div className="flex items-center gap-1">
-                                <Eye className="w-3 h-3" />
-                                {blog.viewCount || 0}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                {blog.likeCount || 0}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 mt-2">
-                            {blog.categoryName && (
-                              <Badge variant="outline" className="text-xs">
-                                📁 {blog.categoryName}
-                              </Badge>
-                            )}
-                            {blog.isTop === 1 && (
-                              <Badge variant="outline" className="text-xs">
-                                置顶
-                              </Badge>
-                            )}
-                            {Array.isArray(blog.tags) &&
-                              blog.tags.slice(0, 2).map((tag: any, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  #{typeof tag === 'string' ? tag.trim() : tag?.name || ''}
-                                </Badge>
-                              ))}
-                          </div>
-                        </div>
-
-                        <div className="flex sm:flex-col gap-2 shrink-0 sm:self-center">
-                          <motion.div whileTap={{ scale: 0.95 }}>
-                            <Button
-                              variant={blog.status === BlogStatus.PUBLISHED ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => handleToggleBlogStatus(blog.id, blog.status || 1)}
-                              disabled={isLoading}
-                              className="w-full text-xs"
-                            >
-                              {isLoading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                blog.status === BlogStatus.PUBLISHED ? '下线' : '发布'
-                              )}
-                            </Button>
-                          </motion.div>
-                          <motion.div whileTap={{ scale: 0.95 }}>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteBlog(blog.id, blog.title || '无标题')}
-                              disabled={isLoading}
-                              className="text-xs"
-                            >
-                              {isLoading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-3 h-3" />
-                              )}
-                            </Button>
-                          </motion.div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalBlogs > 12 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                上一页
-              </Button>
-              <span className="text-sm text-muted-foreground px-3">
-                第 {currentPage} 页，共 {Math.ceil(totalBlogs / 12)} 页
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={currentPage >= Math.ceil(totalBlogs / 12)}
-              >
-                下一页
-              </Button>
-            </div>
+      <AdminSectionCard
+        title="文章列表"
+        description={`第 ${currentPage} / ${totalPages} 页，共 ${totalBlogs} 篇文章`}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
+              上一页
+            </Button>
+            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
+              下一页
+            </Button>
           </div>
+        }
+        contentClassName="space-y-4"
+      >
+        {blogs.length === 0 ? (
+          <AdminEmptyState
+            title="没有匹配的文章"
+            description={debouncedSearchTerm || statusFilter !== undefined
+              ? '尝试调整搜索词或状态筛选。'
+              : '当前还没有可管理的文章，先创建一篇新文章。'}
+            icon={FileText}
+            action={
+              <Button onClick={() => navigate('/blog/new')}>
+                <PenTool className="h-4 w-4" />
+                写第一篇文章
+              </Button>
+            }
+          />
+        ) : (
+          blogs.map((blog) => {
+            const isActionLoading = loadingBlogId === blog.id
+            const isPublished = blog.status === BlogStatus.PUBLISHED
+
+            return (
+              <motion.article
+                key={blog.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                  'rounded-sm border border-border/70 bg-card/75 p-5 transition-opacity',
+                  isRefreshing && 'opacity-80'
+                )}
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-xl font-semibold">{blog.title || '未命名文章'}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                          {blog.summary || '暂无摘要，建议补充一句更清晰的内容概览。'}
+                        </p>
+                      </div>
+                      <Badge variant={getStatusVariant(blog.status)}>{getStatusLabel(blog.status)}</Badge>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Badge variant="outline" className="rounded-sm border-border/80">
+                        分类：{blog.categoryName || '未分类'}
+                      </Badge>
+                      {blog.isTop === 1 && <Badge variant="outline" className="rounded-sm border-border/80">置顶</Badge>}
+                      {blog.visibility === 0 && <Badge variant="outline" className="rounded-sm border-border/80">私密</Badge>}
+                      {blog.tags?.map((tag) => (
+                        <Badge key={tag.id} variant="secondary" className="rounded-sm">
+                          #{tag.name}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>{blog.publishTime ? new Date(blog.publishTime).toLocaleString('zh-CN') : '未发布'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        <span>{blog.viewCount ?? 0} 次浏览</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        <span>文章 ID {blog.id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 xl:w-[260px] xl:justify-end">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/blog/edit/${blog.id}`)}>
+                      <PenTool className="h-4 w-4" />
+                      编辑
+                    </Button>
+                    {isPublished && (
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/blog/${blog.id}`)}>
+                        <Eye className="h-4 w-4" />
+                        查看
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant={isPublished ? 'outline' : 'default'}
+                      disabled={isActionLoading}
+                      onClick={() => handleToggleBlogStatus(Number(blog.id), blog.status || BlogStatus.DRAFT)}
+                    >
+                      {isActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                      {isPublished ? '下线' : '发布'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={isActionLoading}
+                      onClick={() => handleDeleteBlog(Number(blog.id), blog.title || '未命名文章')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      删除
+                    </Button>
+                  </div>
+                </div>
+              </motion.article>
+            )
+          })
         )}
-      </div>
-    </motion.div>
-  );
-};
+      </AdminSectionCard>
+    </div>
+  )
+}
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ')
+}

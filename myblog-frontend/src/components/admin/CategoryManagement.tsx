@@ -1,391 +1,336 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Badge } from '../ui/badge';
+import React, { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Plus,
-  Edit2,
-  Trash2,
-  Save,
-  X,
-  AlertCircle,
-  CheckCircle,
-  FolderOpen,
   Calendar,
-  FileText
-} from 'lucide-react';
-import { api } from '../../utils/api';
-import type { Category } from '../../types/api';
+  Edit2,
+  FileText,
+  FolderOpen,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { api } from '../../utils/api'
+import type { Category } from '../../types/api'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import {
+  AdminEmptyState,
+  AdminNotice,
+  AdminSectionCard,
+  AdminStatCard,
+} from './AdminUI'
+
+type MessageState = { type: 'success' | 'error'; text: string } | null
 
 export const CategoryManagement: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isCreating, setIsCreating] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [formData, setFormData] = useState({ name: '', description: '' })
+  const [message, setMessage] = useState<MessageState>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    if (!message) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setMessage(null), 2800)
+    return () => window.clearTimeout(timeoutId)
+  }, [message])
 
   const fetchCategories = async () => {
     try {
-      setLoading(true);
-      const response = await api.admin.getCategories();
-      setCategories(Array.isArray(response) ? response : []);
-    } catch (err) {
-      setError('获取分类列表失败');
-      console.error('获取分类失败:', err);
-      setCategories([]);
+      setLoading(true)
+      const response = await api.admin.getCategories()
+      setCategories(Array.isArray(response) ? response : [])
+    } catch (error) {
+      console.error('获取分类失败:', error)
+      setCategories([])
+      setMessage({ type: 'error', text: '获取分类列表失败，请稍后重试。' })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const resetForm = () => {
-    setFormData({ name: '', description: '' });
-    setError(null);
-    setSuccess(null);
-    setIsCreating(false);
-    setEditingId(null);
-  };
+    setFormData({ name: '', description: '' })
+    setIsCreating(false)
+    setEditingId(null)
+  }
 
   const handleCreate = () => {
-    setIsCreating(true);
-    setEditingId(null);
-    setFormData({ name: '', description: '' });
-    setError(null);
-    setSuccess(null);
-  };
+    setIsCreating(true)
+    setEditingId(null)
+    setFormData({ name: '', description: '' })
+    setMessage(null)
+  }
 
   const handleEdit = (category: Category) => {
-    setIsCreating(false);
-    setEditingId(category.id);
+    setIsCreating(false)
+    setEditingId(category.id)
     setFormData({
       name: category.name || '',
-      description: category.description || ''
-    });
-    setError(null);
-    setSuccess(null);
-  };
+      description: category.description || '',
+    })
+    setMessage(null)
+  }
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      setError('分类名称不能为空');
-      return;
+    const nextName = formData.name.trim()
+    if (!nextName) {
+      setMessage({ type: 'error', text: '分类名称不能为空。' })
+      return
     }
 
     const existingCategory = categories.find(
-      cat => cat.name === formData.name.trim() &&
-      cat.id !== editingId
-    );
-
+      (category) => category.name === nextName && category.id !== editingId,
+    )
     if (existingCategory) {
-      setError('分类名称已存在');
-      return;
+      setMessage({ type: 'error', text: '分类名称已存在。' })
+      return
     }
 
     try {
-      setError(null);
+      setIsSaving(true)
       if (isCreating) {
         await api.category.create({
-          name: formData.name.trim(),
-          description: formData.description.trim()
-        });
-        setSuccess('分类创建成功');
+          name: nextName,
+          description: formData.description.trim(),
+        })
+        setMessage({ type: 'success', text: '分类已创建。' })
       } else if (editingId) {
         await api.category.update({
           id: editingId,
-          name: formData.name.trim(),
-          description: formData.description.trim()
-        });
-        setSuccess('分类更新成功');
+          name: nextName,
+          description: formData.description.trim(),
+        })
+        setMessage({ type: 'success', text: '分类已更新。' })
       }
 
-      await fetchCategories();
-      setTimeout(resetForm, 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || '操作失败');
-      console.error('保存分类失败:', err);
+      await fetchCategories()
+      resetForm()
+    } catch (error: any) {
+      console.error('保存分类失败:', error)
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || '保存分类失败。',
+      })
+    } finally {
+      setIsSaving(false)
     }
-  };
+  }
 
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`确定要删除分类"${name}"吗？此操作不可撤销。`)) {
-      return;
+    if (!window.confirm(`确定要删除分类“${name}”吗？此操作不可撤销。`)) {
+      return
     }
 
     try {
-      setError(null);
-      await api.category.delete(id);
-      setSuccess('分类删除成功');
-      await fetchCategories();
-      setTimeout(() => setSuccess(null), 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || '删除失败');
-      console.error('删除分类失败:', err);
+      setDeletingId(id)
+      await api.category.delete(id)
+      setMessage({ type: 'success', text: '分类已删除。' })
+      await fetchCategories()
+    } catch (error: any) {
+      console.error('删除分类失败:', error)
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || '删除分类失败。',
+      })
+    } finally {
+      setDeletingId(null)
     }
-  };
+  }
+
+  const newCategoriesThisMonth = useMemo(() => {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    return categories.filter((category) => {
+      const createdAt = new Date(category.createTime || '')
+      return createdAt >= thirtyDaysAgo
+    }).length
+  }, [categories])
+
+  const formatDate = (value?: string) => {
+    if (!value) return '未知'
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('zh-CN')
+  }
 
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
+      <div className="flex min-h-[420px] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载中...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-muted-foreground">正在加载分类工作台...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-    >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">管理博客分类</p>
-          </div>
-          <Button onClick={handleCreate} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <AdminStatCard label="总分类数" value={categories.length} detail="当前内容结构总量" icon={FolderOpen} />
+        <AdminStatCard label="近30天新增" value={newCategoriesThisMonth} detail="最近一个月新增分类" icon={Calendar} />
+        <AdminStatCard label="分组页数" value={categories.length > 0 ? Math.ceil(categories.length / 10) : 0} detail="按 10 项估算的浏览页数" icon={FileText} />
+      </div>
+
+      <AnimatePresence>
+        {message && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+            <AdminNotice type={message.type}>{message.text}</AdminNotice>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AdminSectionCard
+        title="分类工作台"
+        description="维护前台内容结构，统一分类名称和说明，避免出现重复命名。"
+        action={
+          <Button size="sm" onClick={handleCreate}>
+            <Plus className="h-4 w-4" />
             新建分类
           </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FolderOpen className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{categories.length}</p>
-                  <p className="text-muted-foreground text-sm">总分类数</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Calendar className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {categories.filter(cat => {
-                      const createdAt = new Date(cat.createTime || '');
-                      const thirtyDaysAgo = new Date();
-                      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                      return createdAt >= thirtyDaysAgo;
-                    }).length}
-                  </p>
-                  <p className="text-muted-foreground text-sm">近30天新增</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <FileText className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {categories.length > 0 ? Math.ceil(categories.length / 10) : 0}
-                  </p>
-                  <p className="text-muted-foreground text-sm">页数 (10/页)</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alerts */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                  <span className="text-red-700">{error}</span>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <Card className="border-green-200 bg-green-50">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-green-700">{success}</span>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Create/Edit Form */}
+        }
+      >
         <AnimatePresence>
           {(isCreating || editingId) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{isCreating ? '新建分类' : '编辑分类'}</span>
-                    <Button variant="ghost" size="sm" onClick={resetForm}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <div className="mb-5 rounded-sm border border-border/70 bg-muted/20 p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      Editor
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold">
+                      {isCreating ? '新建分类' : '编辑分类'}
+                    </h3>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={resetForm}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">分类名称 *</Label>
+                    <Label htmlFor="category-name">分类名称 *</Label>
                     <Input
-                      id="name"
+                      id="category-name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="请输入分类名称（如：技术分享、项目实战等）"
+                      onChange={(event) => setFormData((previous) => ({ ...previous, name: event.target.value }))}
+                      placeholder="例如：技术分享、项目实战"
                       maxLength={50}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      建议使用简洁明了的分类名称，便于用户理解内容分类
-                    </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">分类描述</Label>
+                    <Label htmlFor="category-description">分类描述</Label>
                     <Input
-                      id="description"
+                      id="category-description"
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="请输入分类描述（可选）"
+                      onChange={(event) => setFormData((previous) => ({ ...previous, description: event.target.value }))}
+                      placeholder="用一句话说明该分类的内容边界"
                       maxLength={200}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      详细描述该分类包含的内容类型，帮助用户更好地了解分类
-                    </p>
                   </div>
-                  <div className="flex gap-3">
-                    <Button onClick={handleSave} className="flex items-center gap-2">
-                      <Save className="w-4 h-4" />
-                      保存
-                    </Button>
-                    <Button variant="outline" onClick={resetForm}>
-                      取消
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <div className="mt-5 flex gap-3">
+                  <Button onClick={handleSave} disabled={isSaving}>
+                    <Save className="h-4 w-4" />
+                    {isSaving ? '保存中...' : '保存分类'}
+                  </Button>
+                  <Button variant="outline" onClick={resetForm}>
+                    取消
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Categories Grid */}
-        <div>
-          {categories.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="text-muted-foreground mb-4">
-                  <FolderOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">暂无分类</p>
-                  <p>点击上方"新建分类"按钮创建第一个分类</p>
-                </div>
-                <Button onClick={handleCreate} className="flex items-center gap-2 mx-auto">
-                  <Plus className="w-4 h-4" />
-                  新建分类
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map((category) => (
-                <motion.div
+        {categories.length === 0 ? (
+          <AdminEmptyState
+            title="还没有分类"
+            description="先建立几个稳定的内容分组，再继续运营文章列表和推荐体系。"
+            icon={FolderOpen}
+            action={
+              <Button onClick={handleCreate}>
+                <Plus className="h-4 w-4" />
+                新建分类
+              </Button>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {categories.map((category) => {
+              const isDeleting = deletingId === category.id
+              return (
+                <motion.article
                   key={category.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="group"
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-sm border border-border/70 bg-card/75 p-5"
                 >
-                  <Card className="hover:shadow-md transition-all duration-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FolderOpen className="w-5 h-5 text-primary flex-shrink-0" />
-                          <h3 className="font-semibold text-lg truncate">{category.name}</h3>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(category)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(category.id, category.name)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-border/70 bg-muted/35">
+                          <FolderOpen className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-semibold">{category.name}</h3>
+                          <p className="text-sm text-muted-foreground">分类 ID {category.id}</p>
                         </div>
                       </div>
 
-                      {category.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {category.description}
-                        </p>
-                      )}
+                      <p className="mt-4 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                        {category.description || '暂无描述，可补充内容边界说明。'}
+                      </p>
 
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <div className="flex items-center justify-between">
-                          <span>ID: {category.id}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            分类
-                          </Badge>
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          {category.createTime ? new Date(category.createTime).toLocaleDateString('zh-CN') : '未知'}
-                        </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge variant="outline">分类</Badge>
+                        <Badge variant="secondary">创建于 {formatDate(category.createTime)}</Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(category)}>
+                        <Edit2 className="h-4 w-4" />
+                        编辑
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={isDeleting}
+                        onClick={() => handleDelete(category.id, category.name)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {isDeleting ? '删除中...' : '删除'}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.article>
+              )
+            })}
+          </div>
+        )}
+      </AdminSectionCard>
+    </div>
+  )
+}

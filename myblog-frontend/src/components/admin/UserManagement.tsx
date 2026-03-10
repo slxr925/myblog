@@ -1,426 +1,318 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Input } from '../ui/input';
+import React, { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Search,
   Ban,
-  Shield,
-  Users,
   Calendar,
+  Loader2,
   Mail,
-  CheckCircle,
-  AlertCircle,
+  Search,
+  Shield,
   UserCheck,
   UserX,
-  Loader2
-} from 'lucide-react';
-import { Role, UserStatus, type User as UserType } from '../../types/api';
-import { api } from '../../utils/api';
-import { useAuth } from '../../contexts/AuthContext';
+  Users,
+} from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { useAuth } from '../../contexts/AuthContext'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { Role, UserStatus, type User as UserType } from '../../types/api'
+import { api } from '../../utils/api'
+import {
+  AdminEmptyState,
+  AdminNotice,
+  AdminSectionCard,
+  AdminStatCard,
+  AdminToolbar,
+} from './AdminUI'
+
+type MessageState = { type: 'success' | 'error'; text: string } | null
+
+const PAGE_SIZE = 12
 
 export const UserManagement: React.FC = () => {
-  const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [normalCount, setNormalCount] = useState(0);
-  const [disabledCount, setDisabledCount] = useState(0);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [statusLoadingId, setStatusLoadingId] = useState<number | null>(null);
+  const { user: currentUser } = useAuth()
+  const [users, setUsers] = useState<UserType[]>([])
+  const [isBootstrapping, setIsBootstrapping] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [normalCount, setNormalCount] = useState(0)
+  const [disabledCount, setDisabledCount] = useState(0)
+  const [message, setMessage] = useState<MessageState>(null)
+  const [statusLoadingId, setStatusLoadingId] = useState<number | null>(null)
 
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 350)
 
-  const debounceSearch = (value: string) => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
+  useEffect(() => {
+    fetchUsers(isBootstrapping)
+  }, [currentPage, debouncedSearchTerm])
+
+  useEffect(() => {
+    if (!message) {
+      return
     }
 
-    debounceTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearchTerm(value);
-    }, 300);
-  };
+    const timeoutId = window.setTimeout(() => setMessage(null), 2800)
+    return () => window.clearTimeout(timeoutId)
+  }, [message])
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    debounceSearch(value);
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, debouncedSearchTerm]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = async (firstLoad = false) => {
     try {
-      setLoading(true);
+      if (firstLoad) {
+        setIsBootstrapping(true)
+      } else {
+        setIsRefreshing(true)
+      }
+
       const response = await api.admin.getUsers({
         page: currentPage,
-        size: 12,
-        keyword: debouncedSearchTerm
-      });
+        size: PAGE_SIZE,
+        keyword: debouncedSearchTerm || undefined,
+      })
 
-      // Cast to any to handle the new backend response structure
-      const responseData: any = response;
+      const responseData = response as any
+      const pageResult = responseData.pageResult || responseData
+      const records = Array.isArray(pageResult?.records) ? pageResult.records : []
 
-      // Extract pageResult (paginated user data)
-      const pageResult = responseData.pageResult || responseData;
-      const userData = Array.isArray(pageResult?.records) ? pageResult.records : [];
-      const totalCount = pageResult?.total ?? userData.length;
-
-      setUsers(userData);
-      setTotalUsers(totalCount);
-
-      // Extract status counts from backend response
-      setNormalCount(responseData.normalCount ?? 0);
-      setDisabledCount(responseData.disabledCount ?? 0);
+      setUsers(records)
+      setTotalUsers(pageResult?.total ?? records.length)
+      setNormalCount(Number(responseData.normalCount) || 0)
+      setDisabledCount(Number(responseData.disabledCount) || 0)
     } catch (error) {
-      console.error('获取用户列表失败:', error);
-      setMessage({ type: 'error', text: '获取用户列表失败' });
-      setUsers([]);
-      setTotalUsers(0);
-      setNormalCount(0);
-      setDisabledCount(0);
+      console.error('获取用户列表失败:', error)
+      setUsers([])
+      setTotalUsers(0)
+      setNormalCount(0)
+      setDisabledCount(0)
+      setMessage({ type: 'error', text: '获取用户列表失败，请稍后重试。' })
     } finally {
-      setLoading(false);
+      setIsBootstrapping(false)
+      setIsRefreshing(false)
     }
-  };
+  }
 
   const handleToggleUserStatus = async (userId: number, currentStatus?: number | null) => {
     try {
-      setStatusLoadingId(userId);
-      const normalizedStatus = currentStatus ?? UserStatus.NORMAL;
-      const newStatus = normalizedStatus === UserStatus.NORMAL ? UserStatus.DISABLED : UserStatus.NORMAL;
-      await api.admin.updateUserStatus(userId, newStatus);
+      setStatusLoadingId(userId)
+      const normalizedStatus = currentStatus ?? UserStatus.NORMAL
+      const nextStatus =
+        normalizedStatus === UserStatus.NORMAL ? UserStatus.DISABLED : UserStatus.NORMAL
+
+      await api.admin.updateUserStatus(userId, nextStatus)
       setMessage({
         type: 'success',
-        text: newStatus === UserStatus.NORMAL ? '用户已启用' : '用户已禁用'
-      });
-      fetchUsers();
-      setTimeout(() => setMessage(null), 3000);
+        text: nextStatus === UserStatus.NORMAL ? '用户已启用。' : '用户已禁用。',
+      })
+      await fetchUsers()
     } catch (error: any) {
-      console.error('更新用户状态失败:', error);
+      console.error('更新用户状态失败:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.message || '更新用户状态失败'
-      });
-      setTimeout(() => setMessage(null), 3000);
+        text: error.response?.data?.message || '更新用户状态失败。',
+      })
     } finally {
-      setStatusLoadingId(null);
+      setStatusLoadingId(null)
     }
-  };
+  }
 
-  const getRoleBadgeVariant = (role: number) => {
-    return role === Role.ADMIN ? 'default' : 'secondary';
-  };
+  const totalPages = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE))
+  const admins = users.filter((user) => (user.role ?? Role.USER) === Role.ADMIN).length
 
-  const getRoleText = (role: number) => {
-    return role === Role.ADMIN ? '管理员' : '普通用户';
-  };
+  const formatDate = (value?: string) => {
+    if (!value) return '未知'
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('zh-CN')
+  }
 
-  const getStatusBadgeVariant = (status: number) => {
-    return status === UserStatus.NORMAL ? 'default' : 'destructive';
-  };
+  const getInitials = (username?: string, nickname?: string) => {
+    const name = nickname || username || 'U'
+    return name.slice(0, 2).toUpperCase()
+  }
 
-  const getStatusText = (status: number) => {
-    return status === UserStatus.NORMAL ? '正常' : '已禁用';
-  };
-
-  const getInitials = (username: string, nickname: string) => {
-    const name = nickname || username || 'U';
-    return name.slice(0, 2).toUpperCase();
-  };
-
-  const displayUsers = users;
-
-  if (loading) {
+  if (isBootstrapping) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
+      <div className="flex min-h-[420px] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载中...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-muted-foreground">正在加载用户工作台...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-    >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground">管理系统中的所有用户账户</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard label="总用户数" value={totalUsers} detail="当前筛选结果总数" icon={Users} />
+        <AdminStatCard label="活跃用户" value={normalCount} detail="状态正常的账户" icon={UserCheck} tone="success" />
+        <AdminStatCard label="已禁用" value={disabledCount} detail="被限制登录的账户" icon={UserX} tone="danger" />
+        <AdminStatCard label="管理员" value={admins} detail="当前页中的后台账户" icon={Shield} tone="accent" />
+      </div>
+
+      <AnimatePresence>
+        {message && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+            <AdminNotice type={message.type}>{message.text}</AdminNotice>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AdminSectionCard
+        title="用户检索"
+        description="服务端搜索用户名、邮箱与昵称，输入时只刷新列表区。"
+      >
+        <AdminToolbar>
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value)
+                setCurrentPage(1)
+              }}
+              placeholder="搜索用户名、邮箱或昵称..."
+              className="h-11 rounded-sm border-border/80 bg-background/70 pl-10 pr-10"
+            />
+            {isRefreshing && (
+              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            )}
           </div>
-        </div>
+          <div className="text-sm text-muted-foreground">第 {currentPage} / {totalPages} 页</div>
+        </AdminToolbar>
+      </AdminSectionCard>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalUsers}</p>
-                  <p className="text-muted-foreground text-sm">总用户数</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <AdminSectionCard
+        title="用户列表"
+        description={`共 ${totalUsers} 个账户`}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
+              上一页
+            </Button>
+            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
+              下一页
+            </Button>
+          </div>
+        }
+        contentClassName="space-y-4"
+      >
+        {users.length === 0 ? (
+          <AdminEmptyState
+            title="没有匹配的用户"
+            description={debouncedSearchTerm ? '试试更短的关键词，或改搜邮箱。' : '系统里还没有用户。'}
+            icon={Users}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {users.map((user) => {
+              const normalizedRole = user.role ?? Role.USER
+              const normalizedStatus = user.status ?? UserStatus.NORMAL
+              const isStatusLoading = statusLoadingId === user.id
+              const isCurrentUser = currentUser?.id === user.id
+              const isAdmin = normalizedRole === Role.ADMIN
+              const isDisabled = isStatusLoading || isCurrentUser || isAdmin
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <UserCheck className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {normalCount}
-                  </p>
-                  <p className="text-muted-foreground text-sm">活跃用户</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              let disabledReason = ''
+              if (isCurrentUser) {
+                disabledReason = '不能修改自己的状态'
+              } else if (isAdmin) {
+                disabledReason = '不能禁用管理员账户'
+              }
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <UserX className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {disabledCount}
-                  </p>
-                  <p className="text-muted-foreground text-sm">已禁用</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alerts */}
-        <AnimatePresence>
-          {message && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <Card className={`border-${message.type === 'success' ? 'green' : 'red'}-200 bg-${message.type === 'success' ? 'green' : 'red'}-50`}>
-                <CardContent className="p-4 flex items-center gap-3">
-                  {message.type === 'success' ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
+              return (
+                <motion.article
+                  key={user.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    'rounded-sm border border-border/70 bg-card/75 p-5',
+                    isRefreshing && 'opacity-80',
                   )}
-                  <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
-                    {message.text}
-                  </span>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <Avatar className="h-12 w-12 rounded-sm">
+                        <AvatarImage src={user.avatar} />
+                        <AvatarFallback className="rounded-sm bg-muted text-foreground">
+                          {getInitials(user.username, user.nickname)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-semibold">
+                          {user.nickname || user.username || '未命名用户'}
+                        </h3>
+                        <p className="truncate text-sm text-muted-foreground">@{user.username || 'unknown'}</p>
+                      </div>
+                    </div>
 
-        {/* Search Bar */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="搜索用户名、邮箱或昵称..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="pl-10 pr-10"
-              />
-              {searchTerm !== debouncedSearchTerm && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary opacity-50"></div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant={normalizedRole === Role.ADMIN ? 'default' : 'secondary'}>
+                        {normalizedRole === Role.ADMIN ? '管理员' : '普通用户'}
+                      </Badge>
+                      <Badge variant={normalizedStatus === UserStatus.NORMAL ? 'default' : 'destructive'}>
+                        {normalizedStatus === UserStatus.NORMAL ? '正常' : '已禁用'}
+                      </Badge>
+                    </div>
+                  </div>
 
-        {/* Users Grid */}
-        <div>
-          {displayUsers.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="text-muted-foreground mb-4">
-                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">暂无用户数据</p>
-                  <p>
-                    {searchTerm ? '没有找到匹配的用户' : '系统中还没有用户'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {displayUsers.map((user) => {
-                const normalizedRole = user.role ?? Role.USER;
-                const normalizedStatus = user.status ?? UserStatus.NORMAL;
-                const isStatusLoading = statusLoadingId === user.id;
-                const isCurrentUser = currentUser?.id === user.id;
-                const isAdmin = normalizedRole === Role.ADMIN;
-                const isDisabled = isStatusLoading || isCurrentUser || isAdmin;
+                  <div className="mt-4 space-y-3 rounded-sm border border-border/60 bg-muted/35 p-4 text-sm text-muted-foreground">
+                    {user.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        <span className="truncate">{user.email}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span>ID {user.id}</span>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>{formatDate(user.createTime)}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                let disabledReason = '';
-                if (isCurrentUser) {
-                  disabledReason = '不能修改自己的状态';
-                } else if (isAdmin) {
-                  disabledReason = '不能禁用管理员账户';
-                }
-
-                return (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="group"
-                  >
-                    <Card className="hover:shadow-md transition-all duration-200">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                                {getInitials(user.username || '', user.nickname || '')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-lg truncate">
-                                {user.nickname || user.username}
-                              </h3>
-                              <p className="text-sm text-muted-foreground truncate">
-                                @{user.username}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Badge variant={getRoleBadgeVariant(normalizedRole)} className="text-xs">
-                              {getRoleText(normalizedRole)}
-                            </Badge>
-                            <Badge variant={getStatusBadgeVariant(normalizedStatus)} className="text-xs">
-                              {getStatusText(normalizedStatus)}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                          {user.email && (
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4" />
-                              <span className="truncate">{user.email}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span>ID: {user.id}</span>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {user.createTime ?
-                                new Date(user.createTime).toLocaleDateString('zh-CN') :
-                                '未知'
-                              }
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <div className="flex-1 relative group/btn">
-                            <Button
-                              variant={normalizedStatus === UserStatus.NORMAL ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => handleToggleUserStatus(user.id, normalizedStatus)}
-                              className="w-full flex items-center gap-1"
-                              disabled={isDisabled}
-                            >
-                              {isStatusLoading ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  处理中...
-                                </>
-                              ) : normalizedStatus === UserStatus.NORMAL ? (
-                                <>
-                                  <Ban className="w-4 h-4" />
-                                  禁用
-                                </>
-                              ) : (
-                                <>
-                                  <Shield className="w-4 h-4" />
-                                  启用
-                                </>
-                              )}
-                            </Button>
-                            {disabledReason && (
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                                {disabledReason}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalUsers > 12 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                上一页
-              </Button>
-              <span className="text-sm text-muted-foreground px-3">
-                第 {currentPage} 页，共 {Math.ceil(totalUsers / 12)} 页
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={currentPage >= Math.ceil(totalUsers / 12)}
-              >
-                下一页
-              </Button>
-            </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      {disabledReason || '可直接在此切换账户状态。'}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant={normalizedStatus === UserStatus.NORMAL ? 'destructive' : 'default'}
+                      disabled={isDisabled}
+                      onClick={() => handleToggleUserStatus(user.id, normalizedStatus)}
+                    >
+                      {isStatusLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          处理中...
+                        </>
+                      ) : normalizedStatus === UserStatus.NORMAL ? (
+                        <>
+                          <Ban className="h-4 w-4" />
+                          禁用
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="h-4 w-4" />
+                          启用
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.article>
+              )
+            })}
           </div>
         )}
-      </div>
-    </motion.div>
-  );
-};
+      </AdminSectionCard>
+    </div>
+  )
+}
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ')
+}

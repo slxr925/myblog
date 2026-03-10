@@ -1,47 +1,96 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../../utils/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import React, { useEffect, useMemo, useState } from 'react'
+import { Activity, Clock3, Fingerprint, Shield } from 'lucide-react'
+import { api } from '../../utils/api'
+import { AdminEmptyState, AdminSectionCard, AdminStatCard } from './AdminUI'
 
 interface AuditLogItem {
-  id: number;
-  operatorId?: number;
-  action?: string;
-  targetType?: string;
-  targetId?: number;
-  ip?: string;
-  createTime?: string;
+  id: number
+  operatorId?: number
+  action?: string
+  targetType?: string
+  targetId?: number
+  ip?: string
+  createTime?: string
 }
 
 export const AuditLogList: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLogItem[]>([]);
+  const [logs, setLogs] = useState<AuditLogItem[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.admin.getAuditLogs({ page: 1, size: 50 })
-      .then((res: any) => setLogs(res.records || []))
-      .catch(() => setLogs([]));
-  }, []);
+    api.admin
+      .getAuditLogs({ page: 1, size: 50 })
+      .then((response: any) => setLogs(response.records || []))
+      .catch(() => setLogs([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const uniqueOperators = useMemo(
+    () => new Set(logs.map((log) => log.operatorId).filter(Boolean)).size,
+    [logs],
+  )
+
+  const todayLogs = useMemo(() => {
+    const today = new Date().toDateString()
+    return logs.filter((log) => {
+      const timestamp = log.createTime ? new Date(log.createTime) : null
+      return timestamp && !Number.isNaN(timestamp.getTime()) && timestamp.toDateString() === today
+    }).length
+  }, [logs])
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return '未知时间'
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN')
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-muted-foreground">正在加载审计轨迹...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <Card className="border-border shadow-sm">
-      <CardHeader>
-        <CardTitle>审计日志</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <AdminStatCard label="日志总数" value={logs.length} detail="当前拉取的审计事件" icon={Shield} />
+        <AdminStatCard label="今日记录" value={todayLogs} detail="今天新增的操作轨迹" icon={Clock3} />
+        <AdminStatCard label="操作人数量" value={uniqueOperators} detail="当前页内涉及的操作者数" icon={Fingerprint} />
+      </div>
+
+      <AdminSectionCard title="审计轨迹" description="查看后台关键动作的时间线，便于追查谁在什么时间操作了什么资源。">
         {logs.length === 0 ? (
-          <div className="text-sm text-muted-foreground">暂无日志</div>
+          <AdminEmptyState
+            title="暂无审计日志"
+            description="当前没有可展示的后台操作轨迹。"
+            icon={Activity}
+          />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {logs.map((log) => (
-              <div key={log.id} className="text-sm text-muted-foreground border-b border-border pb-2">
-                <div className="text-foreground">
-                  {log.action} {log.targetType} {log.targetId ? `#${log.targetId}` : ''}
+              <article key={log.id} className="rounded-sm border border-border/70 bg-card/75 p-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {log.action || '未知动作'} {log.targetType || '资源'} {log.targetId ? `#${log.targetId}` : ''}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <span>操作人：{log.operatorId || '-'}</span>
+                      <span>IP：{log.ip || '-'}</span>
+                      <span>{formatDateTime(log.createTime)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs">操作人: {log.operatorId || '-'} · {log.ip || '-'} · {log.createTime || ''}</div>
-              </div>
+              </article>
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
-  );
-};
+      </AdminSectionCard>
+    </div>
+  )
+}

@@ -72,7 +72,7 @@ const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
 };
 
 // 创建认证上下文
@@ -156,6 +156,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.removeItem('refreshToken');
         }
       }
+
+      dispatch({ type: 'SET_LOADING', payload: false });
     };
 
     initAuth();

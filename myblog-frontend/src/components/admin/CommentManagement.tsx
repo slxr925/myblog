@@ -1,349 +1,244 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '../ui/card';
-import { Button } from '../ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Input } from '../ui/input';
+import React, { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Calendar,
+  Loader2,
+  MessageSquare,
   Search,
   Trash2,
-  Calendar,
-  MessageSquare,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  User
-} from 'lucide-react';
-import { type CommentVO } from '../../types/api';
-import { api } from '../../utils/api';
+  User,
+} from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { type CommentVO } from '../../types/api'
+import { api } from '../../utils/api'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import {
+  AdminEmptyState,
+  AdminNotice,
+  AdminSectionCard,
+  AdminStatCard,
+  AdminToolbar,
+} from './AdminUI'
+
+type MessageState = { type: 'success' | 'error'; text: string } | null
+
+const PAGE_SIZE = 12
 
 export const CommentManagement: React.FC = () => {
-  const [comments, setComments] = useState<CommentVO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalComments, setTotalComments] = useState(0);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [comments, setComments] = useState<CommentVO[]>([])
+  const [isBootstrapping, setIsBootstrapping] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalComments, setTotalComments] = useState(0)
+  const [message, setMessage] = useState<MessageState>(null)
+
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 350)
 
   useEffect(() => {
-    fetchComments();
-  }, [currentPage, searchTerm]);
+    fetchComments(isBootstrapping)
+  }, [currentPage, debouncedSearchTerm])
 
-  const fetchComments = async () => {
+  useEffect(() => {
+    if (!message) return
+    const timeoutId = window.setTimeout(() => setMessage(null), 2800)
+    return () => window.clearTimeout(timeoutId)
+  }, [message])
+
+  const fetchComments = async (firstLoad = false) => {
     try {
-      setLoading(true);
+      if (firstLoad) {
+        setIsBootstrapping(true)
+      } else {
+        setIsRefreshing(true)
+      }
+
       const response = await api.admin.getComments({
         page: currentPage,
-        size: 12,
-        keyword: searchTerm
-      });
+        size: PAGE_SIZE,
+        keyword: debouncedSearchTerm || undefined,
+      })
 
-      const commentData = Array.isArray(response?.records) ? response.records : [];
-      const totalCount = response?.total ?? commentData.length;
-
-      setComments(commentData);
-      setTotalComments(totalCount);
+      const records = Array.isArray(response?.records) ? response.records : []
+      setComments(records)
+      setTotalComments(response?.total ?? records.length)
     } catch (error) {
-      console.error('获取评论列表失败:', error);
-      setMessage({ type: 'error', text: '获取评论列表失败' });
-      setComments([]);
-      setTotalComments(0);
+      console.error('获取评论列表失败:', error)
+      setComments([])
+      setTotalComments(0)
+      setMessage({ type: 'error', text: '获取评论列表失败，请稍后重试。' })
     } finally {
-      setLoading(false);
+      setIsBootstrapping(false)
+      setIsRefreshing(false)
     }
-  };
+  }
 
   const handleDeleteComment = async (commentId: number, content: string) => {
-    if (!window.confirm(`确定要删除这条评论吗？\n内容："${content.slice(0, 50)}${content.length > 50 ? '...' : ''}"`)) {
-      return;
+    if (!window.confirm(`确定要删除这条评论吗？\n内容：“${content.slice(0, 50)}${content.length > 50 ? '...' : ''}”`)) {
+      return
     }
 
     try {
-      await api.admin.deleteComment(commentId);
-      setMessage({ type: 'success', text: '评论删除成功' });
-      fetchComments();
-      setTimeout(() => setMessage(null), 3000);
+      await api.admin.deleteComment(commentId)
+      setMessage({ type: 'success', text: '评论已删除。' })
+      await fetchComments()
     } catch (error: any) {
-      console.error('删除评论失败:', error);
+      console.error('删除评论失败:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.message || '删除评论失败'
-      });
-      setTimeout(() => setMessage(null), 3000);
+        text: error.response?.data?.message || '删除评论失败。',
+      })
     }
-  };
+  }
 
-  const getInitials = (nickname: string, username: string) => {
-    const name = nickname || username || 'U';
-    return name.slice(0, 2).toUpperCase();
-  };
+  const totalPages = Math.max(1, Math.ceil(totalComments / PAGE_SIZE))
+  const recentComments = comments.filter((comment) => {
+    const createdAt = new Date(comment.createTime || '')
+    const yesterday = new Date()
+    yesterday.setHours(yesterday.getHours() - 24)
+    return createdAt >= yesterday
+  }).length
+  const activeAuthors = new Set(comments.map((comment) => comment.username || comment.nickname)).size
 
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '未知时间';
-    try {
-      const date = new Date(timeString);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffHours / 24);
+  const formatTime = (time?: string) => {
+    if (!time) return '未知时间'
+    const date = new Date(time)
+    return Number.isNaN(date.getTime()) ? time : date.toLocaleString('zh-CN')
+  }
 
-      if (diffDays > 0) {
-        return `${diffDays}天前`;
-      } else if (diffHours > 0) {
-        return `${diffHours}小时前`;
-      } else {
-        return '刚刚';
-      }
-    } catch {
-      return '未知时间';
-    }
-  };
+  const getInitials = (nickname?: string, username?: string) => {
+    const source = nickname || username || 'U'
+    return source.slice(0, 2).toUpperCase()
+  }
 
-  const filteredComments = comments.filter(comment =>
-    comment.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    comment.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    comment.username?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) {
+  if (isBootstrapping) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
+      <div className="flex min-h-[420px] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载中...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-muted-foreground">正在加载评论工作台...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-    >
-      <div className="space-y-6">
-        {/* Header */}
-            <div>
-              <p className="text-muted-foreground">管理系统中的所有用户评论</p>
-        </div>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <AdminStatCard label="总评论数" value={totalComments} detail="当前筛选结果总数" icon={MessageSquare} />
+        <AdminStatCard label="24小时新增" value={recentComments} detail="近一天内写入的评论" icon={Calendar} tone="accent" />
+        <AdminStatCard label="活跃评论者" value={activeAuthors} detail="当前页参与用户数" icon={User} tone="success" />
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <MessageSquare className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalComments}</p>
-                  <p className="text-muted-foreground text-sm">总评论数</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <AnimatePresence>{message && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><AdminNotice type={message.type}>{message.text}</AdminNotice></motion.div>}</AnimatePresence>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Clock className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {comments.filter(c => {
-                      const createdAt = new Date(c.createTime || '');
-                      const twentyFourHoursAgo = new Date();
-                      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-                      return createdAt >= twentyFourHoursAgo;
-                    }).length}
-                  </p>
-                  <p className="text-muted-foreground text-sm">24小时内新增</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <AdminSectionCard
+        title="评论检索"
+        description="服务端搜索评论内容与用户信息，输入时只刷新列表区。"
+      >
+        <AdminToolbar>
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value)
+                setCurrentPage(1)
+              }}
+              placeholder="搜索评论内容、用户名或昵称..."
+              className="h-11 rounded-sm border-border/80 bg-background/70 pl-10 pr-10"
+            />
+            {isRefreshing && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
+          </div>
+          <div className="text-sm text-muted-foreground">第 {currentPage} / {totalPages} 页</div>
+        </AdminToolbar>
+      </AdminSectionCard>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <User className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {new Set(comments.map(c => c.username || c.nickname)).size}
-                  </p>
-                  <p className="text-muted-foreground text-sm">活跃评论者</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alerts */}
-        <AnimatePresence>
-          {message && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <Card className={`border-${message.type === 'success' ? 'green' : 'red'}-200 bg-${message.type === 'success' ? 'green' : 'red'}-50`}>
-                <CardContent className="p-4 flex items-center gap-3">
-                  {message.type === 'success' ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                  )}
-                  <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
-                    {message.text}
-                  </span>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Search Bar */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="搜索评论内容或用户名..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Comments Grid */}
-        <div>
-          {filteredComments.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="text-muted-foreground mb-4">
-                  <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">暂无评论数据</p>
-                  <p>
-                    {searchTerm ? '没有找到匹配的评论' : '系统中还没有评论'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredComments.map((comment) => (
-                <motion.div
-                  key={comment.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="group"
-                >
-                  <Card className="hover:shadow-md transition-all duration-200">
-                    <CardContent className="p-6">
-                      {/* User Info */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={comment.avatar} />
-                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                              {getInitials(comment.nickname || '', comment.username || '')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-lg truncate">
-                              {comment.nickname || comment.username || '匿名用户'}
-                            </h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Calendar className="w-3 h-3" />
-                              <span>{formatTime(comment.createTime || '')}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground mb-1">
-                            ID: {comment.id}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            博客: {comment.blogId}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Comment Content */}
-                      <div className="mb-4">
-                        <p className="text-sm leading-relaxed bg-muted p-3 rounded-lg">
-                          {comment.content || '无内容'}
-                        </p>
-                      </div>
-
-                      {/* Comment Metadata */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                        <div className="flex items-center gap-2">
-                          <span>用户名: @{comment.username || 'unknown'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {comment.createTime ?
-                            new Date(comment.createTime).toLocaleDateString('zh-CN') :
-                            '未知时间'
-                          }
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteComment(comment.id, comment.content || '')}
-                          className="flex-1 flex items-center gap-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          删除评论
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalComments > 12 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+      <AdminSectionCard
+        title="评论列表"
+        description={`共 ${totalComments} 条评论`}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
+              上一页
+            </Button>
+            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
+              下一页
+            </Button>
+          </div>
+        }
+        contentClassName="space-y-4"
+      >
+        {comments.length === 0 ? (
+          <AdminEmptyState
+            title="没有匹配的评论"
+            description={debouncedSearchTerm ? '试试更短的关键词，或改搜用户名。' : '系统里还没有评论。'}
+            icon={MessageSquare}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {comments.map((comment) => (
+              <motion.article
+                key={comment.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                  'rounded-sm border border-border/70 bg-card/75 p-5',
+                  isRefreshing && 'opacity-80'
+                )}
               >
-                上一页
-              </Button>
-              <span className="text-sm text-muted-foreground px-3">
-                第 {currentPage} 页，共 {Math.ceil(totalComments / 12)} 页
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={currentPage >= Math.ceil(totalComments / 12)}
-              >
-                下一页
-              </Button>
-            </div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <Avatar className="h-11 w-11 rounded-sm">
+                      <AvatarImage src={comment.avatar} />
+                      <AvatarFallback className="rounded-sm bg-muted text-foreground">
+                        {getInitials(comment.nickname, comment.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-lg font-semibold">{comment.nickname || comment.username || '匿名用户'}</h3>
+                      <p className="truncate text-sm text-muted-foreground">@{comment.username || 'unknown'}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right text-xs text-muted-foreground">
+                    <div>ID {comment.id}</div>
+                    <div className="mt-1">文章 {comment.blogId}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-sm border border-border/60 bg-muted/35 p-4">
+                  <p className="line-clamp-5 whitespace-pre-wrap break-words text-sm leading-6 text-foreground/90">
+                    {comment.content || '无内容'}
+                  </p>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatTime(comment.createTime)}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDeleteComment(comment.id, comment.content || '')}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    删除评论
+                  </Button>
+                </div>
+              </motion.article>
+            ))}
           </div>
         )}
-      </div>
-    </motion.div>
-  );
-};
+      </AdminSectionCard>
+    </div>
+  )
+}
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ')
+}
