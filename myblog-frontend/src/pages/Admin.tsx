@@ -248,7 +248,7 @@ export const Admin: React.FC = () => {
           <AdminSectionCard className="overflow-hidden" contentClassName="space-y-5">
             <div className="rounded-sm border border-border/70 bg-muted/18 p-4 sm:p-5">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                <div className="max-w-3xl">
+                <div className="max-w-3xl xl:min-w-0 xl:flex-1">
                   <p className="font-mono-display text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                     Command Deck
                   </p>
@@ -259,7 +259,7 @@ export const Admin: React.FC = () => {
                     {today}。把内容发布、互动治理、系统健康和增长趋势集中在同一块主舞台，后台首页改成更稳定的运营工作台。
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 sm:flex-nowrap xl:ml-6 xl:flex-none">
                   <Button size="sm" onClick={() => navigate('/blog/new')}>
                     <PenTool className="h-4 w-4" />
                     写文章
