@@ -246,8 +246,8 @@ export const Admin: React.FC = () => {
       <div className="space-y-5">
         <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.88fr)]">
           <AdminSectionCard className="overflow-hidden" contentClassName="space-y-5">
-            <div className="rounded-sm border border-border/70 bg-muted/18 p-5">
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div className="rounded-sm border border-border/70 bg-muted/18 p-4 sm:p-5">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div className="max-w-3xl">
                   <p className="font-mono-display text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                     Command Deck
@@ -275,7 +275,7 @@ export const Admin: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
+              <div className="mt-4 grid grid-cols-1 gap-2.5 md:grid-cols-2 2xl:grid-cols-4">
                 <AdminStatCard label="总用户数" value={stats.totalUsers} detail={`今日新增 ${stats.todayNewUsers}`} icon={Users} />
                 <AdminStatCard label="总文章数" value={stats.totalBlogs} detail={`今日新增 ${stats.todayNewBlogs}`} icon={FileText} />
                 <AdminStatCard label="总评论数" value={stats.totalComments} detail={`今日新增 ${stats.todayNewComments}`} icon={MessageSquare} />

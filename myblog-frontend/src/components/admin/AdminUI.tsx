@@ -120,23 +120,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             ))}
           </nav>
         </div>
-
-        <div className="admin-sidebar__footer">
-          <div className="admin-sidebar__account">
-            <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-              当前账号
-            </p>
-            <p className="mt-2 text-base font-semibold">{user?.nickname || user?.username || '管理员'}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{activeLabel}</p>
-          </div>
-
-          <button type="button" onClick={handleLogout} className="admin-sidebar__item admin-sidebar__item--danger">
-            <span className="admin-sidebar__item-icon">
-              <LogOut className="h-4 w-4" />
-            </span>
-            <span>退出登录</span>
-          </button>
-        </div>
       </aside>
 
       <main className="relative xl:ml-[280px]">
@@ -183,7 +166,22 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <div className="admin-topbar-account">
+                <div>
+                  <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                    当前账号
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {user?.nickname || user?.username || '管理员'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{activeLabel}</p>
+                </div>
+              </div>
               {actions}
+              <Button variant="outline" onClick={handleLogout} className="text-red-700 hover:text-red-800">
+                <LogOut className="h-4 w-4" />
+                退出登录
+              </Button>
               <Button variant="outline" onClick={() => navigate('/')} className="hidden xl:inline-flex">
                 返回前台
               </Button>
@@ -294,8 +292,8 @@ export const AdminStatCard: React.FC<AdminStatCardProps> = ({
           <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-foreground md:text-[2.35rem]">{value}</p>
-          {detail && <p className="mt-2 text-[13px] leading-5 text-muted-foreground">{detail}</p>}
+          <p className="mt-2.5 text-[1.9rem] font-semibold tracking-[-0.04em] text-foreground md:text-[2.15rem]">{value}</p>
+          {detail && <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground">{detail}</p>}
         </div>
         <span className="admin-kpi__icon">
           <Icon className="h-5 w-5" />
