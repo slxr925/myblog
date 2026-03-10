@@ -480,6 +480,26 @@
     padding-bottom: 2rem;
   }
 
+  .admin-page-header__controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .admin-page-header__utility {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .admin-page-header__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   .admin-topbar-account {
     display: inline-flex;
     min-width: 156px;
@@ -494,8 +514,19 @@
   @media (min-width: 1024px) {
     .admin-page-header {
       flex-direction: row;
-      align-items: flex-end;
+      align-items: start;
       justify-content: space-between;
+    }
+
+    .admin-page-header__controls {
+      align-items: flex-end;
+      flex: 0 0 auto;
+      max-width: min(560px, 46%);
+    }
+
+    .admin-page-header__utility,
+    .admin-page-header__actions {
+      justify-content: flex-end;
     }
   }
 

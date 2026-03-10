@@ -153,7 +153,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
         <div className={cn('relative w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8 xl:px-9', contentClassName)}>
           <header className="admin-page-header">
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-mono-display text-[11px] uppercase tracking-[0.32em] text-muted-foreground">
                 Operations Console
               </p>
@@ -165,26 +165,28 @@ export const AdminShell: React.FC<AdminShellProps> = ({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="admin-topbar-account">
-                <div>
-                  <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                    当前账号
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">
-                    {user?.nickname || user?.username || '管理员'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{activeLabel}</p>
+            <div className="admin-page-header__controls">
+              <div className="admin-page-header__utility">
+                <div className="admin-topbar-account">
+                  <div>
+                    <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      当前账号
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {user?.nickname || user?.username || '管理员'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{activeLabel}</p>
+                  </div>
                 </div>
+                <Button variant="outline" onClick={handleLogout} className="text-red-700 hover:text-red-800">
+                  <LogOut className="h-4 w-4" />
+                  退出登录
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/')} className="hidden xl:inline-flex">
+                  返回前台
+                </Button>
               </div>
-              {actions}
-              <Button variant="outline" onClick={handleLogout} className="text-red-700 hover:text-red-800">
-                <LogOut className="h-4 w-4" />
-                退出登录
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/')} className="hidden xl:inline-flex">
-                返回前台
-              </Button>
+              {actions && <div className="admin-page-header__actions">{actions}</div>}
             </div>
           </header>
 
