@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Github, Mail, Code2, Database, Globe, Server, Rocket, Heart, ExternalLink } from 'lucide-react';
+import { Github, Mail, Code2, Database, Server, Rocket, Heart } from 'lucide-react';
+import { api } from '../utils/api';
+
+interface AboutStats {
+  totalBlogs: number;
+  totalViews: number;
+  totalLikes: number;
+}
 
 const About: React.FC = () => {
+  const [stats, setStats] = useState<AboutStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -37,7 +48,7 @@ const About: React.FC = () => {
     {
       category: 'DevOps & AI',
       icon: <Rocket className="w-5 h-5" />,
-      technologies: ['Spring AI (ZhipuGLM)', 'Docker', 'Nginx', 'GitHub Actions']
+      technologies: ['Spring AI', 'Docker', 'Nginx', 'GitHub Actions']
     }
   ];
 
@@ -48,6 +59,95 @@ const About: React.FC = () => {
     { title: '实时通知', description: 'WebSocket 实时消息推送' },
     { title: '全文搜索', description: 'Elasticsearch 毫秒级检索' },
     { title: '互动社区', description: '完整的评论、点赞与关注' },
+  ];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      setStatsError(null);
+
+      const pageSize = 100;
+
+      try {
+        const firstPage = await api.blog.getPage({ page: 1, size: pageSize, status: 1 });
+
+        if (cancelled) {
+          return;
+        }
+
+        const initialRecords = Array.isArray(firstPage.records) ? firstPage.records : [];
+        const totalBlogs = typeof firstPage.total === 'number' ? firstPage.total : initialRecords.length;
+        const totalPages = Math.max(
+          typeof firstPage.pages === 'number' ? firstPage.pages : Math.ceil(totalBlogs / pageSize),
+          1,
+        );
+
+        let totalViews = initialRecords.reduce((sum, blog) => sum + (blog.viewCount || 0), 0);
+        let totalLikes = initialRecords.reduce((sum, blog) => sum + (blog.likeCount || 0), 0);
+
+        if (totalPages > 1) {
+          const remainingPages = await Promise.all(
+            Array.from({ length: totalPages - 1 }, (_, index) =>
+              api.blog.getPage({ page: index + 2, size: pageSize, status: 1 }),
+            ),
+          );
+
+          if (cancelled) {
+            return;
+          }
+
+          remainingPages.forEach((pageResult) => {
+            const records = Array.isArray(pageResult.records) ? pageResult.records : [];
+            totalViews += records.reduce((sum, blog) => sum + (blog.viewCount || 0), 0);
+            totalLikes += records.reduce((sum, blog) => sum + (blog.likeCount || 0), 0);
+          });
+        }
+
+        setStats({
+          totalBlogs,
+          totalViews,
+          totalLikes,
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        console.error('获取关于页统计失败:', error);
+        setStatsError('真实统计加载失败');
+      } finally {
+        if (!cancelled) {
+          setStatsLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const formatStatValue = (value: number) => new Intl.NumberFormat('zh-CN').format(value);
+
+  const statCards = [
+    {
+      label: '文章总数',
+      value: stats?.totalBlogs ?? 0,
+      className: '',
+    },
+    {
+      label: '总访问量',
+      value: stats?.totalViews ?? 0,
+      className: '',
+    },
+    {
+      label: '获赞总数',
+      value: stats?.totalLikes ?? 0,
+      className: 'sm:col-span-2',
+    },
   ];
 
   return (
@@ -187,24 +287,29 @@ const About: React.FC = () => {
                   <Database className="w-4 h-4 text-accent" />
                   数据概览
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border border-border p-3">
-                    <div className="text-2xl font-bold text-foreground">47</div>
-                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">文章总数</div>
-                  </div>
-                  <div className="border border-border p-3">
-                    <div className="text-2xl font-bold text-foreground">2.3k</div>
-                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">总访问量</div>
-                  </div>
-                  <div className="border border-border p-3">
-                    <div className="text-2xl font-bold text-foreground">128</div>
-                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">获赞总数</div>
-                  </div>
-                  <div className="border border-border p-3">
-                    <div className="text-2xl font-bold text-foreground">99%</div>
-                    <div className="text-xs text-muted-foreground font-mono-display uppercase tracking-wider">好评率</div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {statCards.map((stat) => (
+                    <div key={stat.label} className={`border border-border p-4 ${stat.className}`.trim()}>
+                      <div className="text-2xl font-bold text-foreground">
+                        {statsLoading ? (
+                          <span className="inline-block h-8 w-20 animate-pulse bg-muted/70" />
+                        ) : statsError ? (
+                          '--'
+                        ) : (
+                          formatStatValue(stat.value)
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground font-mono-display uppercase tracking-wider">
+                        {stat.label}
+                      </div>
+                    </div>
+                  ))}
                 </div>
+                {statsError && (
+                  <p className="mt-4 text-xs text-destructive font-mono-display uppercase tracking-wider">
+                    {statsError}
+                  </p>
+                )}
               </div>
             </motion.div>
 

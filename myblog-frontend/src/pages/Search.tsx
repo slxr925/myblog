@@ -105,24 +105,48 @@ const SearchPage: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
-          <Button
-            variant={!selectedCategory ? "default" : "outline"}
-            onClick={() => setSelectedCategory(null)}
-            className="rounded-full"
-          >
-            全部
-          </Button>
-          {allCategories.map(category => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              onClick={() => setSelectedCategory(category)}
-              className="rounded-full"
-            >
-              {category}
-            </Button>
-          ))}
+        <div className="relative mb-12 border border-border bg-card px-5 py-5 sm:px-7">
+          <div className="pointer-events-none absolute inset-0 pattern-editorial-grid opacity-30" />
+          <div className="relative">
+            <div className="mb-4 flex items-center justify-between gap-4 border-b border-border/80 pb-3">
+              <div>
+                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">Category Index</p>
+                <p className="mt-1 text-sm text-muted-foreground">按内容主题快速浏览全部文章</p>
+              </div>
+              <div className="hidden sm:block text-right">
+                <p className="font-mono-display text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Active Filter</p>
+                <p className="mt-1 text-sm text-foreground">{selectedCategory || '全部文章'}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2.5 sm:justify-start">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory(null)}
+                className={`min-w-[108px] border px-4 py-3 text-left font-mono-display text-[11px] uppercase tracking-[0.22em] transition-all duration-200 ${
+                  !selectedCategory
+                    ? 'border-accent bg-accent/10 text-accent shadow-[inset_3px_0_0_0_hsl(var(--accent))]'
+                    : 'border-border bg-background/80 text-muted-foreground hover:border-accent/50 hover:text-foreground'
+                }`}
+              >
+                全部
+              </button>
+              {allCategories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`min-w-[108px] border px-4 py-3 text-left font-mono-display text-[11px] uppercase tracking-[0.22em] transition-all duration-200 ${
+                    selectedCategory === category
+                      ? 'border-accent bg-accent/10 text-accent shadow-[inset_3px_0_0_0_hsl(var(--accent))]'
+                      : 'border-border bg-background/80 text-muted-foreground hover:border-accent/50 hover:text-foreground'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* List Layout */}
