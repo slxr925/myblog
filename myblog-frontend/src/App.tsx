@@ -34,7 +34,7 @@ const RouteFallback = () => (
 )
 
 const getRouteTitle = (pathname: string) => {
-  if (pathname === '/') return "Ryan's Blog"
+  if (pathname === '/') return 'Ryan’s Blog'
   if (pathname === '/blog') return '全部文章 - MyBlog'
   if (pathname === '/about') return '关于本站 - MyBlog'
   if (pathname === '/search') return '搜索结果 - MyBlog'
