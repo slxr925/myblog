@@ -325,7 +325,7 @@ ON DUPLICATE KEY UPDATE create_time = NOW();
 SELECT '数据库初始化完成！' as status;
 SELECT '默认管理员账号: admin / admin123' as info;
 
--- V1.0.1 Notification Tables
+-- V1.0.1/V1.0.2 Notification Tables
 
 -- 通知系统数据库表
 -- 执行前请确保已选择正确的数据库
