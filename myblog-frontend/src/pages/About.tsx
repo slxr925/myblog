@@ -272,7 +272,7 @@ const About: React.FC = () => {
                     <a href="https://github.com/slxr925" target="_blank" title="GitHub" rel="noopener noreferrer" className="p-2 text-muted-foreground hover:text-foreground border border-border hover:border-accent rounded-sm transition-all">
                       <Github className="w-4 h-4" />
                     </a>
-                    <a href="mailto:contact@example.com" title="Email" className="p-2 text-muted-foreground hover:text-foreground border border-border hover:border-accent rounded-sm transition-all">
+                    <a href="mailto:slxr@outlook.com" title="Email" className="p-2 text-muted-foreground hover:text-foreground border border-border hover:border-accent rounded-sm transition-all">
                       <Mail className="w-4 h-4" />
                     </a>
                   </div>

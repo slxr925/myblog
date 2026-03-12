@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
@@ -33,8 +33,33 @@ const RouteFallback = () => (
   </div>
 )
 
+const getRouteTitle = (pathname: string) => {
+  if (pathname === '/') return "Ryan's Blog"
+  if (pathname === '/blog') return '全部文章 - MyBlog'
+  if (pathname === '/about') return '关于本站 - MyBlog'
+  if (pathname === '/search') return '搜索结果 - MyBlog'
+  if (pathname === '/profile') return '个人中心 - MyBlog'
+  if (pathname === '/user/collections') return '我的收藏 - MyBlog'
+  if (pathname === '/notifications') return '消息通知 - MyBlog'
+  if (pathname === '/following') return '关注动态 - MyBlog'
+  if (pathname === '/blog/new') return '新建文章 - MyBlog'
+  if (pathname.startsWith('/blog/edit/')) return '编辑文章 - MyBlog'
+  if (pathname === '/blog/drafts') return '草稿箱 - MyBlog'
+  if (pathname === '/dashboard') return '管理后台 - MyBlog'
+  if (pathname.startsWith('/collection/share/')) return '共享收藏夹 - MyBlog'
+  if (pathname.startsWith('/blog/')) return null
+  return 'MyBlog'
+}
+
 const AppRoutes = () => {
   const location = useLocation()
+
+  useEffect(() => {
+    const nextTitle = getRouteTitle(location.pathname)
+    if (nextTitle) {
+      document.title = nextTitle
+    }
+  }, [location.pathname])
 
   return (
     <AnimatePresence mode="wait">
