@@ -16,6 +16,8 @@ export interface PageParams {
   tagId?: number;
   keyword?: string;
   status?: number;
+  sort?: BlogSortOption;
+  timeRange?: BlogTimeRange;
 }
 
 // 分页响应数据
@@ -154,6 +156,9 @@ export interface BlogRecommendationVO {
   categoryName?: string;
   publishTime?: string;
 }
+
+export type BlogSortOption = 'latest' | 'popular' | 'liked';
+export type BlogTimeRange = 'all' | '30d' | '90d' | 'year';
 
 export interface RecommendationSectionVO {
   title: string;
@@ -449,7 +454,8 @@ export enum NotificationType {
   FOLLOW = 'FOLLOW',
   MENTION = 'MENTION',
   NEW_ARTICLE = 'NEW_ARTICLE',
-  STATS = 'STATS'
+  STATS = 'STATS',
+  WEEKLY_DIGEST = 'WEEKLY_DIGEST'
 }
 
 // 通知状态枚举
@@ -481,11 +487,18 @@ export interface NotificationVO {
 // 通知设置
 export interface NotificationSettingVO {
   userId: number;
-  emailNotification: boolean;
-  commentNotification: boolean;
-  likeNotification: boolean;
-  followNotification: boolean;
-  systemNotification: boolean;
+  enableComment: boolean;
+  enableLike: boolean;
+  enableFollow: boolean;
+  enableCollection?: boolean;
+  enableSystem: boolean;
+  enableNewArticle: boolean;
+  enableMention?: boolean;
+  enableStats?: boolean;
+  enableWeeklyDigest: boolean;
+  enableWebsocket: boolean;
+  enableBrowser: boolean;
+  enableAll: boolean;
 }
 
 // 用户会话

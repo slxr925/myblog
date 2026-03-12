@@ -129,7 +129,7 @@ const MyLikes: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-accent" />
           <p className="text-muted-foreground">加载中...</p>
         </div>
       </div>
@@ -141,7 +141,7 @@ const MyLikes: React.FC = () => {
       {/* 标题栏 */}
       <div>
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Heart className="w-6 h-6 text-red-500" />
+          <Heart className="w-6 h-6 text-accent" />
           我的喜爱
         </h2>
         <p className="text-muted-foreground mt-1">
@@ -150,7 +150,7 @@ const MyLikes: React.FC = () => {
       </div>
 
       {error && (
-        <Card className="border-red-200 bg-red-50 text-red-700">
+        <Card className="rounded-none border-border bg-muted/20 text-foreground">
           <CardContent className="p-4">
             {error}
           </CardContent>
@@ -159,7 +159,7 @@ const MyLikes: React.FC = () => {
 
       {/* 博客列表 */}
       {blogs.length === 0 ? (
-        <Card className="p-12">
+        <Card className="rounded-none border-border p-12">
           <div className="text-center space-y-4">
             <Heart className="w-16 h-16 text-muted-foreground mx-auto" />
             <div>
@@ -168,7 +168,7 @@ const MyLikes: React.FC = () => {
                 去发现一些有趣的内容并点赞吧！
               </p>
             </div>
-            <Button onClick={() => navigate('/blog')}>
+            <Button onClick={() => navigate('/blog')} className="rounded-none">
               浏览文章
             </Button>
           </div>
@@ -187,7 +187,7 @@ const MyLikes: React.FC = () => {
                   transition={{ delay: index * 0.03 }}
                 >
                   <Card
-                    className="group hover:shadow-md transition-all duration-200 cursor-pointer py-0"
+                    className="group cursor-pointer rounded-none border-border py-0 transition-colors duration-200 hover:border-accent/40"
                     onClick={() => handleBlogClick(blog.id)}
                   >
                     <CardContent className="p-3">
@@ -200,7 +200,7 @@ const MyLikes: React.FC = () => {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-foreground mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">
+                          <h3 className="mb-1.5 line-clamp-1 font-medium text-foreground transition-colors group-hover:text-accent">
                             {blog.title}
                           </h3>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -209,7 +209,7 @@ const MyLikes: React.FC = () => {
                               {transformedBlog.publishDate}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Heart className="w-3 h-3 fill-red-500 text-red-500" />
+                              <Heart className="w-3 h-3 fill-accent text-accent" />
                               {transformedBlog.likedDate}
                             </span>
                           </div>
@@ -228,7 +228,7 @@ const MyLikes: React.FC = () => {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-accent"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleUnlike(blog.id);

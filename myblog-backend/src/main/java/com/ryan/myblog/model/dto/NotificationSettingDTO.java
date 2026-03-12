@@ -68,6 +68,13 @@ public class NotificationSettingDTO {
     private Boolean enableStats;
 
     /**
+     * 是否开启周报摘要通知
+     * 接收关注作者过去 7 天的新文章摘要
+     */
+    @Schema(description = "是否开启周报摘要通知", example = "true")
+    private Boolean enableWeeklyDigest;
+
+    /**
      * 是否开启WebSocket实时推送
      * 关闭后需要手动刷新页面查看通知
      */

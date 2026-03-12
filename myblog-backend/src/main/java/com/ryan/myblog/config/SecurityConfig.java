@@ -77,7 +77,7 @@ public class SecurityConfig {
                         // 允许生成验证码（登录前需要）
                         .requestMatchers("/api/captcha/**").permitAll()
                         // 允许查看博客列表和详情（含增强详情）
-                        .requestMatchers("/api/blog/page", "/api/blog/{id}", "/api/blog/{id}/enhanced").permitAll()
+                        .requestMatchers("/api/blog/page", "/api/blog/rss.xml", "/api/blog/{id}", "/api/blog/{id}/enhanced").permitAll()
                         // 允许搜索功能
                         .requestMatchers("/api/search/**").permitAll()
                         // 允许查看分类和标签

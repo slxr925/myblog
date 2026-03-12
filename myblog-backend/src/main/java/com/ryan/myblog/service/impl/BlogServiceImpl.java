@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ryan.myblog.common.PageRequest;
+import com.ryan.myblog.event.NotificationEvent;
 import com.ryan.myblog.model.dto.BlogSaveDTO;
 import com.ryan.myblog.model.dto.LikeResultDTO;
 import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.model.entity.BlogTag;
+import com.ryan.myblog.model.entity.UserFollow;
 import com.ryan.myblog.model.entity.User;
 import com.ryan.myblog.model.entity.UserLike;
 import com.ryan.myblog.model.entity.Category;
@@ -36,13 +38,17 @@ import com.ryan.myblog.model.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -75,6 +81,7 @@ public class BlogServiceImpl implements BlogService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final com.ryan.myblog.service.BlogRevisionService blogRevisionService;
     private final com.ryan.myblog.mapper.UserFollowMapper userFollowMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -122,6 +129,10 @@ public class BlogServiceImpl implements BlogService {
             }
         }
 
+        if (isPublished(blog.getStatus())) {
+            notifyFollowersOfNewArticle(blog);
+        }
+
         BlogDetailVO detail = blogMapper.selectBlogDetail(blog.getId());
         if (detail != null) {
             detail.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
@@ -144,6 +155,7 @@ public class BlogServiceImpl implements BlogService {
         }
 
         Integer previousStatus = existBlog.getStatus();
+        boolean wasPublished = isPublished(previousStatus);
 
         // 更新博客信息
         existBlog.setTitle(blogSaveDTO.getTitle());
@@ -198,6 +210,10 @@ public class BlogServiceImpl implements BlogService {
             }
         }
 
+        if (!wasPublished && isPublished(existBlog.getStatus())) {
+            notifyFollowersOfNewArticle(existBlog);
+        }
+
         BlogDetailVO detail = blogMapper.selectBlogDetail(id);
         if (detail != null) {
             detail.setTags(tagMapper.selectTagsByBlogId(id));
@@ -244,11 +260,14 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public IPage<BlogDetailVO> getBlogPage(PageRequest pageRequest, Long categoryId,
-            Long tagId, String keyword, Integer status) {
+            Long tagId, String keyword, Integer status, String sort, String timeRange) {
         Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        String normalizedSort = normalizeSort(sort);
+        String normalizedTimeRange = normalizeTimeRange(timeRange);
 
         // 使用新的查询方法，已经包含标签信息，无需额外查询
-        IPage<BlogDetailVO> result = blogMapper.selectBlogPage(page, categoryId, tagId, keyword, status);
+        IPage<BlogDetailVO> result = blogMapper.selectBlogPage(page, categoryId, tagId, keyword, status,
+                normalizedSort, normalizedTimeRange);
 
         return result;
     }
@@ -441,6 +460,9 @@ public class BlogServiceImpl implements BlogService {
         if (!checkBlogPermission(blog.getAuthorId(), authorId)) {
             throw new RuntimeException("无权限发布此博客");
         }
+        if (isPublished(blog.getStatus())) {
+            return;
+        }
 
         blog.setStatus(1);
         blog.setVisibility(1);
@@ -464,6 +486,8 @@ public class BlogServiceImpl implements BlogService {
                 log.error("同步发布的博客到Elasticsearch失败: {}", blog.getId(), e);
             }
         }
+
+        notifyFollowersOfNewArticle(blog);
     }
 
     @Override
@@ -1219,6 +1243,78 @@ public class BlogServiceImpl implements BlogService {
             }
         }
         return result;
+    }
+
+    public List<Blog> getRecentPublishedBlogsByAuthors(List<Long> authorIds, LocalDateTime since) {
+        if (authorIds == null || authorIds.isEmpty()) {
+            return List.of();
+        }
+
+        LambdaQueryWrapper<Blog> wrapper = new LambdaQueryWrapper<Blog>()
+                .in(Blog::getAuthorId, authorIds)
+                .eq(Blog::getStatus, 1)
+                .eq(Blog::getDeleted, 0)
+                .ge(Blog::getPublishTime, since)
+                .orderByDesc(Blog::getPublishTime);
+
+        return blogMapper.selectList(wrapper);
+    }
+
+    private void notifyFollowersOfNewArticle(Blog blog) {
+        if (blog == null || blog.getId() == null || blog.getAuthorId() == null || !isPublished(blog.getStatus())) {
+            return;
+        }
+
+        List<UserFollow> followers = userFollowMapper.selectList(new LambdaQueryWrapper<UserFollow>()
+                .eq(UserFollow::getFolloweeId, blog.getAuthorId())
+                .eq(UserFollow::getDeleted, 0));
+
+        if (followers.isEmpty()) {
+            return;
+        }
+
+        User author = userMapper.selectById(blog.getAuthorId());
+        String authorName = author != null
+                ? StringUtils.defaultIfBlank(author.getNickname(), author.getUsername())
+                : "你关注的作者";
+
+        for (UserFollow follower : followers) {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put("blogId", blog.getId());
+            extraData.put("blogTitle", blog.getTitle());
+            extraData.put("authorId", blog.getAuthorId());
+            extraData.put("authorName", authorName);
+            if (blog.getCoverImg() != null) {
+                extraData.put("coverImg", blog.getCoverImg());
+            }
+
+            eventPublisher.publishEvent(NotificationEvent.newArticleEvent(
+                    this,
+                    follower.getFollowerId(),
+                    blog.getAuthorId(),
+                    authorName,
+                    blog.getTitle(),
+                    blog.getId(),
+                    extraData));
+        }
+    }
+
+    private boolean isPublished(Integer status) {
+        return Objects.equals(status, 1);
+    }
+
+    private String normalizeSort(String sort) {
+        if ("popular".equalsIgnoreCase(sort) || "liked".equalsIgnoreCase(sort)) {
+            return sort.toLowerCase();
+        }
+        return "latest";
+    }
+
+    private String normalizeTimeRange(String timeRange) {
+        if ("30d".equalsIgnoreCase(timeRange) || "90d".equalsIgnoreCase(timeRange) || "year".equalsIgnoreCase(timeRange)) {
+            return timeRange.toLowerCase();
+        }
+        return "all";
     }
 
     /**

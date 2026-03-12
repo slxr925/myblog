@@ -21,6 +21,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +36,8 @@ import com.ryan.myblog.model.entity.Blog;
 import com.ryan.myblog.mapper.BlogMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 博客控制器
@@ -67,13 +73,18 @@ public class BlogController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long tagId,
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "1") Integer status) {
+            @RequestParam(defaultValue = "1") Integer status,
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "all") String timeRange) {
 
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
         pageRequest.setSize(size);
+        pageRequest.setSort(sort);
+        pageRequest.setTimeRange(timeRange);
 
-        IPage<BlogDetailVO> result = blogService.getBlogPage(pageRequest, categoryId, tagId, keyword, status);
+        IPage<BlogDetailVO> result = blogService.getBlogPage(pageRequest, categoryId, tagId, keyword, status, sort,
+                timeRange);
         return Result.success(result);
     }
 
@@ -457,6 +468,50 @@ public class BlogController {
     }
 
     /**
+     * 全站 RSS Feed
+     */
+    @GetMapping(value = "/rss.xml", produces = "application/rss+xml; charset=UTF-8")
+    public ResponseEntity<String> getRssFeed() {
+        List<BlogDetailVO> blogs = blogService.getLatestBlogs(20);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        StringBuilder xml = new StringBuilder();
+        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        xml.append("<rss version=\"2.0\"><channel>");
+        xml.append("<title>").append(escapeXml("Ryan's Blog")).append("</title>");
+        xml.append("<link>").append(escapeXml(baseUrl)).append("</link>");
+        xml.append("<description>").append(escapeXml("最新发布的技术文章与项目实践")).append("</description>");
+        xml.append("<language>zh-CN</language>");
+
+        for (BlogDetailVO blog : blogs) {
+            String blogUrl = baseUrl + "/blog/" + blog.getId();
+            String pubDate = blog.getPublishTime() != null
+                    ? blog.getPublishTime().atZone(ZoneId.of("Asia/Shanghai")).format(DateTimeFormatter.RFC_1123_DATE_TIME)
+                    : null;
+            xml.append("<item>");
+            xml.append("<title>").append(escapeXml(blog.getTitle())).append("</title>");
+            xml.append("<link>").append(escapeXml(blogUrl)).append("</link>");
+            xml.append("<guid>").append(escapeXml(blogUrl)).append("</guid>");
+            xml.append("<description>").append(escapeXml(blog.getSummary() != null ? blog.getSummary() : "")).append("</description>");
+            if (blog.getAuthorName() != null) {
+                xml.append("<author>").append(escapeXml(blog.getAuthorName())).append("</author>");
+            }
+            if (blog.getCategoryName() != null) {
+                xml.append("<category>").append(escapeXml(blog.getCategoryName())).append("</category>");
+            }
+            if (pubDate != null) {
+                xml.append("<pubDate>").append(escapeXml(pubDate)).append("</pubDate>");
+            }
+            xml.append("</item>");
+        }
+
+        xml.append("</channel></rss>");
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "application/rss+xml; charset=UTF-8")
+                .body(xml.toString());
+    }
+
+    /**
      * 搜索所有公开博客文章
      */
     @GetMapping("/search")
@@ -531,5 +586,14 @@ public class BlogController {
             return (Long) authentication.getPrincipal();
         }
         throw new RuntimeException("用户未登录");
+    }
+
+    private String escapeXml(String value) {
+        return value == null ? "" : value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 }

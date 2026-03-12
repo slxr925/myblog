@@ -144,4 +144,31 @@ public class NotificationEvent extends ApplicationEvent {
         return new NotificationEvent(source, NotificationType.MENTION, receiverId, senderId,
                 title, content, ResourceType.COMMENT, commentId, extraData);
     }
+
+    /**
+     * 创建新文章通知事件
+     */
+    public static NotificationEvent newArticleEvent(Object source,
+            Long receiverId,
+            Long senderId,
+            String authorName,
+            String blogTitle,
+            Long blogId,
+            Map<String, Object> extraData) {
+        String title = "关注作者发布了新文章";
+        String content = String.format("%s 发布了新文章《%s》", authorName, blogTitle);
+        return new NotificationEvent(source, NotificationType.NEW_ARTICLE, receiverId, senderId,
+                title, content, ResourceType.BLOG, blogId, extraData);
+    }
+
+    /**
+     * 创建周报摘要通知事件
+     */
+    public static NotificationEvent weeklyDigestEvent(Object source,
+            Long receiverId,
+            String content,
+            Map<String, Object> extraData) {
+        return new NotificationEvent(source, NotificationType.WEEKLY_DIGEST, receiverId, null,
+                "本周订阅摘要", content, null, null, extraData);
+    }
 }

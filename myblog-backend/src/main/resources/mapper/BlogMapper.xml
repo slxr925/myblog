@@ -126,7 +126,30 @@
         <if test="status != null">
             AND b.status = #{status}
         </if>
-        ORDER BY b.is_top DESC, b.create_time DESC
+        <if test="timeRange != null and timeRange != 'all'">
+            <choose>
+                <when test="timeRange == '30d'">
+                    AND COALESCE(b.publish_time, b.create_time) >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == '90d'">
+                    AND COALESCE(b.publish_time, b.create_time) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND COALESCE(b.publish_time, b.create_time) >= DATE_FORMAT(NOW(), '%Y-01-01 00:00:00')
+                </when>
+            </choose>
+        </if>
+        <choose>
+            <when test="sort == 'popular'">
+                ORDER BY b.view_count DESC, like_count DESC, COALESCE(b.publish_time, b.create_time) DESC
+            </when>
+            <when test="sort == 'liked'">
+                ORDER BY like_count DESC, b.view_count DESC, COALESCE(b.publish_time, b.create_time) DESC
+            </when>
+            <otherwise>
+                ORDER BY b.is_top DESC, COALESCE(b.publish_time, b.create_time) DESC
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectBlogDetail" resultMap="BlogDetailMap">

@@ -72,6 +72,12 @@ public class NotificationSetting {
     private Boolean enableStats;
 
     /**
+     * 是否开启周报摘要通知
+     */
+    @TableField("enable_weekly_digest")
+    private Boolean enableWeeklyDigest;
+
+    /**
      * 是否开启WebSocket推送
      */
     @TableField("enable_websocket")

@@ -76,11 +76,11 @@ export const MyFollowers: React.FC = () => {
 
     if (!user) {
         return (
-            <Card>
+            <Card className="rounded-none border-border">
                 <CardContent className="p-12 text-center">
-                    <UserIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600 text-lg mb-4">请先登录查看您的粉丝</p>
-                    <Button onClick={openAuthModal} className="bg-indigo-600 hover:bg-indigo-700">
+                    <UserIcon className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                    <p className="mb-4 text-lg text-muted-foreground">请先登录查看您的粉丝</p>
+                    <Button onClick={openAuthModal} className="rounded-none">
                         立即登录
                     </Button>
                 </CardContent>
@@ -93,7 +93,7 @@ export const MyFollowers: React.FC = () => {
             {/* 标题栏 */}
             <div>
                 <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                    <Users className="w-6 h-6 text-indigo-600" />
+                    <Users className="w-6 h-6 text-accent" />
                     我的粉丝
                 </h2>
                 <p className="text-muted-foreground mt-1">
@@ -109,12 +109,11 @@ export const MyFollowers: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                     >
-                        <Card className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                        <Card className="rounded-none border-border bg-muted/20">
                             <CardContent className="p-4">
                                 <div className="flex items-center space-x-3">
-                                    <AlertCircle className={`w-5 h-5 ${message.type === 'success' ? 'text-green-500' : 'text-red-500'
-                                        }`} />
-                                    <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+                                    <AlertCircle className="w-5 h-5 text-accent" />
+                                    <span className="text-foreground">
                                         {message.text}
                                     </span>
                                 </div>
@@ -128,19 +127,19 @@ export const MyFollowers: React.FC = () => {
             {!hasLoaded ? null : followers.length > 0 ? (
                 <div className="space-y-3">
                     {followers.map((follower) => (
-                        <Card key={follower.userId} className="hover:shadow-md transition-shadow py-0">
+                        <Card key={follower.userId} className="rounded-none border-border py-0 transition-colors hover:border-accent/40">
                             <CardContent className="p-4">
                                 <div className="flex items-start space-x-3">
                                     <Avatar className="w-10 h-10">
                                         <AvatarImage src={follower.avatar} alt={follower.nickname || follower.username} />
-                                        <AvatarFallback className="text-base bg-indigo-100 text-indigo-600">
+                                        <AvatarFallback className="bg-muted text-base text-foreground">
                                             {(follower.nickname || follower.username).charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-medium text-sm text-gray-800">{follower.nickname || follower.username}</span>
-                                            <span className="text-xs text-gray-500">
+                                            <span className="text-sm font-medium text-foreground">{follower.nickname || follower.username}</span>
+                                            <span className="font-mono-display text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                                                 {formatDistanceToNow(new Date(follower.followTime), {
                                                     addSuffix: true,
                                                     locale: zhCN,
@@ -148,7 +147,7 @@ export const MyFollowers: React.FC = () => {
                                             </span>
                                         </div>
                                         {follower.bio && (
-                                            <div className="text-xs text-gray-600 line-clamp-1">
+                                            <div className="line-clamp-1 text-xs text-muted-foreground">
                                                 {follower.bio}
                                             </div>
                                         )}
@@ -159,7 +158,7 @@ export const MyFollowers: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                <Card className="p-12">
+                <Card className="rounded-none border-border p-12">
                     <div className="text-center space-y-4">
                         <Users className="w-16 h-16 text-muted-foreground mx-auto" />
                         <div>
@@ -183,7 +182,7 @@ export const MyFollowers: React.FC = () => {
                         >
                             上一页
                         </Button>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                             第 {currentPage} 页，共 {Math.ceil(total / pageSize)} 页
                         </span>
                         <Button

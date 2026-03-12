@@ -22,6 +22,16 @@ public class PageRequest {
      * 排序字段
      */
     private String orderBy;
+
+    /**
+     * 业务排序：latest / popular / liked
+     */
+    private String sort;
+
+    /**
+     * 时间筛选：all / 30d / 90d / year
+     */
+    private String timeRange;
     
     /**
      * 排序方向：asc, desc

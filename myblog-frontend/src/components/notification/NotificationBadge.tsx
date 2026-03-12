@@ -138,12 +138,12 @@ const NotificationBadge: React.FC = () => {
             <Button
                 variant="ghost"
                 size="icon"
-                className="relative text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300 hover:scale-110"
+                className="relative border border-transparent text-muted-foreground transition-all duration-300 hover:border-border hover:bg-muted hover:text-foreground"
                 onClick={handleToggle}
             >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 min-w-[1.25rem] h-5 rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in duration-300 shadow-sm pointer-events-none">
+                    <span className="absolute -top-1 -right-1 flex h-5 min-w-[1.3rem] items-center justify-center rounded-full border-2 border-background bg-accent px-1.5 text-[10px] font-bold text-accent-foreground animate-in zoom-in duration-300 shadow-sm pointer-events-none">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
@@ -151,12 +151,15 @@ const NotificationBadge: React.FC = () => {
 
             {/* Popover */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 md:w-96 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-                        <h3 className="font-semibold text-foreground">通知</h3>
+                <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden border border-border bg-background shadow-lg animate-in fade-in zoom-in-95 duration-200 md:w-96">
+                    <div className="flex items-center justify-between border-b border-border bg-card px-4 py-4">
+                        <div>
+                            <p className="font-mono-display text-[11px] uppercase tracking-[0.22em] text-accent">Inbox</p>
+                            <h3 className="mt-1 text-base font-semibold text-foreground">通知</h3>
+                        </div>
                         <div className="flex gap-2">
                             <button
-                                className="text-xs text-primary hover:underline disabled:opacity-50"
+                                className="font-mono-display text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground disabled:opacity-50"
                                 onClick={handleMarkAllRead}
                                 disabled={unreadCount === 0}
                             >
@@ -182,16 +185,16 @@ const NotificationBadge: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="p-8 text-center flex flex-col items-center text-muted-foreground">
-                                <Bell className="w-8 h-8 mb-2 opacity-50" />
+                            <div className="flex flex-col items-center p-8 text-center text-muted-foreground">
+                                <Bell className="mb-3 h-8 w-8 opacity-50" />
                                 <p className="text-sm">暂无新通知</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="p-3 border-t border-border bg-muted/30 text-center">
+                    <div className="border-t border-border bg-card px-3 py-3 text-center">
                         <button
-                            className="text-sm text-foreground hover:text-primary transition-colors font-medium w-full py-1"
+                            className="w-full py-1 font-mono-display text-[11px] uppercase tracking-[0.22em] text-foreground transition-colors hover:text-accent"
                             onClick={handleViewAll}
                         >
                             查看全部通知

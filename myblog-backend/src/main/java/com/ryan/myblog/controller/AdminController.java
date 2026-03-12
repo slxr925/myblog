@@ -277,7 +277,7 @@ public class AdminController {
         pageRequest.setPage(page);
         pageRequest.setSize(size);
 
-        IPage<BlogDetailVO> blogPage = blogService.getBlogPage(pageRequest, null, null, keyword, status);
+        IPage<BlogDetailVO> blogPage = blogService.getBlogPage(pageRequest, null, null, keyword, status, null, null);
         PageResult<BlogDetailVO> pageResult = PageResult.of(
                 blogPage.getRecords(),
                 blogPage.getTotal(),

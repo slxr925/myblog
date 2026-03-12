@@ -45,7 +45,7 @@ import type {
 
 // 创建axios实例
 // 根据环境自动选择API地址
-const getBaseURL = () => {
+export const getBaseURL = () => {
   // 开发环境直接访问后端
   if (import.meta.env.DEV) {
     return 'http://localhost:8081/api';
@@ -237,7 +237,7 @@ apiClient.interceptors.response.use(
 );
 
 // 工具函数：将后端BlogDetailVO转换为前端BlogPost
-const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
+export const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost => {
 
   // 处理日期格式：后端返回的可能是字符串格式 "2025-10-02T22:14:38" 或数组格式 [2025,10,2,22,14,38]
   let publishDate = '';
@@ -1219,7 +1219,7 @@ export const api = {
 
     // 标记所有为已读
     markAllAsRead: async (): Promise<void> => {
-      await apiClient.put('/notifications/read/all');
+      await apiClient.put('/notifications/read-all');
     },
 
     // 删除通知
@@ -1237,4 +1237,11 @@ export const api = {
       await apiClient.put('/notifications/settings', settings);
     }
   },
+};
+
+export const getRssFeedUrl = () => {
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8081/api/blog/rss.xml';
+  }
+  return '/api/blog/rss.xml';
 };

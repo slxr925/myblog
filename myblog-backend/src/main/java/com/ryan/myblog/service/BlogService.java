@@ -35,7 +35,7 @@ public interface BlogService {
      * 分页查询博客列表
      */
     IPage<BlogDetailVO> getBlogPage(PageRequest pageRequest, Long categoryId,
-            Long tagId, String keyword, Integer status);
+            Long tagId, String keyword, Integer status, String sort, String timeRange);
 
     /**
      * 查询博客详情

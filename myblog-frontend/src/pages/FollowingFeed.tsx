@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ArrowUpRight, Heart, Newspaper, Users } from 'lucide-react';
+
+import BlogListItem from '../components/BlogListItem';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { api } from '../utils/api';
-import BlogListItem from '../components/BlogListItem';
-import { Heart, Users } from 'lucide-react';
 
 interface BlogPost {
   id: number;
@@ -39,7 +41,7 @@ const formatBlogPost = (blog: any): BlogPost => {
 
   const tags = Array.isArray(blog.tags)
     ? blog.tags.map((tag: any) => typeof tag === 'string' ? tag : (tag?.name || '')).filter(Boolean)
-    : (typeof blog.tags === 'string' ? blog.tags.split(',').map((t: string) => t.trim()) : []);
+    : (typeof blog.tags === 'string' ? blog.tags.split(',').map((item: string) => item.trim()) : []);
 
   return {
     id: Number(blog.id) || blog.id,
@@ -77,15 +79,12 @@ const FollowingFeed: React.FC = () => {
       if (reset) {
         setLoading(true);
       }
+
       const response = await api.blog.getFollowingFeed({ page: pageNum, size: 10 });
       const records = (response as any)?.records ?? (response as any)?.content ?? [];
       const formatted = records.map((blog: any) => formatBlogPost(blog));
 
-      if (reset) {
-        setPosts(formatted);
-      } else {
-        setPosts(prev => [...prev, ...formatted]);
-      }
+      setPosts((prev) => (reset ? formatted : [...prev, ...formatted]));
 
       const total = (response as any)?.total ?? (response as any)?.totalElements ?? formatted.length;
       const size = (response as any)?.size ?? 10;
@@ -120,64 +119,113 @@ const FollowingFeed: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-muted/30 py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Users className="w-5 h-5" />
-            </div>
-            <h1 className="text-4xl font-bold text-foreground">关注动态</h1>
-          </div>
-          <p className="text-muted-foreground text-lg">查看你关注的作者最新动态</p>
-        </div>
+  const activeAuthors = useMemo(() => new Set(posts.map((post) => post.author)).size, [posts]);
 
-        {loading ? (
-          <div className="flex flex-col gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-52 bg-card rounded-3xl animate-pulse border border-border" />
-            ))}
+  return (
+    <div className="min-h-screen bg-background py-12">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+        <section className="relative overflow-hidden border border-border bg-card px-6 py-8 sm:px-8 sm:py-10">
+          <div className="pointer-events-none absolute inset-0 pattern-editorial-grid opacity-20" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-accent/10 to-transparent" />
+          <div className="relative grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+            <div>
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center border border-border bg-background text-accent">
+                  <Users className="h-5 w-5" />
+                </div>
+                <p className="font-mono-display text-[11px] uppercase tracking-[0.3em] text-accent">Following Dispatch</p>
+              </div>
+              <h1 className="text-editorial-xl text-foreground">关注动态</h1>
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+                集中查看你关注作者的最新发布，把订阅更新和日常阅读合并到同一条时间线里。
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="border border-border bg-background/80 px-4 py-4">
+                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Visible Posts</p>
+                <p className="mt-2 text-3xl font-semibold text-foreground">{posts.length}</p>
+                <p className="mt-1 text-sm text-muted-foreground">当前已载入的关注更新</p>
+              </div>
+              <div className="border border-border bg-background/80 px-4 py-4">
+                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">Active Authors</p>
+                <p className="mt-2 text-3xl font-semibold text-foreground">{activeAuthors}</p>
+                <p className="mt-1 text-sm text-muted-foreground">当前动态流里出现的作者数</p>
+              </div>
+            </div>
           </div>
-        ) : posts.length > 0 ? (
-          <>
+        </section>
+
+        <section className="mt-8">
+          {loading ? (
             <div className="flex flex-col gap-6">
-              {posts.map((post, index) => (
-                <BlogListItem
-                  key={post.id}
-                  post={post}
-                  index={index}
-                  onClick={() => navigate(`/blog/${post.id}`)}
-                />
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="h-52 animate-pulse border border-border bg-card" />
               ))}
             </div>
-
-            {hasMore && (
-              <div className="flex justify-center mt-10">
-                <Button variant="outline" onClick={() => fetchFollowing(page)}>
-                  加载更多
+          ) : posts.length > 0 ? (
+            <>
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">Fresh From Authors</p>
+                  <p className="mt-1 text-sm text-muted-foreground">最新关注动态，按发布时间倒序展开</p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/notifications')}
+                  className="rounded-none font-mono-display text-[11px] uppercase tracking-[0.22em]"
+                >
+                  查看通知
+                  <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-            )}
-          </>
-        ) : (
-          <div className="bg-card border border-border rounded-3xl p-10 text-center">
-            <div className="w-14 h-14 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-4">
-              <Heart className="w-6 h-6" />
+
+              <div className="flex flex-col gap-6">
+                {posts.map((post, index) => (
+                  <BlogListItem
+                    key={post.id}
+                    post={post}
+                    index={index}
+                    onClick={() => navigate(`/blog/${post.id}`)}
+                  />
+                ))}
+              </div>
+
+              {hasMore && (
+                <div className="mt-10 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchFollowing(page)}
+                    className="rounded-none font-mono-display text-[11px] uppercase tracking-[0.22em]"
+                  >
+                    加载更多
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="border border-border bg-card px-8 py-14 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center border border-border bg-background text-accent">
+                <Heart className="h-6 w-6" />
+              </div>
+              <h2 className="mt-6 text-2xl font-semibold text-foreground">还没有关注任何作者</h2>
+              <p className="mt-2 text-muted-foreground">先去发现一些值得持续阅读的创作者，动态流就会开始更新。</p>
+              <Button onClick={() => navigate('/blog')} className="mt-6 rounded-none">
+                浏览推荐文章
+              </Button>
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">还没有关注任何作者</h2>
-            <p className="text-muted-foreground mb-6">去看看推荐内容，找到你喜欢的创作者吧。</p>
-            <Button onClick={() => navigate('/blog')}>浏览推荐文章</Button>
-          </div>
-        )}
+          )}
+        </section>
 
         {!loading && recommended.length > 0 && posts.length === 0 && (
-          <div className="mt-12">
-            <div className="flex items-center gap-2 mb-4">
-              <Badge variant="secondary" className="text-xs">为你推荐</Badge>
-              <span className="text-sm text-muted-foreground">精选热门内容</span>
+          <section className="mt-12">
+            <div className="mb-4 flex items-center gap-2">
+              <Badge variant="secondary" className="rounded-none border border-border bg-background font-mono-display text-[11px] uppercase tracking-[0.2em] text-accent">
+                为你推荐
+              </Badge>
+              <span className="text-sm text-muted-foreground">先从这些热门内容开始</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {recommended.map((post, index) => (
                 <motion.div
                   key={post.id}
@@ -185,30 +233,34 @@ const FollowingFeed: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => navigate(`/blog/${post.id}`)}
-                  className="group bg-card rounded-3xl overflow-hidden border border-border hover:shadow-lg transition-all cursor-pointer"
+                  className="group cursor-pointer overflow-hidden border border-border bg-card transition-colors hover:border-accent/50"
                 >
-                  <div className="relative h-44 overflow-hidden">
+                  <div className="relative h-44 overflow-hidden border-b border-border">
                     <img
                       src={post.image}
                       alt={post.title}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute top-4 left-4">
-                      <Badge className="bg-background/90 backdrop-blur text-primary shadow-sm">
+                    <div className="absolute left-4 top-4">
+                      <Badge className="rounded-none border border-accent/30 bg-background/90 font-mono-display text-[11px] uppercase tracking-[0.18em] text-accent shadow-none backdrop-blur">
                         {post.categoryName || '未分类'}
                       </Badge>
                     </div>
                   </div>
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                  <div className="space-y-2 p-5">
+                    <div className="flex items-center gap-2 font-mono-display text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      <Newspaper className="h-3.5 w-3.5 text-accent" />
+                      推荐阅读
+                    </div>
+                    <h3 className="line-clamp-2 font-semibold text-foreground transition-colors group-hover:text-accent">
                       {post.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                    <p className="line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
     </div>

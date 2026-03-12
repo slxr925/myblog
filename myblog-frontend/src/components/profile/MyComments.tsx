@@ -103,11 +103,11 @@ export const MyComments: React.FC = () => {
 
   if (!user) {
     return (
-      <Card>
+      <Card className="rounded-none border-border">
         <CardContent className="p-12 text-center">
-          <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg mb-4">请先登录查看您的评论</p>
-          <Button onClick={openAuthModal} className="bg-blue-600 hover:bg-blue-700">
+          <User className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+          <p className="mb-4 text-lg text-muted-foreground">请先登录查看您的评论</p>
+          <Button onClick={openAuthModal} className="rounded-none">
             立即登录
           </Button>
         </CardContent>
@@ -120,7 +120,7 @@ export const MyComments: React.FC = () => {
       {/* 标题栏 */}
       <div>
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <MessageCircle className="w-6 h-6 text-blue-500" />
+          <MessageCircle className="w-6 h-6 text-accent" />
           我的评论
         </h2>
         <p className="text-muted-foreground mt-1">
@@ -136,12 +136,11 @@ export const MyComments: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <Card className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+            <Card className="rounded-none border-border bg-muted/20">
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <AlertCircle className={`w-5 h-5 ${message.type === 'success' ? 'text-green-500' : 'text-red-500'
-                    }`} />
-                  <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+                  <AlertCircle className="w-5 h-5 text-accent" />
+                  <span className="text-foreground">
                     {message.text}
                   </span>
                 </div>
@@ -155,12 +154,12 @@ export const MyComments: React.FC = () => {
       {!hasLoaded ? null : comments.length > 0 ? (
         <div className="space-y-3">
           {comments.map((comment) => (
-            <Card key={comment.id} className="hover:shadow-md transition-shadow py-0">
+            <Card key={comment.id} className="rounded-none border-border py-0 transition-colors hover:border-accent/40">
               <CardContent className="p-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-mono-display text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                         <Clock className="w-2.5 h-2.5" />
                         {formatDistanceToNow(new Date(comment.createTime), {
                           addSuffix: true,
@@ -168,7 +167,7 @@ export const MyComments: React.FC = () => {
                         })}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-700 line-clamp-2">
+                    <div className="line-clamp-2 text-xs text-foreground/80">
                       {comment.content}
                     </div>
                     {comment.blogTitle && (
@@ -180,7 +179,7 @@ export const MyComments: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleNavigateToBlog(comment.blogId)}
-                          className="text-blue-600 hover:text-blue-700 p-0 h-auto text-[10px]"
+                          className="h-auto p-0 font-mono-display text-[10px] uppercase tracking-[0.16em] text-accent hover:text-foreground"
                         >
                           查看
                           <ExternalLink className="w-2 h-2 ml-0.5" />
@@ -192,7 +191,7 @@ export const MyComments: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteComment(comment.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0 shrink-0"
+                    className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -202,7 +201,7 @@ export const MyComments: React.FC = () => {
           ))}
         </div>
       ) : (
-        <Card className="p-12">
+        <Card className="rounded-none border-border p-12">
           <div className="text-center space-y-4">
             <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto" />
             <div>
@@ -211,7 +210,7 @@ export const MyComments: React.FC = () => {
                 去发现一些有趣的内容并发表评论吧！
               </p>
             </div>
-            <Button onClick={() => navigate('/blog')}>
+            <Button onClick={() => navigate('/blog')} className="rounded-none">
               浏览文章
             </Button>
           </div>

@@ -395,7 +395,7 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
                   </p>
                 )}
                 {item.note && (
-                  <p className="text-sm bg-blue-50 dark:bg-blue-950 p-2 rounded mb-2">
+                  <p className="mb-2 rounded border border-border bg-muted/20 p-2 text-sm text-foreground/80">
                     备注：{item.note}
                   </p>
                 )}

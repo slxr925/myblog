@@ -77,7 +77,7 @@ const FolderCreateForm: React.FC<FolderCreateFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="name">
-              收藏夹名称 <span className="text-red-500">*</span>
+              收藏夹名称 <span className="text-accent">*</span>
             </Label>
             <Input
               id="name"

@@ -170,6 +170,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
             case NEW_ARTICLE -> Boolean.TRUE.equals(setting.getEnableNewArticle());
             case MENTION -> Boolean.TRUE.equals(setting.getEnableMention());
             case STATS -> Boolean.TRUE.equals(setting.getEnableStats());
+            case WEEKLY_DIGEST -> Boolean.TRUE.equals(setting.getEnableWeeklyDigest());
         };
     }
 
@@ -265,6 +266,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         setting.setEnableNewArticle(true);
         setting.setEnableMention(true);
         setting.setEnableStats(true);
+        setting.setEnableWeeklyDigest(true);
         setting.setEnableWebsocket(true);
         setting.setEnableBrowser(true);
         setting.setEnableAll(true);

@@ -46,7 +46,12 @@ public enum NotificationType {
     /**
      * 统计通知：周报/月报、互动里程碑
      */
-    STATS("统计", "你的数据统计");
+    STATS("统计", "你的数据统计"),
+
+    /**
+     * 周报摘要：订阅作者近 7 天的更新摘要
+     */
+    WEEKLY_DIGEST("周报摘要", "你关注作者的本周更新");
 
     private final String name;
     private final String description;

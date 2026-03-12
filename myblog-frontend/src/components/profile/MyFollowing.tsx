@@ -84,11 +84,11 @@ export const MyFollowing: React.FC = () => {
 
     if (!user) {
         return (
-            <Card>
+            <Card className="rounded-none border-border">
                 <CardContent className="p-12 text-center">
-                    <UserIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600 text-lg mb-4">请先登录查看您的关注</p>
-                    <Button onClick={openAuthModal} className="bg-indigo-600 hover:bg-indigo-700">
+                    <UserIcon className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                    <p className="mb-4 text-lg text-muted-foreground">请先登录查看您的关注</p>
+                    <Button onClick={openAuthModal} className="rounded-none">
                         立即登录
                     </Button>
                 </CardContent>
@@ -101,7 +101,7 @@ export const MyFollowing: React.FC = () => {
             {/* 标题栏 */}
             <div>
                 <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                    <UserCheck className="w-6 h-6 text-indigo-600" />
+                    <UserCheck className="w-6 h-6 text-accent" />
                     我关注的
                 </h2>
                 <p className="text-muted-foreground mt-1">
@@ -117,12 +117,11 @@ export const MyFollowing: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                     >
-                        <Card className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                        <Card className="rounded-none border-border bg-muted/20">
                             <CardContent className="p-4">
                                 <div className="flex items-center space-x-3">
-                                    <AlertCircle className={`w-5 h-5 ${message.type === 'success' ? 'text-green-500' : 'text-red-500'
-                                        }`} />
-                                    <span className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+                                    <AlertCircle className="w-5 h-5 text-accent" />
+                                    <span className="text-foreground">
                                         {message.text}
                                     </span>
                                 </div>
@@ -136,19 +135,19 @@ export const MyFollowing: React.FC = () => {
             {!hasLoaded ? null : following.length > 0 ? (
                 <div className="space-y-3">
                     {following.map((followedUser) => (
-                        <Card key={followedUser.userId} className="hover:shadow-md transition-shadow py-0">
+                        <Card key={followedUser.userId} className="rounded-none border-border py-0 transition-colors hover:border-accent/40">
                             <CardContent className="p-3">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="w-10 h-10 shrink-0">
                                         <AvatarImage src={followedUser.avatar} alt={followedUser.nickname || followedUser.username} />
-                                        <AvatarFallback className="text-base bg-indigo-100 text-indigo-600">
+                                        <AvatarFallback className="bg-muted text-base text-foreground">
                                             {(followedUser.nickname || followedUser.username).charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-medium text-sm text-gray-800 truncate max-w-[100px]">{followedUser.nickname || followedUser.username}</span>
-                                            <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                            <span className="max-w-[100px] truncate text-sm font-medium text-foreground">{followedUser.nickname || followedUser.username}</span>
+                                            <span className="whitespace-nowrap font-mono-display text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                                                 {formatDistanceToNow(new Date(followedUser.followTime), {
                                                     addSuffix: false,
                                                     locale: zhCN,
@@ -168,7 +167,7 @@ export const MyFollowing: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                <Card className="p-12">
+                <Card className="rounded-none border-border p-12">
                     <div className="text-center space-y-4">
                         <UserCheck className="w-16 h-16 text-muted-foreground mx-auto" />
                         <div>
@@ -192,7 +191,7 @@ export const MyFollowing: React.FC = () => {
                         >
                             上一页
                         </Button>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                             第 {currentPage} 页，共 {Math.ceil(total / pageSize)} 页
                         </span>
                         <Button

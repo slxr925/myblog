@@ -23,7 +23,9 @@ public interface BlogMapper extends BaseMapper<Blog> {
                         @Param("categoryId") Long categoryId,
                         @Param("tagId") Long tagId,
                         @Param("keyword") String keyword,
-                        @Param("status") Integer status);
+                        @Param("status") Integer status,
+                        @Param("sort") String sort,
+                        @Param("timeRange") String timeRange);
 
         /**
          * 查询博客详情（包含作者、分类、标签信息）
