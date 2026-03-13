@@ -1,0 +1,119 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: Deployment mode to run on the production host
+        required: true
+        default: incremental
+        type: choice
+        options:
+          - incremental
+          - full
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    env:
+      PROD_HOST: ${{ secrets.PROD_HOST }}
+      PROD_USER: ${{ secrets.PROD_USER }}
+      PROD_PATH: ${{ secrets.PROD_PATH }}
+      PROD_PORT: ${{ secrets.PROD_PORT }}
+      DEPLOY_MODE: ${{ inputs.deploy_mode }}
+    steps:
+      - name: Ensure main branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Production deployments must be triggered from main. Current ref: ${GITHUB_REF}"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          missing=0
+          for var in PROD_HOST PROD_USER PROD_PATH; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::Missing required secret: ${var}"
+              missing=1
+            fi
+          done
+
+          if [ -z "${{ secrets.PROD_SSH_KEY }}" ]; then
+            echo "::error::Missing required secret: PROD_SSH_KEY"
+            missing=1
+          fi
+
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: myblog-frontend/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build frontend
+        working-directory: myblog-frontend
+        run: |
+          npm ci
+          npm run build:check
+
+      - name: Build backend
+        working-directory: myblog-backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -DskipTests package
+
+      - name: Prepare optional production env file
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        run: |
+          if [ -n "${PROD_ENV_FILE}" ]; then
+            ENV_FILE="${RUNNER_TEMP}/prod.env"
+            printf '%s' "${PROD_ENV_FILE}" > "${ENV_FILE}"
+            chmod 600 "${ENV_FILE}"
+            echo "PROD_ENV_FILE_LOCAL=${ENV_FILE}" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Configure SSH
+        run: |
+          mkdir -p "${HOME}/.ssh"
+          chmod 700 "${HOME}/.ssh"
+
+          KEY_FILE="${HOME}/.ssh/id_ed25519"
+          printf '%s\n' "${{ secrets.PROD_SSH_KEY }}" > "${KEY_FILE}"
+          chmod 600 "${KEY_FILE}"
+
+          if [ -n "${{ secrets.PROD_KNOWN_HOSTS }}" ]; then
+            printf '%s\n' "${{ secrets.PROD_KNOWN_HOSTS }}" > "${HOME}/.ssh/known_hosts"
+          else
+            ssh-keyscan -p "${PROD_PORT:-22}" -H "${PROD_HOST}" >> "${HOME}/.ssh/known_hosts"
+          fi
+
+      - name: Deploy artifacts
+        run: |
+          chmod +x scripts/deploy-prod-ci.sh
+          ./scripts/deploy-prod-ci.sh

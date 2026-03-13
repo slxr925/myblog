@@ -21,6 +21,7 @@
 
 1. `deploy/QUICK-ITERATION.md`
 2. `tools/CLEANUP.md`
+3. `deploy/GITHUB-ACTIONS.md`
 
 ### 面试准备
 

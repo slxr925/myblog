@@ -507,6 +507,8 @@ export interface UserSessionVO {
   ip?: string;
   userAgent?: string;
   deviceLabel?: string;
+  deviceInfo?: string;
+  browser?: string;
   lastSeen?: string;
   createdAt?: string;
   status?: number;
