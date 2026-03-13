@@ -55,6 +55,7 @@ fi
 for path in \
     "docker-compose.prod.yml" \
     "myblog-backend/Dockerfile.prod" \
+    "myblog-backend/database" \
     "myblog-frontend/Dockerfile.prod" \
     "myblog-frontend/nginx.conf" \
     "nginx/nginx.conf" \
@@ -121,6 +122,8 @@ rsync -e "${RSYNC_SSH}" --archive --human-readable --progress \
     docker-compose.prod.yml "${SSH_TARGET}:${PROD_PATH}/"
 rsync -e "${RSYNC_SSH}" --archive --human-readable --progress \
     myblog-backend/Dockerfile.prod "${SSH_TARGET}:${PROD_PATH}/myblog-backend/"
+rsync -e "${RSYNC_SSH}" --archive --human-readable --progress --delete \
+    myblog-backend/database/ "${SSH_TARGET}:${PROD_PATH}/myblog-backend/database/"
 rsync -e "${RSYNC_SSH}" --archive --human-readable --progress \
     myblog-frontend/Dockerfile.prod myblog-frontend/nginx.conf \
     "${SSH_TARGET}:${PROD_PATH}/myblog-frontend/"
