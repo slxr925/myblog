@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Bold,
   Eye,
@@ -15,6 +15,7 @@ import {
   SplitSquareHorizontal,
   Strikethrough,
   Underline,
+  Wand2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
@@ -30,7 +31,9 @@ interface EditorToolbarProps {
   onViewModeChange: (mode: ViewMode) => void
   onSave?: () => void
   onUploadImage?: (file: File) => Promise<string>
+  onPolishContent?: () => Promise<void> | void
   isSaving?: boolean
+  isPolishing?: boolean
   isUploading?: boolean
 }
 
@@ -42,15 +45,37 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onViewModeChange,
   onSave,
   onUploadImage,
+  onPolishContent,
   isSaving = false,
+  isPolishing = false,
   isUploading = false,
 }) => {
   const [showLinkDialog, setShowLinkDialog] = useState(false)
   const [linkText, setLinkText] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
+  const latestContentRef = useRef(content)
 
-  const focusTextarea = () => {
-    requestAnimationFrame(() => textareaRef.current?.focus())
+  useEffect(() => {
+    latestContentRef.current = content
+  }, [content])
+
+  const updateContentAtRange = (replacement: string, start?: number, end?: number) => {
+    const currentContent = latestContentRef.current
+    const textarea = textareaRef.current
+    const resolvedStart = typeof start === 'number' ? start : textarea?.selectionStart ?? currentContent.length
+    const resolvedEnd = typeof end === 'number' ? end : textarea?.selectionEnd ?? resolvedStart
+    const safeStart = Math.max(0, Math.min(resolvedStart, currentContent.length))
+    const safeEnd = Math.max(safeStart, Math.min(resolvedEnd, currentContent.length))
+    const nextContent = `${currentContent.slice(0, safeStart)}${replacement}${currentContent.slice(safeEnd)}`
+
+    onContentChange(nextContent)
+    latestContentRef.current = nextContent
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+      const caret = safeStart + replacement.length
+      textareaRef.current?.setSelectionRange(caret, caret)
+    })
   }
 
   const insertMarkdown = (before: string, after = '', placeholder = '') => {
@@ -59,10 +84,8 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
-    const selectedText = content.slice(start, end) || placeholder
-    const nextContent = `${content.slice(0, start)}${before}${selectedText}${after}${content.slice(end)}`
-
-    onContentChange(nextContent)
+    const selectedText = latestContentRef.current.slice(start, end) || placeholder
+    updateContentAtRange(`${before}${selectedText}${after}`, start, end)
 
     requestAnimationFrame(() => {
       textarea.focus()
@@ -83,11 +106,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const confirmInsertLink = () => {
     const textarea = textareaRef.current
     if (!textarea || !linkUrl.trim()) return
-    insertMarkdown(`[${linkText || '链接文本'}](`, ')', linkUrl.trim())
+    updateContentAtRange(`[${linkText || '链接文本'}](${linkUrl.trim()})`, textarea.selectionStart, textarea.selectionEnd)
     setShowLinkDialog(false)
   }
 
   const insertImage = () => {
+    const textarea = textareaRef.current
+    const savedStart = textarea?.selectionStart
+    const savedEnd = textarea?.selectionEnd
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
@@ -97,7 +123,19 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       try {
         const result = await onUploadImage(file)
-        insertMarkdown(`![${file.name}](`, ')', result)
+        const imageMarkdown = `![${file.name}](${result})`
+        const currentTextarea = textareaRef.current
+        const hasSelection = typeof savedStart === 'number' && typeof savedEnd === 'number'
+        const currentStart = currentTextarea?.selectionStart
+        const currentEnd = currentTextarea?.selectionEnd
+
+        if (hasSelection) {
+          updateContentAtRange(imageMarkdown, savedStart, savedEnd)
+        } else if (typeof currentStart === 'number' && typeof currentEnd === 'number') {
+          updateContentAtRange(imageMarkdown, currentStart, currentEnd)
+        } else {
+          updateContentAtRange(imageMarkdown, latestContentRef.current.length, latestContentRef.current.length)
+        }
         toast.success('图片已插入正文。')
       } catch (error) {
         console.error('图片上传失败:', error)
@@ -163,12 +201,21 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             </Button>
           </div>
 
-          {onSave && (
-            <Button size="sm" onClick={onSave} disabled={isSaving}>
-              {isSaving ? <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-background" /> : <Save className="h-4 w-4" />}
-              保存草稿
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {onPolishContent && (
+              <Button variant="outline" size="sm" onClick={onPolishContent} disabled={!content.trim() || isPolishing}>
+                {isPolishing ? <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-foreground" /> : <Wand2 className="h-4 w-4" />}
+                AI润色正文
+              </Button>
+            )}
+
+            {onSave && (
+              <Button variant="outline" size="sm" onClick={onSave} disabled={isSaving}>
+                {isSaving ? <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-foreground" /> : <Save className="h-4 w-4" />}
+                保存草稿
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

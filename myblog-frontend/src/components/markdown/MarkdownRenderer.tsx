@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import { markdownConfig } from '../../config/markdown'
 import { generateHeadingSlug } from '../../utils/markdown'
 
 interface MarkdownRendererProps {
@@ -27,9 +28,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   className = ''
 }) => {
+  const { remarkPlugins = [], rehypePlugins = [] } = markdownConfig
+
   return (
     <div className={`markdown-body ${className}`}>
       <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
         components={{
           code: ({ node, className, children, ...props }) => {
             const isInline = !className?.includes('language-')
@@ -120,6 +125,19 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               {children}
             </a>
           ),
+          img: ({ node, alt, src, ...props }) => {
+            if (!src) return null
+
+            return (
+              <img
+                src={src}
+                alt={alt || 'Markdown image'}
+                className="my-5 w-full rounded-sm border border-border/60 bg-muted/20 object-contain shadow-[0_18px_38px_hsl(var(--foreground)/0.08)]"
+                loading="lazy"
+                {...props}
+              />
+            )
+          },
           table: ({ node, children, ...props }) => (
             <div className="overflow-x-auto my-4">
               <table className="min-w-full border-collapse border border-border" {...props}>

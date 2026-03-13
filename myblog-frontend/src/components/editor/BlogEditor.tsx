@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Loader2, PenTool, Sparkles, Upload, Wand2 } from 'lucide-react'
+import { Loader2, PenTool, Sparkles, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -65,8 +65,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
   const [drafts, setDrafts] = useState<BlogDetailVO[]>([])
   const [draftsLoading, setDraftsLoading] = useState(false)
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false)
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   const [isPolishing, setIsPolishing] = useState(false)
-  const [aiStyle, setAiStyle] = useState('默认')
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null)
 
   const buildSnapshot = (data: BlogFormData = formData) => {
@@ -329,7 +329,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsGeneratingTitle(true)
     try {
-      const result = await api.ai.generateTitle(formData.content, aiStyle === '默认' ? undefined : aiStyle)
+      const result = await api.ai.generateTitle(formData.content)
       const title = (result.title || '').trim()
       if (!title) {
         toast.error('标题内容为空，请重试。')
@@ -345,6 +345,30 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
     }
   }
 
+  const handleGenerateSummary = async () => {
+    if (!formData.content.trim()) {
+      toast.error('请先输入正文内容。')
+      return
+    }
+
+    setIsGeneratingSummary(true)
+    try {
+      const result = await api.ai.generateSummary(formData.content)
+      const summary = (result.summary || '').trim()
+      if (!summary) {
+        toast.error('摘要内容为空，请重试。')
+        return
+      }
+      handleInputChange('summary', summary)
+      toast.success('摘要生成成功。')
+    } catch (error) {
+      console.error('摘要生成失败:', error)
+      toast.error('摘要生成失败。')
+    } finally {
+      setIsGeneratingSummary(false)
+    }
+  }
+
   const handlePolishContent = async () => {
     if (!formData.content.trim()) {
       toast.error('请先输入正文内容。')
@@ -353,7 +377,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsPolishing(true)
     try {
-      const result = await api.ai.polishContent(formData.content, aiStyle === '默认' ? undefined : aiStyle)
+      const result = await api.ai.polishContent(formData.content)
       const polishedContent = (result.polishedContent || '').trim()
       if (!polishedContent) {
         toast.error('润色结果为空，请重试。')
@@ -393,7 +417,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
           <Button variant="outline" onClick={() => handleSave(BlogStatus.DRAFT)} disabled={isSaving}>
             保存草稿
           </Button>
-          <Button onClick={() => handleSave(BlogStatus.PUBLISHED)} disabled={isSaving}>
+          <Button variant="outline" onClick={() => handleSave(BlogStatus.PUBLISHED)} disabled={isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenTool className="h-4 w-4" />}
             发布文章
           </Button>
@@ -441,13 +465,24 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
                 <div>
                   <Label htmlFor="summary">文章摘要</Label>
-                  <Textarea
-                    id="summary"
-                    value={formData.summary}
-                    onChange={(event) => handleInputChange('summary', event.target.value)}
-                    placeholder="写一句帮助读者理解主题的摘要"
-                    className="mt-2 min-h-[104px] rounded-sm border-border/80 bg-background/70"
-                  />
+                  <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-start">
+                    <Textarea
+                      id="summary"
+                      value={formData.summary}
+                      onChange={(event) => handleInputChange('summary', event.target.value)}
+                      placeholder="写一句帮助读者理解主题的摘要"
+                      className="min-h-[104px] flex-1 rounded-sm border-border/80 bg-background/70"
+                    />
+                    <Button
+                      variant="outline"
+                      className="w-full md:w-auto md:self-start"
+                      onClick={handleGenerateSummary}
+                      disabled={!formData.content || isGeneratingSummary}
+                    >
+                      {isGeneratingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      AI生成摘要
+                    </Button>
+                  </div>
                 </div>
               </div>
             </AdminSectionCard>
@@ -466,7 +501,9 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                 onViewModeChange={setViewMode}
                 onSave={() => handleSave(BlogStatus.DRAFT)}
                 onUploadImage={uploadInlineImage}
+                onPolishContent={handlePolishContent}
                 isSaving={isSaving}
+                isPolishing={isPolishing}
                 isUploading={isUploading}
               />
 
@@ -566,7 +603,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
             <AdminSectionCard title="标签管理" description="添加标签并使用推荐标签快速补全。">
               <div className="space-y-4">
-                <div className="flex gap-2">
+                <div className="flex items-stretch gap-2">
                   <Input
                     value={tagInput}
                     onChange={(event) => setTagInput(event.target.value)}
@@ -577,9 +614,15 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                       }
                     }}
                     placeholder="输入标签名称"
-                    className="rounded-sm"
+                    className="h-10 rounded-sm"
                   />
-                  <Button type="button" onClick={() => addTag(tagInput)} disabled={!tagInput.trim()}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 shrink-0"
+                    onClick={() => addTag(tagInput)}
+                    disabled={!tagInput.trim()}
+                  >
                     添加
                   </Button>
                 </div>
@@ -606,35 +649,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                         </Badge>
                       ))}
                   </div>
-                </div>
-              </div>
-            </AdminSectionCard>
-
-            <AdminSectionCard title="AI 辅助" description="生成标题和润色。">
-              <div className="space-y-4">
-                <div>
-                  <Label>AI 风格</Label>
-                  <select
-                    value={aiStyle}
-                    onChange={(event) => setAiStyle(event.target.value)}
-                    className="mt-2 h-10 w-full rounded-sm border border-border bg-background px-3 text-sm"
-                  >
-                    <option value="默认">默认</option>
-                    <option value="简洁专业">简洁专业</option>
-                    <option value="技术深度">技术深度</option>
-                    <option value="轻松友好">轻松友好</option>
-                  </select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Button variant="outline" onClick={handleGenerateTitle} disabled={!formData.content || isGeneratingTitle}>
-                    {isGeneratingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    AI生成标题
-                  </Button>
-                  <Button variant="outline" onClick={handlePolishContent} disabled={!formData.content || isPolishing}>
-                    {isPolishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                    AI润色正文
-                  </Button>
                 </div>
               </div>
             </AdminSectionCard>

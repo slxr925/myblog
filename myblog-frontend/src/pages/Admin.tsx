@@ -258,7 +258,7 @@ export const Admin: React.FC = () => {
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{today}。查看内容、互动、系统状态和趋势概况。</p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:flex-nowrap xl:ml-6 xl:flex-none">
-                  <Button size="sm" onClick={() => navigate('/blog/new')}>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/blog/new')}>
                     <PenTool className="h-4 w-4" />
                     写文章
                   </Button>

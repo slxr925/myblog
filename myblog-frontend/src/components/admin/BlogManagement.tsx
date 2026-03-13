@@ -259,7 +259,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
               <ClipboardList className="h-4 w-4" />
               草稿箱
             </Button>
-            <Button onClick={() => navigate('/blog/new')}>
+            <Button variant="outline" onClick={() => navigate('/blog/new')}>
               <PenTool className="h-4 w-4" />
               写文章
             </Button>
