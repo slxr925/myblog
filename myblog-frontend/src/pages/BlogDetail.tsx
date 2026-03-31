@@ -10,6 +10,7 @@ import type { BlogDetailVO, BlogDetailEnhancedVO, LikeResultDTO, RecommendationS
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { TableOfContents } from '../components/markdown/TableOfContents';
 import { CommentSection } from '../components/comment/CommentSection';
+import { copyToClipboard } from '../utils/markdown';
 import CollectButton from '../components/blog/CollectButton';
 import FollowButton from '../components/user/FollowButton';
 import PrevNextNav from '../components/blog/PrevNextNav';
@@ -244,40 +245,31 @@ const BlogDetail: React.FC = () => {
   }, [user, blog, isLiking, openAuthModal]);
 
   const handleShare = useCallback(async () => {
+    const shareUrl = window.location.href;
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: blogData.title,
           text: blogData.summary,
-          url: window.location.href,
+          url: shareUrl,
         });
+        return;
       } catch (error) {
-        // Ignore user cancel.
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
       }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
     }
-  }, [blogData.title, blogData.summary]);
 
-  const handleReportBlog = async () => {
-    if (!blog) return;
-    if (!user) {
-      openAuthModal();
+    const copied = await copyToClipboard(shareUrl);
+    if (copied) {
+      toast.success('文章链接已复制');
       return;
     }
-    const reason = window.prompt('请输入举报原因（选填）');
-    try {
-      await api.report.create({
-        targetType: 'blog',
-        targetId: blog.id,
-        reason: reason || '',
-        detail: '',
-      });
-      toast.success('举报已提交');
-    } catch (error) {
-      toast.error('举报失败');
-    }
-  };
+
+    toast.error('复制失败，请手动复制');
+  }, [blogData.title, blogData.summary]);
 
   const handleCommentCountChange = useCallback((count: number) => {
     setCommentCount(count);
@@ -365,13 +357,6 @@ const BlogDetail: React.FC = () => {
                 onClick={handleShare}
               >
                 <Share2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-sm w-10 h-10 p-0 flex items-center justify-center"
-                onClick={handleReportBlog}
-              >
-                <MessageCircle className="w-4 h-4" />
               </Button>
             </div>
           </div>

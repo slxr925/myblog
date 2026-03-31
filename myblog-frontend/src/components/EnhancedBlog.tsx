@@ -172,10 +172,10 @@ const EnhancedBlog = () => {
           <Button
             variant="ghost"
             onClick={handleNavigateToBlog}
-            className="group font-mono-display text-xs uppercase tracking-wider hover:bg-transparent"
+            className="group h-auto px-0 py-3 font-mono-display text-sm sm:text-base uppercase tracking-[0.18em] text-foreground hover:bg-transparent hover:text-accent"
           >
             查看全部
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
 
