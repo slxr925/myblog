@@ -1,38 +1,17 @@
-# MyBlog 数据库迁移记录
+# MyBlog 数据库迁移目录
 
-## 2026-02-07 收藏分享功能字段添加
+本目录下的 `*.sql` 文件会被以下脚本按文件名字典序自动执行：
 
-### 问题
-收藏分享功能需要以下字段，但`tb_collection_folder`表中缺失：
-- `is_public` - 标记收藏夹是否公开
-- `share_code` - 分享码
-- `share_expire_time` - 分享过期时间
+- `/Users/xuran/Dev/myblog/deploy/local/apply-migrations.sh`
+- `/Users/xuran/Dev/myblog/deploy/prod/apply-migrations.sh`
 
-### 解决方案
-执行以下SQL添加缺失字段：
+规则：
 
-```sql
--- 添加公开收藏字段
-ALTER TABLE tb_collection_folder 
-ADD COLUMN is_public TINYINT(1) DEFAULT 0 COMMENT '是否公开（0私有1公开）',
-ADD COLUMN share_code VARCHAR(32) DEFAULT NULL COMMENT '分享码',
-ADD COLUMN share_expire_time DATETIME DEFAULT NULL COMMENT '分享过期时间';
+- 新增结构变更时，必须把 SQL 放到本目录，不能只放在 `src/main/resources/db/`
+- 已执行过的迁移文件不要修改内容；如需继续变更，请新增文件
+- 文件名建议使用时间/版本前缀，例如 `V20260401__feature.sql`
 
--- 添加索引
-CREATE INDEX idx_share_code ON tb_collection_folder(share_code);
-```
+当前迁移：
 
-### 验证
-```sql
-DESCRIBE tb_collection_folder;
--- 应该看到新增的三列
-```
-
-### 回滚
-如需回滚（不推荐）：
-```sql
-ALTER TABLE tb_collection_folder 
-DROP COLUMN is_public,
-DROP COLUMN share_code,
-DROP COLUMN share_expire_time;
-```
+- `V20260401__add_blog_public_id.sql`
+  为 `tb_blog` 增加 `public_id`，回填历史 UUID，移除冗余普通索引，并补上唯一索引 `uk_blog_public_id`

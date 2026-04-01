@@ -7,9 +7,11 @@ import BlogListItem from '../components/BlogListItem';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { api } from '../utils/api';
+import { getPublicBlogPath } from '../utils/blogLinks';
 
 interface BlogPost {
   id: number;
+  publicId?: string;
   title: string;
   excerpt: string;
   content: string;
@@ -45,6 +47,7 @@ const formatBlogPost = (blog: any): BlogPost => {
 
   return {
     id: Number(blog.id) || blog.id,
+    publicId: blog.publicId,
     title: blog.title || '',
     excerpt: blog.summary || '',
     content: blog.content || '',
@@ -186,7 +189,7 @@ const FollowingFeed: React.FC = () => {
                     key={post.id}
                     post={post}
                     index={index}
-                    onClick={() => navigate(`/blog/${post.id}`)}
+                    onClick={() => navigate(getPublicBlogPath(post))}
                   />
                 ))}
               </div>
@@ -232,7 +235,7 @@ const FollowingFeed: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => navigate(`/blog/${post.id}`)}
+                  onClick={() => navigate(getPublicBlogPath(post))}
                   className="group cursor-pointer overflow-hidden border border-border bg-card transition-colors hover:border-accent/50"
                 >
                   <div className="relative h-44 overflow-hidden border-b border-border">

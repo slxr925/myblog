@@ -4,12 +4,14 @@ import { X, Send, Loader2, Sparkles, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 
 interface RelatedArticle {
   id: number;
+  publicId?: string;
   title: string;
 }
 
@@ -213,9 +215,9 @@ export const AIAssistant: React.FC = () => {
     }
   };
 
-  const handleArticleClick = (articleId: number) => {
+  const handleArticleClick = (article: RelatedArticle) => {
     setIsOpen(false);
-    navigate(`/blog/${articleId}`);
+    navigate(getPublicBlogPath(article));
   };
 
   return (
@@ -338,7 +340,7 @@ export const AIAssistant: React.FC = () => {
                                 {message.relatedArticles.map((article) => (
                                   <button
                                     key={article.id}
-                                    onClick={() => handleArticleClick(article.id)}
+                                    onClick={() => handleArticleClick(article)}
                                     className="block w-full text-left text-xs text-accent hover:underline truncate transition-colors font-mono-display"
                                   >
                                     {article.title}

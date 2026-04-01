@@ -8,6 +8,7 @@ import { Badge } from '../ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import type { CommentVO } from '../../types/api';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -87,8 +88,8 @@ export const MyComments: React.FC = () => {
   };
 
   // 跳转到博客详情
-  const handleNavigateToBlog = (blogId: number) => {
-    window.open(`/blog/${blogId}`, '_blank');
+  const handleNavigateToBlog = (comment: ExtendedCommentVO) => {
+    window.open(getPublicBlogPath({ publicId: comment.publicId, id: comment.blogId }), '_blank');
   };
 
   // 消息自动消失
@@ -178,7 +179,7 @@ export const MyComments: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleNavigateToBlog(comment.blogId)}
+                          onClick={() => handleNavigateToBlog(comment)}
                           className="h-auto p-0 font-mono-display text-[10px] uppercase tracking-[0.16em] text-accent hover:text-foreground"
                         >
                           查看

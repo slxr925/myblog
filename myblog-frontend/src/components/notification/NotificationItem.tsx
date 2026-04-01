@@ -5,6 +5,7 @@ import { AtSign, Bell, FileText, Heart, MessageSquare, Newspaper, UserPlus, X } 
 import { useNavigate } from 'react-router-dom';
 
 import { NotificationVO } from '../../types/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 
 interface NotificationItemProps {
   notification: NotificationVO;
@@ -75,14 +76,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     const resourceId = notification.resourceId;
 
     if ((resourceType === 'BLOG' || resourceType === 'ARTICLE') && resourceId) {
-      navigate(`/blog/${resourceId}`);
+      navigate(getPublicBlogPath({ publicId: extra.publicId || extra.blogPublicId || extra.articlePublicId, id: resourceId }));
       return;
     }
 
     if (resourceType === 'COMMENT' && resourceId) {
       const blogId = extra.blogId || extra.blog_id || extra.articleId;
       if (blogId) {
-        navigate(`/blog/${blogId}#comment-${resourceId}`);
+        navigate(`${getPublicBlogPath({ publicId: extra.publicId || extra.blogPublicId || extra.articlePublicId, id: blogId })}#comment-${resourceId}`);
       }
       return;
     }

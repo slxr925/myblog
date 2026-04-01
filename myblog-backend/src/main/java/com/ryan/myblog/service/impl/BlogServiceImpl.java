@@ -31,6 +31,7 @@ import com.ryan.myblog.service.RedisLikeService;
 import com.ryan.myblog.service.SearchService;
 import com.ryan.myblog.service.TagService;
 import com.ryan.myblog.converter.BlogDocumentConverter;
+import com.ryan.myblog.exception.ResourceNotFoundException;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogListVO;
@@ -38,6 +39,7 @@ import com.ryan.myblog.model.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.concurrent.CompletableFuture;
@@ -95,6 +98,7 @@ public class BlogServiceImpl implements BlogService {
         blog.setContent(blogSaveDTO.getContent());
         blog.setCoverImg(blogSaveDTO.getCoverImg());
         blog.setAuthorId(authorId);
+        blog.setPublicId(UUID.randomUUID().toString());
         blog.setCategoryId(blogSaveDTO.getCategoryId());
         blog.setStatus(blogSaveDTO.getStatus());
         Integer visibility = blogSaveDTO.getVisibility() != null ? blogSaveDTO.getVisibility() : 1;
@@ -121,7 +125,7 @@ public class BlogServiceImpl implements BlogService {
         clearBlogCaches();
 
         // 同步到Elasticsearch（仅已发布的博客）
-        if (blog.getStatus() == 1 && searchService.isAvailable()) {
+        if (isPubliclyVisible(blog) && searchService.isAvailable()) {
             try {
                 syncBlogToElasticsearch(blog);
             } catch (Exception e) {
@@ -129,11 +133,11 @@ public class BlogServiceImpl implements BlogService {
             }
         }
 
-        if (isPublished(blog.getStatus())) {
+        if (isPubliclyVisible(blog)) {
             notifyFollowersOfNewArticle(blog);
         }
 
-        BlogDetailVO detail = blogMapper.selectBlogDetail(blog.getId());
+        BlogDetailVO detail = blogMapper.selectInternalBlogDetailById(blog.getId());
         if (detail != null) {
             detail.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
         }
@@ -195,13 +199,13 @@ public class BlogServiceImpl implements BlogService {
         cacheConsistencyService.updateCacheVersion("blog:*");
 
         // 同步到Elasticsearch（仅已发布的博客）
-        if (existBlog.getStatus() == 1 && searchService.isAvailable()) {
+        if (isPubliclyVisible(existBlog) && searchService.isAvailable()) {
             try {
                 syncBlogToElasticsearch(existBlog);
             } catch (Exception e) {
                 log.error("同步博客更新到Elasticsearch失败: {}", existBlog.getId(), e);
             }
-        } else if (existBlog.getStatus() != 1) {
+        } else if (!isPubliclyVisible(existBlog)) {
             // 如果博客不再是已发布状态，从ES删除 - 不阻塞主流程
             try {
                 deleteBlogFromElasticsearch(existBlog.getId());
@@ -210,11 +214,11 @@ public class BlogServiceImpl implements BlogService {
             }
         }
 
-        if (!wasPublished && isPublished(existBlog.getStatus())) {
+        if (!wasPublished && isPubliclyVisible(existBlog)) {
             notifyFollowersOfNewArticle(existBlog);
         }
 
-        BlogDetailVO detail = blogMapper.selectBlogDetail(id);
+        BlogDetailVO detail = blogMapper.selectInternalBlogDetailById(id);
         if (detail != null) {
             detail.setTags(tagMapper.selectTagsByBlogId(id));
         }
@@ -240,11 +244,11 @@ public class BlogServiceImpl implements BlogService {
         log.info("用户 {} 删除博客 {} (作者: {}, 标题: {})",
                 operatorId, id, blog.getAuthorId(), blog.getTitle());
 
+        clearBlogCache(blog);
         blogMapper.deleteById(id);
         blogTagMapper.deleteByBlogId(id);
 
         // 清除缓存
-        clearBlogCache(id);
         clearBlogCaches();
 
         // 发布缓存失效通知
@@ -273,38 +277,75 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
-    public BlogDetailVO getBlogDetail(Long id) {
-        return getBlogDetail(id, null);
+    public IPage<BlogDetailVO> getAdminBlogPage(PageRequest pageRequest, Long categoryId,
+            Long tagId, String keyword, Integer status, String sort, String timeRange) {
+        Page<BlogDetailVO> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
+        String normalizedSort = normalizeSort(sort);
+        String normalizedTimeRange = normalizeTimeRange(timeRange);
+
+        return blogMapper.selectAdminBlogPage(page, categoryId, tagId, keyword, status, normalizedSort,
+                normalizedTimeRange);
     }
 
     @Override
-    public BlogDetailVO getBlogDetail(Long id, Long userId) {
-        // 先从缓存中获取 - 使用统一缓存服务
-        BlogDetailVO blog = unifiedCacheService.get(RedisKeyFactory.BLOG_DETAIL, BlogDetailVO.class, id);
+    public BlogDetailVO getPublicBlogDetail(String publicId) {
+        return getPublicBlogDetail(publicId, null);
+    }
+
+    @Override
+    public BlogDetailVO getPublicBlogDetail(String publicId, Long userId) {
+        BlogDetailVO blog = unifiedCacheService.get(RedisKeyFactory.BLOG_PUBLIC_DETAIL, BlogDetailVO.class, publicId);
 
         if (blog == null) {
-            // 缓存中没有，从数据库查询
-            blog = blogMapper.selectBlogDetail(id);
+            blog = blogMapper.selectPublicBlogDetailByPublicId(publicId);
             if (blog == null) {
-                throw new RuntimeException("博客不存在");
+                throw new ResourceNotFoundException("博客不存在");
             }
 
-            // 设置标签信息
-            blog.setTags(tagMapper.selectTagsByBlogId(id));
+            blog.setTags(tagMapper.selectTagsByBlogId(blog.getId()));
 
-            // 存入缓存，使用RedisKeyFactory定义的TTL (30分钟)
-            unifiedCacheService.set(RedisKeyFactory.BLOG_DETAIL, blog, id);
+            unifiedCacheService.set(RedisKeyFactory.BLOG_PUBLIC_DETAIL, blog, publicId);
         }
 
-        // 查询用户点赞状态
         if (userId != null) {
-            UserLike userLike = userLikeMapper.selectByUserAndTarget(userId, "blog", id);
+            UserLike userLike = userLikeMapper.selectByUserAndTarget(userId, "blog", blog.getId());
             blog.setIsLiked(userLike != null && userLike.getStatus() == 1);
         } else {
             blog.setIsLiked(false);
         }
 
         return blog;
+    }
+
+    @Override
+    public BlogDetailVO getInternalBlogDetail(Long id, Long operatorId) {
+        BlogDetailVO blog = unifiedCacheService.get(RedisKeyFactory.BLOG_INTERNAL_DETAIL, BlogDetailVO.class, id);
+
+        if (blog == null) {
+            blog = blogMapper.selectInternalBlogDetailById(id);
+            if (blog == null) {
+                throw new ResourceNotFoundException("博客不存在");
+            }
+            blog.setTags(tagMapper.selectTagsByBlogId(id));
+            unifiedCacheService.set(RedisKeyFactory.BLOG_INTERNAL_DETAIL, blog, id);
+        }
+
+        if (!checkBlogPermission(blog.getAuthorId(), operatorId)) {
+            throw new AccessDeniedException("无权限访问此博客");
+        }
+
+        UserLike userLike = userLikeMapper.selectByUserAndTarget(operatorId, "blog", id);
+        blog.setIsLiked(userLike != null && userLike.getStatus() == 1);
+        return blog;
+    }
+
+    @Override
+    public String resolveLegacyPublicId(Long id) {
+        String publicId = blogMapper.selectPublicIdByLegacyId(id);
+        if (StringUtils.isBlank(publicId)) {
+            throw new ResourceNotFoundException("博客不存在");
+        }
+        return publicId;
     }
 
     @Override
@@ -375,7 +416,7 @@ public class BlogServiceImpl implements BlogService {
         }
 
         // 清除相关缓存 - 使用统一缓存服务
-        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
+        clearBlogCache(id);
         cacheService.deleteByPattern("blog:page:*");
 
         // 返回操作后的点赞状态
@@ -434,13 +475,13 @@ public class BlogServiceImpl implements BlogService {
         }
 
         // 清除相关缓存 - 使用统一缓存服务
-        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
+        clearBlogCache(id);
         cacheService.deleteByPattern("blog:page:*");
         unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
         unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
 
         // 获取更新后的博客数据（需要重新查询才能获得实时的 likeCount）
-        BlogDetailVO updatedBlog = blogMapper.selectBlogDetail(id);
+        BlogDetailVO updatedBlog = blogMapper.selectInternalBlogDetailById(id);
         Integer likeCount = updatedBlog != null && updatedBlog.getLikeCount() != null
                 ? updatedBlog.getLikeCount()
                 : 0;
@@ -465,7 +506,9 @@ public class BlogServiceImpl implements BlogService {
         }
 
         blog.setStatus(1);
-        blog.setVisibility(1);
+        if (blog.getVisibility() == null) {
+            blog.setVisibility(1);
+        }
         blog.setPublishTime(LocalDateTime.now());
         blog.setStatusChangedTime(LocalDateTime.now());
         blogMapper.updateById(blog);
@@ -633,6 +676,7 @@ public class BlogServiceImpl implements BlogService {
                 .map(blog -> {
                     BlogListVO vo = new BlogListVO();
                     vo.setId(blog.getId());
+                    vo.setPublicId(blog.getPublicId());
                     vo.setTitle(blog.getTitle());
                     vo.setSummary(blog.getSummary());
                     vo.setCoverImage(blog.getCoverImg());
@@ -703,6 +747,7 @@ public class BlogServiceImpl implements BlogService {
     private BlogListVO convertToBlogListVO(Blog blog) {
         BlogListVO vo = new BlogListVO();
         vo.setId(blog.getId());
+        vo.setPublicId(blog.getPublicId());
         vo.setTitle(blog.getTitle());
         vo.setSummary(blog.getSummary());
         vo.setCoverImage(blog.getCoverImg()); // 使用正确的字段名
@@ -760,6 +805,7 @@ public class BlogServiceImpl implements BlogService {
     public List<BlogListVO> getAllPublicBlogs() {
         return blogMapper.selectList(new LambdaQueryWrapper<Blog>()
                 .eq(Blog::getStatus, 1) // 只查询已发布的博客
+                .eq(Blog::getVisibility, 1)
                 .orderByDesc(Blog::getIsTop) // 置顶的在前
                 .orderByDesc(Blog::getPublishTime) // 按发布时间倒序
         ).stream().map(this::convertToBlogListVO).collect(Collectors.toList());
@@ -910,6 +956,7 @@ public class BlogServiceImpl implements BlogService {
     private LambdaQueryWrapper<Blog> createPublishedBlogQuery() {
         return new LambdaQueryWrapper<Blog>()
                 .eq(Blog::getStatus, 1)
+                .eq(Blog::getVisibility, 1)
                 .eq(Blog::getDeleted, 0);
     }
 
@@ -921,6 +968,7 @@ public class BlogServiceImpl implements BlogService {
             return blogMapper.selectList(new QueryWrapper<Blog>()
                     .apply("MATCH(title, summary, content) AGAINST({0} IN BOOLEAN MODE)", keyword)
                     .eq("status", 1)
+                    .eq("visibility", 1)
                     .eq("deleted", 0)
                     .orderByDesc("is_top")
                     .orderByDesc("publish_time")
@@ -1054,7 +1102,20 @@ public class BlogServiceImpl implements BlogService {
      * 清除单个博客缓存
      */
     private void clearBlogCache(Long blogId) {
-        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, blogId);
+        clearBlogCache(blogMapper.selectById(blogId));
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_INTERNAL_DETAIL, blogId);
+    }
+
+    private void clearBlogCache(Blog blog) {
+        if (blog == null) {
+            return;
+        }
+        if (StringUtils.isNotBlank(blog.getPublicId())) {
+            unifiedCacheService.delete(RedisKeyFactory.BLOG_PUBLIC_DETAIL, blog.getPublicId());
+        }
+        if (blog.getId() != null) {
+            unifiedCacheService.delete(RedisKeyFactory.BLOG_INTERNAL_DETAIL, blog.getId());
+        }
     }
 
     /**
@@ -1182,12 +1243,13 @@ public class BlogServiceImpl implements BlogService {
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Blog> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         wrapper.in(Blog::getAuthorId, followeeIds)
                 .eq(Blog::getStatus, 1)
+                .eq(Blog::getVisibility, 1)
                 .eq(Blog::getDeleted, 0)
                 .orderByDesc(Blog::getPublishTime);
 
         IPage<Blog> blogPage = blogMapper.selectPage(page, wrapper);
         List<BlogDetailVO> records = blogPage.getRecords().stream()
-                .map(blog -> blogMapper.selectBlogDetail(blog.getId()))
+                .map(blog -> blogMapper.selectPublicBlogDetailByPublicId(blog.getPublicId()))
                 .collect(java.util.stream.Collectors.toList());
 
         Page<BlogDetailVO> result = new Page<>(pageRequest.getPage(), pageRequest.getSize());
@@ -1225,7 +1287,11 @@ public class BlogServiceImpl implements BlogService {
 
         List<BlogDetailVO> result = new java.util.ArrayList<>();
         for (Long blogId : recommendedIds) {
-            BlogDetailVO detail = blogMapper.selectBlogDetail(blogId);
+            Blog blog = blogMapper.selectById(blogId);
+            if (blog == null || StringUtils.isBlank(blog.getPublicId())) {
+                continue;
+            }
+            BlogDetailVO detail = blogMapper.selectPublicBlogDetailByPublicId(blog.getPublicId());
             if (detail != null) {
                 result.add(detail);
             }
@@ -1253,6 +1319,7 @@ public class BlogServiceImpl implements BlogService {
         LambdaQueryWrapper<Blog> wrapper = new LambdaQueryWrapper<Blog>()
                 .in(Blog::getAuthorId, authorIds)
                 .eq(Blog::getStatus, 1)
+                .eq(Blog::getVisibility, 1)
                 .eq(Blog::getDeleted, 0)
                 .ge(Blog::getPublishTime, since)
                 .orderByDesc(Blog::getPublishTime);
@@ -1261,7 +1328,7 @@ public class BlogServiceImpl implements BlogService {
     }
 
     private void notifyFollowersOfNewArticle(Blog blog) {
-        if (blog == null || blog.getId() == null || blog.getAuthorId() == null || !isPublished(blog.getStatus())) {
+        if (blog == null || blog.getId() == null || blog.getAuthorId() == null || !isPubliclyVisible(blog)) {
             return;
         }
 
@@ -1284,6 +1351,9 @@ public class BlogServiceImpl implements BlogService {
             extraData.put("blogTitle", blog.getTitle());
             extraData.put("authorId", blog.getAuthorId());
             extraData.put("authorName", authorName);
+            if (blog.getPublicId() != null) {
+                extraData.put("publicId", blog.getPublicId());
+            }
             if (blog.getCoverImg() != null) {
                 extraData.put("coverImg", blog.getCoverImg());
             }
@@ -1301,6 +1371,10 @@ public class BlogServiceImpl implements BlogService {
 
     private boolean isPublished(Integer status) {
         return Objects.equals(status, 1);
+    }
+
+    private boolean isPubliclyVisible(Blog blog) {
+        return blog != null && isPublished(blog.getStatus()) && Objects.equals(blog.getVisibility(), 1);
     }
 
     private String normalizeSort(String sort) {

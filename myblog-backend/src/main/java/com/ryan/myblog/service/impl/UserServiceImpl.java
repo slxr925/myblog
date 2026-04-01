@@ -332,7 +332,8 @@ public class UserServiceImpl implements UserService {
         userMapper.updateById(user);
 
         if (nicknameChanged) {
-            unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_DETAIL);
+            unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_PUBLIC_DETAIL);
+            unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_INTERNAL_DETAIL);
             unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_HOT_LIST);
             unifiedCacheService.deleteByPattern(RedisKeyFactory.BLOG_LATEST_LIST);
             cacheService.deleteByPattern("blog:page:*");

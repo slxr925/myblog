@@ -18,6 +18,9 @@ public class BlogDocument {
     
     @Id
     private String id;
+
+    @Field(type = FieldType.Keyword)
+    private String publicId;
     
     @Field(type = FieldType.Text, analyzer = "standard")
     private String title;

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class BlogRecommendationVO {
 
     private Long id;
+    private String publicId;
     private String title;
     private Long categoryId;
     private String categoryName;

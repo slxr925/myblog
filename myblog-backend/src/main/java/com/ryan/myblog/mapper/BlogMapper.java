@@ -28,9 +28,30 @@ public interface BlogMapper extends BaseMapper<Blog> {
                         @Param("timeRange") String timeRange);
 
         /**
-         * 查询博客详情（包含作者、分类、标签信息）
+         * 后台分页查询博客列表（可查看草稿/下线/私密）
          */
-        BlogDetailVO selectBlogDetail(@Param("id") Long id);
+        IPage<BlogDetailVO> selectAdminBlogPage(Page<BlogDetailVO> page,
+                        @Param("categoryId") Long categoryId,
+                        @Param("tagId") Long tagId,
+                        @Param("keyword") String keyword,
+                        @Param("status") Integer status,
+                        @Param("sort") String sort,
+                        @Param("timeRange") String timeRange);
+
+        /**
+         * 查询公开博客详情（包含作者、分类、标签信息）
+         */
+        BlogDetailVO selectPublicBlogDetailByPublicId(@Param("publicId") String publicId);
+
+        /**
+         * 查询内部博客详情（包含作者、分类、标签信息）
+         */
+        BlogDetailVO selectInternalBlogDetailById(@Param("id") Long id);
+
+        /**
+         * 根据旧的数字ID解析公开访问ID
+         */
+        String selectPublicIdByLegacyId(@Param("id") Long id);
 
         /**
          * 增加阅读量

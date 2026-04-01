@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAuthModal } from '../contexts/AuthModalContext';
 import { api } from '../utils/api';
 import type { BlogDetailVO, BlogDetailEnhancedVO, LikeResultDTO, RecommendationSectionVO } from '../types/api';
+import { getPublicBlogPath, isUuidIdentifier } from '../utils/blogLinks';
 import { MarkdownRenderer } from '../components/markdown/MarkdownRenderer';
 import { TableOfContents } from '../components/markdown/TableOfContents';
 import { CommentSection } from '../components/comment/CommentSection';
@@ -40,7 +41,7 @@ const normalizeRecommendationSection = (
 };
 
 const BlogDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [blog, setBlog] = useState<BlogDetailVO | null>(null);
@@ -142,20 +143,12 @@ const BlogDetail: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!id) {
+    if (!identifier) {
       setLoading(false);
       return;
     }
     setShowMobileToc(false);
     setShowDesktopToc(true);
-
-    const blogId = Number(id);
-    if (!Number.isFinite(blogId)) {
-      setLoading(false);
-      setBlog(null);
-      resetEnhancedSections();
-      return;
-    }
 
     const requestSeq = ++requestSeqRef.current;
 
@@ -172,7 +165,21 @@ const BlogDetail: React.FC = () => {
       setLoading(true);
 
       try {
-        const enhanced = await api.blog.getDetailEnhanced(blogId);
+        let publicId = identifier;
+
+        if (!isUuidIdentifier(identifier)) {
+          const legacyId = Number(identifier);
+          if (!Number.isFinite(legacyId)) {
+            throw new Error('invalid_blog_identifier');
+          }
+          const redirect = await api.blog.resolveLegacyRedirect(legacyId);
+          publicId = redirect.publicId;
+          if (publicId && publicId !== identifier) {
+            navigate(getPublicBlogPath(publicId), { replace: true });
+          }
+        }
+
+        const enhanced = await api.blog.getDetailEnhanced(publicId);
         if (requestSeq !== requestSeqRef.current) {
           return;
         }
@@ -186,14 +193,20 @@ const BlogDetail: React.FC = () => {
         );
         setNextBlog(enhanced.nextBlog && enhanced.nextBlog.id !== detail.id ? enhanced.nextBlog : null);
 
-        api.admin.trackVisit(`/blog/${blogId}`).catch((err) =>
+        api.admin.trackVisit(getPublicBlogPath(detail)).catch((err) =>
           console.warn('记录博客访问失败:', err),
         );
       } catch (enhancedErr: any) {
         console.error('获取增强文章详情失败，回退普通详情:', enhancedErr);
 
         try {
-          const basicDetail = await api.blog.getDetail(blogId);
+          let publicId = identifier;
+          if (!isUuidIdentifier(identifier)) {
+            const redirect = await api.blog.resolveLegacyRedirect(Number(identifier));
+            publicId = redirect.publicId;
+          }
+
+          const basicDetail = await api.blog.getDetail(publicId);
           if (requestSeq !== requestSeqRef.current) {
             return;
           }
@@ -203,7 +216,7 @@ const BlogDetail: React.FC = () => {
           setPreviousBlog(null);
           setNextBlog(null);
 
-          api.admin.trackVisit(`/blog/${blogId}`).catch((err) =>
+          api.admin.trackVisit(getPublicBlogPath(basicDetail)).catch((err) =>
             console.warn('记录博客访问失败:', err),
           );
         } catch (basicErr: any) {
@@ -224,7 +237,7 @@ const BlogDetail: React.FC = () => {
     };
 
     fetchBlogDetail();
-  }, [id, resetEnhancedSections]);
+  }, [identifier, navigate, resetEnhancedSections]);
 
   const handleLike = useCallback(async () => {
     if (!user) {
@@ -276,8 +289,8 @@ const BlogDetail: React.FC = () => {
   }, []);
 
   const handleNavigateToBlog = useCallback(
-    (blogId: number) => {
-      navigate(`/blog/${blogId}`);
+    (item: { publicId?: string; id: number }) => {
+      navigate(getPublicBlogPath(item));
     },
     [navigate],
   );

@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
 import { api } from '../utils/api';
+import { getPublicBlogPath } from '../utils/blogLinks';
 import type { BlogPost, SearchTrendVO } from '../types/api';
 import BlogListItem from '../components/BlogListItem';
 
@@ -19,6 +20,7 @@ type GenericPagePayload<T> = {
 
 type RawSearchBlog = {
   id: number | string;
+  publicId?: string;
   title?: string;
   summary?: string;
   content?: string;
@@ -100,6 +102,7 @@ const formatBlogPost = (blog: RawSearchBlog): BlogPost => {
 
   return {
     id: Number.isNaN(parsedId) ? 0 : parsedId,
+    publicId: blog.publicId,
     title: blog.title || '',
     excerpt: blog.summary || blog.contentSnippet || '',
     highlightedTitle: blog.highlightedTitle,
@@ -300,7 +303,7 @@ const SearchResultsPage: React.FC = () => {
                     key={`${post.id}-${index}`}
                     post={post}
                     index={index}
-                    onClick={() => navigate(`/blog/${post.id}`)}
+                    onClick={() => navigate(getPublicBlogPath(post))}
                   />
                 ))}
               </div>

@@ -37,6 +37,7 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import { UserCollectionVO, CollectionFolderVO } from '../../types/api';
 import { toast } from 'sonner';
 import FolderCreateForm from './FolderCreateForm';
@@ -187,8 +188,8 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
     }
   };
 
-  const openBlog = (blogId: number) => {
-    window.open(`/blog/${blogId}`, '_blank');
+  const openBlog = (item: UserCollectionVO) => {
+    window.open(getPublicBlogPath({ publicId: item.publicId ?? item.blog?.publicId, id: item.blogId }), '_blank');
   };
 
   const handleFolderCreated = (newFolder: CollectionFolderVO) => {
@@ -349,7 +350,7 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
                       />
                       <h3
                         className="font-medium text-foreground hover:text-primary transition-colors cursor-pointer truncate"
-                        onClick={() => openBlog(item.blogId)}
+                        onClick={() => openBlog(item)}
                       >
                         {item.blogTitle}
                       </h3>
@@ -369,7 +370,7 @@ const CollectionsManager: React.FC<CollectionsManagerProps> = ({ className }) =>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openBlog(item.blogId)}>
+                      <DropdownMenuItem onClick={() => openBlog(item)}>
                         <ExternalLink className="w-4 h-4 mr-2" />
                         查看原文
                       </DropdownMenuItem>

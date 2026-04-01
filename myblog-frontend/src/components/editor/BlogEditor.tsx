@@ -13,6 +13,7 @@ import { MarkdownRenderer } from '../markdown/MarkdownRenderer'
 import EditorToolbar from './EditorToolbar'
 import { MarkdownShortcutsDialog } from './MarkdownShortcutsDialog'
 import { api } from '../../utils/api'
+import { getPublicBlogPath } from '../../utils/blogLinks'
 import type { BlogDetailVO, Category, Tag } from '../../types/api'
 import { BlogStatus } from '../../types/api'
 
@@ -264,7 +265,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
       const savedBlog = await persistBlog(status)
       if (!savedBlog) return
       if (status === BlogStatus.PUBLISHED) {
-        navigate(`/blog/${savedBlog.id}`)
+        navigate(getPublicBlogPath(savedBlog))
       }
     } catch (error: any) {
       console.error('保存博客失败:', error)

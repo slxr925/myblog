@@ -3,6 +3,7 @@ package com.ryan.myblog.config;
 import com.ryan.myblog.common.Result;
 import com.ryan.myblog.exception.DistributedLockException;
 import com.ryan.myblog.exception.RateLimitException;
+import com.ryan.myblog.exception.ResourceNotFoundException;
 import com.ryan.myblog.model.vo.ErrorLogVO;
 import com.ryan.myblog.service.ErrorLogService;
 import com.ryan.myblog.utils.IpUtils;
@@ -64,6 +65,16 @@ public class GlobalExceptionHandler {
     public Result<Void> handleDistributedLockException(DistributedLockException e) {
         log.warn("分布式锁获取失败: {}", e.getMessage());
         return Result.error(429, e.getMessage());
+    }
+
+    /**
+     * 处理资源不存在异常
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Result<Void> handleResourceNotFoundException(ResourceNotFoundException e) {
+        log.warn("资源不存在: {}", e.getMessage());
+        return Result.error(HttpStatus.NOT_FOUND.value(), e.getMessage());
     }
 
     /**

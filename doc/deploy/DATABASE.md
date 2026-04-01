@@ -9,6 +9,7 @@
 
 - 目录：`myblog-backend/database/migrations/`
 - 规则：按时间或版本前缀排序（例如 `V20260302__feature.sql`）
+- 注意：生产与本地部署脚本只会执行这个目录下的 SQL；`src/main/resources/db/` 中的文件不会被部署脚本自动执行
 
 ## 3. 本地迁移
 

@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { BlogStatus, type BlogDetailVO } from '../types/api'
 import { api } from '../utils/api'
+import { getPublicBlogPath } from '../utils/blogLinks'
 import { AdminEmptyState, AdminSectionCard, AdminShell, AdminStatCard, AdminToolbar } from '../components/admin/AdminUI'
 
 const PAGE_SIZE = 10
@@ -225,7 +226,7 @@ const MyDrafts: React.FC = () => {
                       编辑
                     </Button>
                     {blog.status === BlogStatus.PUBLISHED && (
-                      <Button size="sm" onClick={() => navigate(`/blog/${blog.id}`)}>
+                      <Button size="sm" onClick={() => navigate(getPublicBlogPath(blog))}>
                         <Eye className="h-4 w-4" />
                         查看
                       </Button>

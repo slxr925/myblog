@@ -12,6 +12,8 @@ import java.util.List;
 public class SearchResultVO {
     
     private Long id;
+
+    private String publicId;
     
     /**
      * 博客标题（可能包含高亮）

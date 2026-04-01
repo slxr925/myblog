@@ -299,6 +299,7 @@ public class SearchServiceImpl implements SearchService {
 
         // 设置基本信息
         result.setId(Long.valueOf(document.getId()));
+        result.setPublicId(document.getPublicId());
         result.setTitle(document.getTitle());
         result.setSummary(document.getSummary());
         result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200
@@ -403,6 +404,7 @@ public class SearchServiceImpl implements SearchService {
 
         // 设置基本信息
         result.setId(Long.valueOf(document.getId()));
+        result.setPublicId(document.getPublicId());
         result.setTitle(document.getTitle());
         result.setSummary(document.getSummary());
         result.setContentSnippet(document.getContent() != null && document.getContent().length() > 200

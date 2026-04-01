@@ -19,6 +19,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { BlogStatus, type BlogDetailVO } from '../../types/api'
 import { api } from '../../utils/api'
+import { getPublicBlogPath } from '../../utils/blogLinks'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import {
   AdminEmptyState,
@@ -359,7 +360,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                       编辑
                     </Button>
                     {isPublished && (
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/blog/${blog.id}`)}>
+                      <Button variant="outline" size="sm" onClick={() => navigate(getPublicBlogPath(blog))}>
                         <Eye className="h-4 w-4" />
                         查看
                       </Button>

@@ -19,6 +19,11 @@ public class CommentVO {
     private Long blogId;
 
     /**
+     * 博客公开访问ID
+     */
+    private String publicId;
+
+    /**
      * 博客标题
      */
     private String blogTitle;

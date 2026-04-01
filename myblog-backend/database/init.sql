@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS tb_tag (
 -- 博客文章表
 CREATE TABLE IF NOT EXISTS tb_blog (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    public_id VARCHAR(36) NOT NULL DEFAULT (UUID()) COMMENT '公开访问ID（UUID）',
     title VARCHAR(255) NOT NULL COMMENT '文章标题',
     summary TEXT COMMENT '文章摘要',
     content LONGTEXT NOT NULL COMMENT '文章内容',
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS tb_blog (
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     INDEX idx_author_id (author_id),
+    UNIQUE INDEX uk_blog_public_id (public_id),
     INDEX idx_category_id (category_id),
     INDEX idx_status (status),
     INDEX idx_is_top (is_top),

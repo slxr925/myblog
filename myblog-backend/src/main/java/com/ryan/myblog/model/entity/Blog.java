@@ -18,6 +18,12 @@ public class Blog {
     private Long id;
 
     /**
+     * 公开访问ID（UUID）
+     */
+    @TableField("public_id")
+    private String publicId;
+
+    /**
      * 文章标题
      */
     @TableField("title")

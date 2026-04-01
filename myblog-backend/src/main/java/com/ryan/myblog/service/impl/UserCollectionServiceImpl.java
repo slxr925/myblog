@@ -214,12 +214,23 @@ public class UserCollectionServiceImpl extends ServiceImpl<UserCollectionMapper,
                     userId,
                     blog.getTitle(),
                     blogId,
-                    java.util.Map.of("blogCover", blog.getCoverImg() != null ? blog.getCoverImg() : ""));
+                    buildBlogNotificationExtraData(blog));
             eventPublisher.publishEvent(event);
             log.info("发布收藏通知事件: receiverId={}, senderId={}, blogId={}",
                     blog.getAuthorId(), userId, blogId);
         } catch (Exception e) {
             log.warn("发送收藏通知失败: {}", e.getMessage(), e);
         }
+    }
+
+    private java.util.Map<String, Object> buildBlogNotificationExtraData(Blog blog) {
+        java.util.Map<String, Object> extraData = new java.util.HashMap<>();
+        if (blog.getPublicId() != null) {
+            extraData.put("publicId", blog.getPublicId());
+        }
+        if (blog.getCoverImg() != null) {
+            extraData.put("blogCover", blog.getCoverImg());
+        }
+        return extraData;
     }
 }

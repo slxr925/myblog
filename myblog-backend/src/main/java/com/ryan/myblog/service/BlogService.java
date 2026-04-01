@@ -38,14 +38,30 @@ public interface BlogService {
             Long tagId, String keyword, Integer status, String sort, String timeRange);
 
     /**
-     * 查询博客详情
+     * 后台分页查询博客列表
      */
-    BlogDetailVO getBlogDetail(Long id);
+    IPage<BlogDetailVO> getAdminBlogPage(PageRequest pageRequest, Long categoryId,
+            Long tagId, String keyword, Integer status, String sort, String timeRange);
 
     /**
-     * 查询博客详情（包含用户点赞状态）
+     * 查询公开博客详情
      */
-    BlogDetailVO getBlogDetail(Long id, Long userId);
+    BlogDetailVO getPublicBlogDetail(String publicId);
+
+    /**
+     * 查询公开博客详情（包含用户点赞状态）
+     */
+    BlogDetailVO getPublicBlogDetail(String publicId, Long userId);
+
+    /**
+     * 查询内部博客详情（作者本人或管理员）
+     */
+    BlogDetailVO getInternalBlogDetail(Long id, Long operatorId);
+
+    /**
+     * 根据旧的数字ID解析公开访问ID
+     */
+    String resolveLegacyPublicId(Long id);
 
     /**
      * 增加阅读量

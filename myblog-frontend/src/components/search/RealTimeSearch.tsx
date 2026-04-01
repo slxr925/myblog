@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 
 const escapeHtml = (input: string): string => {
   return input
@@ -31,6 +32,7 @@ const highlightText = (text: string, keyword: string): string => {
 
 interface SearchSuggestion {
   id: number;
+  publicId?: string;
   title: string;
   summary: string;
   categoryName: string;
@@ -133,6 +135,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
 
         return {
           id: Number.isNaN(numericId) ? doc.id : numericId,
+          publicId: doc.publicId,
           title: doc.title,
           summary: doc.summary,
           categoryName: doc.categoryName,
@@ -231,7 +234,7 @@ const RealTimeSearch: React.FC<RealTimeSearchProps> = ({
     setClickedSuggestion(suggestion.id);
     // 添加延迟让点击动画显示
     await new Promise(resolve => setTimeout(resolve, 150));
-    navigate(`/blog/${suggestion.id}`);
+    navigate(getPublicBlogPath(suggestion));
     setIsOpen(false);
     setSearchTerm('');
   };

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, Eye, Heart, MessageCircle, Calendar, Tag as TagIcon } from 'lucide-react';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import type { BrowseHistoryVO } from '../../types/api';
 import { Badge } from '../ui/badge';
 
@@ -112,7 +113,7 @@ const MyBrowseHistory: React.FC = () => {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    onClick={() => navigate(`/blog/${record.blogId}`)}
+                                    onClick={() => navigate(getPublicBlogPath({ publicId: record.publicId, id: record.blogId }))}
                                     className="group bg-card rounded-xl p-4 border border-border hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer"
                                 >
                                     <div className="flex gap-4">

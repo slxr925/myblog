@@ -5,7 +5,7 @@ import type { BlogDetailVO } from '../../types/api';
 interface PrevNextNavProps {
   previousBlog?: BlogDetailVO | null;
   nextBlog?: BlogDetailVO | null;
-  onNavigate: (blogId: number) => void;
+  onNavigate: (blog: BlogDetailVO) => void;
 }
 
 const formatPublishDate = (date?: string): string => {
@@ -18,14 +18,14 @@ const formatPublishDate = (date?: string): string => {
 const NavCard: React.FC<{
   blog: BlogDetailVO;
   type: 'previous' | 'next';
-  onNavigate: (blogId: number) => void;
+  onNavigate: (blog: BlogDetailVO) => void;
 }> = ({ blog, type, onNavigate }) => {
   const isPrevious = type === 'previous';
 
   return (
     <button
       type="button"
-      onClick={() => onNavigate(blog.id)}
+      onClick={() => onNavigate(blog)}
       className="group w-full border border-border rounded-sm bg-card p-4 text-left hover:border-accent/50 transition-colors"
     >
       <div className="flex items-center gap-2 text-xs font-mono-display uppercase tracking-wider text-muted-foreground mb-3">

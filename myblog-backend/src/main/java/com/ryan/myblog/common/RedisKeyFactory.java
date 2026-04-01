@@ -18,9 +18,9 @@ import java.util.concurrent.TimeUnit;
  * 使用示例:
  * 
  * <pre>
- * String key = RedisKeyFactory.BLOG_DETAIL.getKey(blogId);
- * long ttl = RedisKeyFactory.BLOG_DETAIL.getExpire();
- * TimeUnit unit = RedisKeyFactory.BLOG_DETAIL.getTimeUnit();
+ * String publicKey = RedisKeyFactory.BLOG_PUBLIC_DETAIL.getKey(publicId);
+ * long ttl = RedisKeyFactory.BLOG_PUBLIC_DETAIL.getExpire();
+ * TimeUnit unit = RedisKeyFactory.BLOG_PUBLIC_DETAIL.getTimeUnit();
  * </pre>
  */
 @Getter
@@ -29,11 +29,18 @@ public enum RedisKeyFactory {
     // ==================== 博客模块 ====================
 
     /**
-     * 博客详情缓存
-     * Key: myblog:blog:detail:{blogId}
+     * 博客公开详情缓存
+     * Key: myblog:blog:public:detail:{publicId}
      * TTL: 30分钟
      */
-    BLOG_DETAIL("blog:detail:%s", 30, TimeUnit.MINUTES, "博客详情缓存"),
+    BLOG_PUBLIC_DETAIL("blog:public:detail:%s", 30, TimeUnit.MINUTES, "博客公开详情缓存"),
+
+    /**
+     * 博客内部详情缓存
+     * Key: myblog:blog:internal:detail:{blogId}
+     * TTL: 15分钟
+     */
+    BLOG_INTERNAL_DETAIL("blog:internal:detail:%s", 15, TimeUnit.MINUTES, "博客内部详情缓存"),
 
     /**
      * 热门博客列表

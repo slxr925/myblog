@@ -7,6 +7,7 @@ import type {
   PageResult,
   BlogDetailVO,
   BlogDetailEnhancedVO,
+  BlogLegacyRedirectVO,
   BlogListVO,
   Category,
   TagVO,
@@ -271,6 +272,7 @@ export const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost =>
 
   const transformedPost = {
     id: blog.id,
+    publicId: blog.publicId,
     title: blog.title,
     excerpt: blog.summary || '',
     content: blog.content || '',
@@ -322,8 +324,8 @@ export const api = {
     },
 
     // 获取博客详情
-    getDetail: async (id: number): Promise<BlogDetailVO> => {
-      return apiClient.get(`/blog/${id}`) as Promise<BlogDetailVO>;
+    getDetail: async (publicId: string): Promise<BlogDetailVO> => {
+      return apiClient.get(`/blog/public/${publicId}`) as Promise<BlogDetailVO>;
     },
 
     // 根据ID获取博客（用于编辑器）
@@ -332,8 +334,8 @@ export const api = {
     },
 
     // 获取增强版博客详情
-    getDetailEnhanced: async (id: number): Promise<BlogDetailEnhancedVO> => {
-      return apiClient.get(`/blog/${id}/enhanced`) as Promise<BlogDetailEnhancedVO>;
+    getDetailEnhanced: async (publicId: string): Promise<BlogDetailEnhancedVO> => {
+      return apiClient.get(`/blog/public/${publicId}/enhanced`) as Promise<BlogDetailEnhancedVO>;
     },
 
     // 获取热门博客
@@ -396,6 +398,11 @@ export const api = {
     // 获取博客详情（不增加浏览量）
     getDetailWithoutIncrement: async (id: number): Promise<BlogDetailVO> => {
       return apiClient.get(`/blog/${id}/detail`) as Promise<BlogDetailVO>;
+    },
+
+    // 将旧数字链接解析为公开UUID链接
+    resolveLegacyRedirect: async (id: number): Promise<BlogLegacyRedirectVO> => {
+      return apiClient.get(`/blog/legacy/${id}/redirect`) as Promise<BlogLegacyRedirectVO>;
     },
 
     // 获取当前作者的草稿列表

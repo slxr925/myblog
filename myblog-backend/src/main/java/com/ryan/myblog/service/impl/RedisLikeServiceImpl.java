@@ -268,11 +268,22 @@ public class RedisLikeServiceImpl implements RedisLikeService {
                     userId,
                     blog.getTitle(),
                     blogId,
-                    java.util.Map.of("blogCover", blog.getCoverImg() != null ? blog.getCoverImg() : ""));
+                    buildBlogNotificationExtraData(blog));
             eventPublisher.publishEvent(event);
         } catch (Exception e) {
             log.warn("发送点赞通知失败: {}", e.getMessage());
         }
+    }
+
+    private Map<String, Object> buildBlogNotificationExtraData(Blog blog) {
+        Map<String, Object> extraData = new HashMap<>();
+        if (blog.getPublicId() != null) {
+            extraData.put("publicId", blog.getPublicId());
+        }
+        if (blog.getCoverImg() != null) {
+            extraData.put("blogCover", blog.getCoverImg());
+        }
+        return extraData;
     }
 
     @Override

@@ -29,6 +29,7 @@ public class BlogDocumentConverter {
 
         BlogDocument document = new BlogDocument();
         document.setId(blog.getId().toString());
+        document.setPublicId(blog.getPublicId());
         document.setTitle(blog.getTitle());
         document.setSummary(blog.getSummary());
         document.setContent(blog.getContent());
@@ -82,6 +83,7 @@ public class BlogDocumentConverter {
             return null;
         }
 
+        blog.setPublicId(document.getPublicId());
         blog.setTitle(document.getTitle());
         blog.setSummary(document.getSummary());
         blog.setContent(document.getContent());

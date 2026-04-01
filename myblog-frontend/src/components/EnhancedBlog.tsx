@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { api } from '../utils/api';
 import type { BlogPost } from '../types/api';
+import { getPublicBlogPath } from '../utils/blogLinks';
 import BlogCard from './BlogCard';
 
 const EnhancedBlog = () => {
@@ -41,6 +42,7 @@ const EnhancedBlog = () => {
 
       return {
         id: Number(blog.id) || blog.id,
+        publicId: blog.publicId,
         title: blog.title || '未命名文章',
         excerpt: blog.summary || blog.excerpt || '',
         content: blog.content || '',
@@ -60,8 +62,8 @@ const EnhancedBlog = () => {
   }, []);
 
   // 优化点击处理函数
-  const handlePostClick = useCallback((postId: number | string) => {
-    navigate(`/blog/${postId}`);
+  const handlePostClick = useCallback((post: Pick<BlogPost, 'id' | 'publicId'>) => {
+    navigate(getPublicBlogPath(post));
   }, [navigate]);
 
   const handleScrollToPosts = useCallback(() => {

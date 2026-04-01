@@ -7,7 +7,7 @@ type EmptyBehavior = 'hide' | 'showEmpty';
 interface RecommendListProps {
   title: string;
   items: BlogRecommendationVO[];
-  onNavigate: (blogId: number) => void;
+  onNavigate: (item: BlogRecommendationVO) => void;
   emptyBehavior?: EmptyBehavior;
 }
 
@@ -42,7 +42,7 @@ const RecommendList: React.FC<RecommendListProps> = ({
             <button
               key={item.id}
               type="button"
-              onClick={() => onNavigate(item.id)}
+              onClick={() => onNavigate(item)}
               className="w-full text-left border border-border/60 rounded-sm p-3 hover:border-accent/50 transition-colors"
             >
               <h4 className="text-sm font-medium text-foreground line-clamp-2 mb-2 hover:text-accent transition-colors">

@@ -30,6 +30,12 @@ public class Comment {
     private String blogTitle;
 
     /**
+     * 博客公开访问ID（非数据库字段，仅用于查询结果）
+     */
+    @TableField(exist = false)
+    private String publicId;
+
+    /**
      * 评论者ID
      */
     @TableField("user_id")

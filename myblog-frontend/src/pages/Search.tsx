@@ -6,6 +6,7 @@ import BlogListItem from '../components/BlogListItem';
 import { Button } from '../components/ui/button';
 import type { BlogPost, BlogSortOption, BlogTimeRange, Category } from '../types/api';
 import { api, getRssFeedUrl, transformBlogDetailVOToBlogPost } from '../utils/api';
+import { getPublicBlogPath } from '../utils/blogLinks';
 
 const PAGE_SIZE = 12;
 
@@ -325,7 +326,7 @@ const SearchPage: React.FC = () => {
                     key={post.id}
                     post={post}
                     index={index}
-                    onClick={() => navigate(`/blog/${post.id}`)}
+                    onClick={() => navigate(getPublicBlogPath(post))}
                   />
                 ))}
               </div>

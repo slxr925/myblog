@@ -76,8 +76,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/refresh", "/api/auth/validate").permitAll()
                         // 允许生成验证码（登录前需要）
                         .requestMatchers("/api/captcha/**").permitAll()
-                        // 允许查看博客列表和详情（含增强详情）
-                        .requestMatchers("/api/blog/page", "/api/blog/rss.xml", "/api/blog/{id}", "/api/blog/{id}/enhanced").permitAll()
+                        // 允许查看公开博客列表和详情（含增强详情）
+                        .requestMatchers("/api/blog/page", "/api/blog/rss.xml", "/api/blog/public/**", "/api/blog/legacy/*/redirect").permitAll()
                         // 允许搜索功能
                         .requestMatchers("/api/search/**").permitAll()
                         // 允许查看分类和标签
@@ -87,7 +87,7 @@ public class SecurityConfig {
                         // 允许获取最新博客和热门博客
                         .requestMatchers("/api/blog/latest", "/api/blog/hot", "/api/blog/recommend").permitAll()
                         // 允许根据分类获取博客
-                        .requestMatchers("/api/blog/category/*").permitAll()
+                        .requestMatchers("/api/blog/category/*", "/api/blog/public/all").permitAll()
                         // 允许健康检查和欢迎页面
                         .requestMatchers("/api/health", "/api/welcome").permitAll()
                         // 允许访问Swagger和Knife4j文档

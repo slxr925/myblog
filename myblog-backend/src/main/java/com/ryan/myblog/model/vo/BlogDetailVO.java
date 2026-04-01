@@ -12,6 +12,7 @@ import java.util.List;
 public class BlogDetailVO {
     
     private Long id;
+    private String publicId;
     private String title;
     private String summary;
     private String content;

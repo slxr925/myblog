@@ -21,6 +21,7 @@ import { MoreHorizontal, ExternalLink, FolderOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import { UserCollectionVO, CollectionFolderVO } from '../../types/api';
 import { toast } from 'sonner';
 import { eventEmitter, EVENTS } from '../../utils/events';
@@ -99,8 +100,8 @@ const MyCollections: React.FC = () => {
     }
   };
 
-  const openBlog = (blogId: number) => {
-    window.open(`/blog/${blogId}`, '_blank');
+  const openBlog = (item: UserCollectionVO) => {
+    window.open(getPublicBlogPath({ publicId: item.publicId ?? item.blog?.publicId, id: item.blogId }), '_blank');
   };
 
   return (
@@ -155,8 +156,8 @@ const MyCollections: React.FC = () => {
           {collections.map(item => (
             <Card key={item.id} className="hover:shadow-md transition-shadow py-0">
               <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => openBlog(item.blogId)}>
+                  <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => openBlog(item)}>
                     <img
                       src={`https://picsum.photos/seed/collect${item.id}/400/300.jpg`}
                       alt={item.blogTitle}
@@ -166,7 +167,7 @@ const MyCollections: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <h3
                       className="font-medium text-foreground mb-1.5 line-clamp-1 hover:text-primary transition-colors cursor-pointer"
-                      onClick={() => openBlog(item.blogId)}
+                      onClick={() => openBlog(item)}
                     >
                       {item.blogTitle}
                     </h3>
@@ -199,7 +200,7 @@ const MyCollections: React.FC = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openBlog(item.blogId)}>
+                        <DropdownMenuItem onClick={() => openBlog(item)}>
                           <ExternalLink className="w-4 h-4 mr-2" />
                           查看原文
                         </DropdownMenuItem>

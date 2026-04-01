@@ -75,7 +75,7 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/blog/:id"
+            path="/blog/:identifier"
             element={
               <PageTransition>
                 <BlogDetail />

@@ -42,6 +42,7 @@ public class SearchDataServiceImpl implements SearchDataService {
         List<Blog> blogs = blogMapper.selectList(
             new LambdaQueryWrapper<Blog>()
                 .eq(Blog::getStatus, 1)  // 已发布
+                .eq(Blog::getVisibility, 1)  // 公开可见
                 .eq(Blog::getDeleted, 0)  // 未删除
                 .orderByDesc(Blog::getPublishTime)
         );
@@ -71,6 +72,7 @@ public class SearchDataServiceImpl implements SearchDataService {
 
         // 基本信息
         doc.setId(String.valueOf(blog.getId()));
+        doc.setPublicId(blog.getPublicId());
         doc.setTitle(blog.getTitle());
         doc.setContent(blog.getContent());
         doc.setSummary(blog.getSummary());

@@ -125,24 +125,35 @@ public class CommentServiceImpl implements CommentService {
                 Comment parentComment = commentMapper.selectById(comment.getParentId());
                 if (parentComment != null && !parentComment.getUserId().equals(senderId)) {
                     log.info("发送回复通知给 userId={}", parentComment.getUserId());
+                    Map<String, Object> extraData = new java.util.HashMap<>();
+                    extraData.put("blogId", blog.getId());
+                    extraData.put("blogTitle", blog.getTitle());
+                    if (blog.getPublicId() != null) {
+                        extraData.put("publicId", blog.getPublicId());
+                    }
+                    extraData.put("commentContent", comment.getContent().length() > 100
+                            ? comment.getContent().substring(0, 100) + "..."
+                            : comment.getContent());
                     NotificationEvent event = NotificationEvent.replyEvent(
                             this,
                             parentComment.getUserId(),
                             senderId,
                             comment.getContent(),
                             comment.getId(),
-                            java.util.Map.of(
-                                    "blogId", blog.getId(),
-                                    "blogTitle", blog.getTitle(),
-                                    "commentContent", comment.getContent().length() > 100
-                                            ? comment.getContent().substring(0, 100) + "..."
-                                            : comment.getContent()));
+                            extraData);
                     eventPublisher.publishEvent(event);
                 }
             } else {
                 // 顶级评论 - 通知文章作者
                 if (!blog.getAuthorId().equals(senderId)) {
                     log.info("发送文章评论通知给作者 userId={}", blog.getAuthorId());
+                    Map<String, Object> extraData = new java.util.HashMap<>();
+                    if (blog.getPublicId() != null) {
+                        extraData.put("publicId", blog.getPublicId());
+                    }
+                    extraData.put("commentContent", comment.getContent().length() > 100
+                            ? comment.getContent().substring(0, 100) + "..."
+                            : comment.getContent());
                     NotificationEvent event = NotificationEvent.commentEvent(
                             this,
                             blog.getAuthorId(),
@@ -150,10 +161,7 @@ public class CommentServiceImpl implements CommentService {
                             blog.getTitle(),
                             comment.getContent(),
                             blog.getId(),
-                            java.util.Map.of(
-                                    "commentContent", comment.getContent().length() > 100
-                                            ? comment.getContent().substring(0, 100) + "..."
-                                            : comment.getContent()));
+                            extraData);
                     eventPublisher.publishEvent(event);
                     log.info("事件已发布");
                 } else {
@@ -173,6 +181,7 @@ public class CommentServiceImpl implements CommentService {
             if (comment.getContent() == null || comment.getContent().isBlank()) {
                 return;
             }
+            Blog blog = blogMapper.selectById(comment.getBlogId());
             java.util.Set<String> mentions = extractMentions(comment.getContent());
             if (mentions.isEmpty()) {
                 return;
@@ -191,12 +200,25 @@ public class CommentServiceImpl implements CommentService {
                         senderId,
                         comment.getContent(),
                         comment.getId(),
-                        java.util.Map.of("blogId", comment.getBlogId(), "mention", name));
+                        buildMentionExtraData(comment, blog, name));
                 eventPublisher.publishEvent(event);
             }
         } catch (Exception e) {
             log.warn("发送@提及通知失败: {}", e.getMessage(), e);
         }
+    }
+
+    private Map<String, Object> buildMentionExtraData(Comment comment, Blog blog, String mention) {
+        Map<String, Object> extraData = new java.util.HashMap<>();
+        extraData.put("blogId", comment.getBlogId());
+        extraData.put("mention", mention);
+        if (blog != null) {
+            extraData.put("blogTitle", blog.getTitle());
+            if (blog.getPublicId() != null) {
+                extraData.put("publicId", blog.getPublicId());
+            }
+        }
+        return extraData;
     }
 
     private java.util.Set<String> extractMentions(String content) {
@@ -500,6 +522,7 @@ public class CommentServiceImpl implements CommentService {
                     CommentVO vo = convertToVO(comment, userMap);
                     // 设置博客标题（已在SQL查询中获取）
                     vo.setBlogTitle(comment.getBlogTitle());
+                    vo.setPublicId(comment.getPublicId());
                     return vo;
                 })
                 .collect(Collectors.toList());
@@ -518,6 +541,7 @@ public class CommentServiceImpl implements CommentService {
         CommentVO vo = new CommentVO();
         vo.setId(comment.getId());
         vo.setBlogId(comment.getBlogId());
+        vo.setPublicId(comment.getPublicId());
         vo.setUserId(comment.getUserId());
         vo.setParentId(comment.getParentId());
         vo.setReplyUserId(comment.getReplyUserId());

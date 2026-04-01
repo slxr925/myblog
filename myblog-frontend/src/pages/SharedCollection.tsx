@@ -4,6 +4,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { api } from '../utils/api';
+import { getPublicBlogPath } from '../utils/blogLinks';
 import type { CollectionFolderVO, UserCollectionVO } from '../types/api';
 import { Calendar, BookOpen } from 'lucide-react';
 
@@ -125,7 +126,7 @@ const SharedCollection: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <h3
                         className="text-lg font-semibold text-foreground hover:text-primary cursor-pointer truncate"
-                        onClick={() => navigate(`/blog/${item.blogId}`)}
+                        onClick={() => navigate(getPublicBlogPath({ publicId: item.publicId ?? item.blog?.publicId, id: item.blogId }))}
                       >
                         {item.blogTitle}
                       </h3>

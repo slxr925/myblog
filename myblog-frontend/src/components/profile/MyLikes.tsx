@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import type { BlogDetailVO } from '../../types/api';
 
 const PAGE_SIZE = 6;
@@ -119,8 +120,8 @@ const MyLikes: React.FC = () => {
     }
   };
 
-  const handleBlogClick = (blogId: number) => {
-    navigate(`/blog/${blogId}`);
+  const handleBlogClick = (blog: BlogDetailVO) => {
+    navigate(getPublicBlogPath(blog));
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
@@ -188,7 +189,7 @@ const MyLikes: React.FC = () => {
                 >
                   <Card
                     className="group cursor-pointer rounded-none border-border py-0 transition-colors duration-200 hover:border-accent/40"
-                    onClick={() => handleBlogClick(blog.id)}
+                    onClick={() => handleBlogClick(blog)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center gap-3">

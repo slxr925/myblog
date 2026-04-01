@@ -11,6 +11,7 @@ import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.utils.SecurityUtils;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogDetailEnhancedVO;
+import com.ryan.myblog.model.vo.BlogLegacyRedirectVO;
 import com.ryan.myblog.model.vo.BlogRecommendationVO;
 import com.ryan.myblog.model.vo.BlogListVO;
 import com.ryan.myblog.model.vo.RecommendationSectionVO;
@@ -83,7 +84,7 @@ public class BlogController {
         pageRequest.setSort(sort);
         pageRequest.setTimeRange(timeRange);
 
-        IPage<BlogDetailVO> result = blogService.getBlogPage(pageRequest, categoryId, tagId, keyword, status, sort,
+        IPage<BlogDetailVO> result = blogService.getBlogPage(pageRequest, categoryId, tagId, keyword, 1, sort,
                 timeRange);
         return Result.success(result);
     }
@@ -104,66 +105,72 @@ public class BlogController {
     }
 
     /**
-     * 查询博客详情
+     * 查询公开博客详情
      */
-    @GetMapping("/{id}")
-    public Result<BlogDetailVO> getBlogDetail(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            BlogDetailVO blog = blogService.getBlogDetail(id, userId);
-            // 增加阅读量
-            blogService.incrementViewCount(id);
-            // 记录浏览历史（仅登录用户）
-            if (userId != null) {
-                browseHistoryService.recordBrowse(userId, id);
-            }
-            return Result.success(blog);
-        } catch (Exception e) {
-            // 如果用户未登录，使用普通查询
-            BlogDetailVO blog = blogService.getBlogDetail(id);
-            blogService.incrementViewCount(id);
-            return Result.success(blog);
+    @GetMapping("/public/{publicId}")
+    public Result<BlogDetailVO> getPublicBlogDetail(@PathVariable String publicId) {
+        Long userId = getOptionalCurrentUserId();
+        BlogDetailVO blog = blogService.getPublicBlogDetail(publicId, userId);
+        blogService.incrementViewCount(blog.getId());
+        if (userId != null) {
+            browseHistoryService.recordBrowse(userId, blog.getId());
         }
+        return Result.success(blog);
     }
 
     /**
-     * 查询博客详情（不增加浏览量）
+     * 兼容旧的数字文章链接，解析到新的公开UUID
+     */
+    @GetMapping("/legacy/{id}/redirect")
+    public Result<BlogLegacyRedirectVO> resolveLegacyBlogLink(@PathVariable Long id) {
+        return Result.success(new BlogLegacyRedirectVO(blogService.resolveLegacyPublicId(id)));
+    }
+
+    /**
+     * 查询内部博客详情（不增加浏览量）
+     * 用于编辑器/后台预览
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public Result<BlogDetailVO> getInternalBlogDetail(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
+        return Result.success(blogService.getInternalBlogDetail(id, userId));
+    }
+
+    /**
+     * 查询内部博客详情（不增加浏览量）
      * 用于点赞等操作后获取最新数据
      */
     @GetMapping("/{id}/detail")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public Result<BlogDetailVO> getBlogDetailWithoutIncrement(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            BlogDetailVO blog = blogService.getBlogDetail(id, userId);
-            return Result.success(blog);
-        } catch (Exception e) {
-            // 如果用户未登录，使用普通查询
-            BlogDetailVO blog = blogService.getBlogDetail(id);
-            return Result.success(blog);
-        }
+        Long userId = getCurrentUserId();
+        return Result.success(blogService.getInternalBlogDetail(id, userId));
     }
 
     /**
      * 查询增强版博客详情（包含推荐内容）
      * 使用并行调用优化性能
      */
-    @GetMapping("/{id}/enhanced")
-    public Result<BlogDetailEnhancedVO> getBlogDetailEnhanced(@PathVariable Long id) {
+    @GetMapping("/public/{publicId}/enhanced")
+    public Result<BlogDetailEnhancedVO> getPublicBlogDetailEnhanced(@PathVariable String publicId) {
+        Long userId = getOptionalCurrentUserId();
 
-        // 获取博客详情
-        BlogDetailVO blog = blogService.getBlogDetail(id);
-        if (blog == null) {
-            return Result.error("博客不存在");
-        }
+        BlogDetailVO blog = blogService.getPublicBlogDetail(publicId, userId);
+        Long blogId = blog.getId();
 
         // 增加阅读量（异步执行，不阻塞）
         CompletableFuture.runAsync(() -> {
             try {
-                blogService.incrementViewCount(id);
+                blogService.incrementViewCount(blogId);
             } catch (Exception e) {
                 log.warn("增加阅读量失败: {}", e.getMessage());
             }
         }, executor);
+
+        if (userId != null) {
+            CompletableFuture.runAsync(() -> browseHistoryService.recordBrowse(userId, blogId), executor);
+        }
 
         // 构建增强版详情
         BlogDetailEnhancedVO enhancedVO = new BlogDetailEnhancedVO();
@@ -173,13 +180,13 @@ public class BlogController {
         try {
             // 并行执行多个查询
             CompletableFuture<List<BlogDetailVO>> relatedBlogsFuture = CompletableFuture.supplyAsync(
-                    () -> blogService.getRelatedBlogs(id, 5), executor);
+                    () -> blogService.getRelatedBlogs(blogId, 5), executor);
 
             CompletableFuture<BlogDetailVO> previousBlogFuture = CompletableFuture.supplyAsync(
-                    () -> blogService.getPreviousBlog(id, blog.getCategoryId()), executor);
+                    () -> blogService.getPreviousBlog(blogId, blog.getCategoryId()), executor);
 
             CompletableFuture<BlogDetailVO> nextBlogFuture = CompletableFuture.supplyAsync(
-                    () -> blogService.getNextBlog(id, blog.getCategoryId()), executor);
+                    () -> blogService.getNextBlog(blogId, blog.getCategoryId()), executor);
 
             CompletableFuture<List<BlogDetailVO>> hotBlogsFuture = CompletableFuture.supplyAsync(
                     () -> blogService.getHotBlogs(5), executor);
@@ -202,19 +209,19 @@ public class BlogController {
             enhancedVO.setLatestBlogs(latestBlogsFuture.get());
             enhancedVO.setRelatedSection(buildRecommendationSection(
                     "相关推荐", "related", relatedBlogsFuture.get(),
-                    "热门推荐", "hot", hotBlogsFuture.get(), id, 5));
+                    "热门推荐", "hot", hotBlogsFuture.get(), blogId, 5));
 
         } catch (Exception e) {
             log.error("并行获取博客详情数据失败", e);
             // 如果并行调用失败，降级到串行调用
-            enhancedVO.setRelatedBlogs(blogService.getRelatedBlogs(id, 5));
-            enhancedVO.setPreviousBlog(blogService.getPreviousBlog(id, blog.getCategoryId()));
-            enhancedVO.setNextBlog(blogService.getNextBlog(id, blog.getCategoryId()));
+            enhancedVO.setRelatedBlogs(blogService.getRelatedBlogs(blogId, 5));
+            enhancedVO.setPreviousBlog(blogService.getPreviousBlog(blogId, blog.getCategoryId()));
+            enhancedVO.setNextBlog(blogService.getNextBlog(blogId, blog.getCategoryId()));
             enhancedVO.setHotBlogs(blogService.getHotBlogs(5));
             enhancedVO.setLatestBlogs(blogService.getLatestBlogs(5));
             enhancedVO.setRelatedSection(buildRecommendationSection(
                     "相关推荐", "related", enhancedVO.getRelatedBlogs(),
-                    "热门推荐", "hot", enhancedVO.getHotBlogs(), id, 5));
+                    "热门推荐", "hot", enhancedVO.getHotBlogs(), blogId, 5));
         }
 
         return Result.success(enhancedVO);
@@ -258,6 +265,7 @@ public class BlogController {
 
             BlogRecommendationVO recommendation = new BlogRecommendationVO();
             recommendation.setId(item.getId());
+            recommendation.setPublicId(item.getPublicId());
             recommendation.setTitle(item.getTitle());
             recommendation.setCategoryId(item.getCategoryId());
             recommendation.setCategoryName(item.getCategoryName());
@@ -354,7 +362,7 @@ public class BlogController {
         Boolean isLiked = redisLikeService.toggleLike(id, userId);
 
         // 清除相关缓存（保持原有逻辑）
-        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
+        clearBlogDetailCaches(id);
         cacheService.deleteByPattern("blog:page:*");
 
         return Result.success(isLiked);
@@ -383,7 +391,7 @@ public class BlogController {
         Integer viewCount = blog != null ? blog.getViewCount() : 0;
 
         // 4. 清除相关缓存
-        unifiedCacheService.delete(RedisKeyFactory.BLOG_DETAIL, id);
+        clearBlogDetailCaches(id);
         cacheService.deleteByPattern("blog:page:*");
 
         return Result.success(new LikeResultDTO(isLiked, likeCount.intValue(), viewCount));
@@ -451,6 +459,7 @@ public class BlogController {
      * 获取相关推荐博客
      */
     @GetMapping("/{id}/related")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public Result<List<BlogDetailVO>> getRelatedBlogs(
             @PathVariable Long id,
             @RequestParam(defaultValue = "5") Integer limit) {
@@ -483,7 +492,7 @@ public class BlogController {
         xml.append("<language>zh-CN</language>");
 
         for (BlogDetailVO blog : blogs) {
-            String blogUrl = baseUrl + "/blog/" + blog.getId();
+            String blogUrl = baseUrl + "/blog/" + blog.getPublicId();
             String pubDate = blog.getPublishTime() != null
                     ? blog.getPublishTime().atZone(ZoneId.of("Asia/Shanghai")).format(DateTimeFormatter.RFC_1123_DATE_TIME)
                     : null;
@@ -586,6 +595,22 @@ public class BlogController {
             return (Long) authentication.getPrincipal();
         }
         throw new RuntimeException("用户未登录");
+    }
+
+    private Long getOptionalCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Long) {
+            return (Long) authentication.getPrincipal();
+        }
+        return null;
+    }
+
+    private void clearBlogDetailCaches(Long blogId) {
+        Blog blog = blogMapper.selectById(blogId);
+        if (blog != null && blog.getPublicId() != null) {
+            unifiedCacheService.delete(RedisKeyFactory.BLOG_PUBLIC_DETAIL, blog.getPublicId());
+        }
+        unifiedCacheService.delete(RedisKeyFactory.BLOG_INTERNAL_DETAIL, blogId);
     }
 
     private String escapeXml(String value) {

@@ -4,6 +4,7 @@
 
     <resultMap id="BlogDetailMap" type="com.ryan.myblog.model.vo.BlogDetailVO">
         <id column="id" property="id"/>
+        <result column="public_id" property="publicId"/>
         <result column="title" property="title"/>
         <result column="summary" property="summary"/>
         <result column="content" property="content"/>
@@ -28,6 +29,7 @@
 
     <resultMap id="BlogDetailWithTagsMap" type="com.ryan.myblog.model.vo.BlogDetailVO">
         <id column="id" property="id"/>
+        <result column="public_id" property="publicId"/>
         <result column="title" property="title"/>
         <result column="summary" property="summary"/>
         <result column="content" property="content"/>
@@ -58,6 +60,7 @@
     <!-- 不包含content字段的ResultMap，用于列表查询 -->
     <resultMap id="BlogListWithTagsMap" type="com.ryan.myblog.model.vo.BlogDetailVO">
         <id column="id" property="id"/>
+        <result column="public_id" property="publicId"/>
         <result column="title" property="title"/>
         <result column="summary" property="summary"/>
         <result column="cover_img" property="coverImg"/>
@@ -85,7 +88,7 @@
     </resultMap>
 
     <sql id="BlogBaseColumns">
-        id, title, summary, content, cover_img, author_id, category_id, status,
+        id, public_id, title, summary, content, cover_img, author_id, category_id, status,
         visibility, is_top, view_count,
         publish_time, status_changed_time, create_time, update_time, deleted
     </sql>
@@ -98,7 +101,62 @@
 
     <select id="selectBlogPage" resultMap="BlogListWithTagsMap">
         SELECT DISTINCT
-            b.id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.id, b.public_id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.visibility, b.is_top, b.view_count,
+            (SELECT COUNT(*) FROM tb_user_like ul 
+             WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
+             AND ul.status = 1 AND ul.deleted = 0) AS like_count,
+            (SELECT COUNT(*) FROM tb_comment c 
+             WHERE c.blog_id = b.id AND c.status = 1 AND c.deleted = 0) AS comment_count,
+            b.publish_time, b.create_time, b.update_time, b.status_changed_time,
+            u.nickname as author_name, u.avatar as author_avatar, c.name as category_name,
+            t.id as tag_id, t.name as tag_name, t.color as tag_color
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
+        LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
+        LEFT JOIN tb_tag t ON bt.tag_id = t.id AND t.deleted = 0
+        WHERE b.deleted = 0
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="tagId != null">
+            AND b.id IN (SELECT blog_id FROM tb_blog_tag WHERE tag_id = #{tagId})
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (b.title LIKE CONCAT('%', #{keyword}, '%') OR b.summary LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        AND b.status = 1
+        AND b.visibility = 1
+        <if test="timeRange != null and timeRange != 'all'">
+            <choose>
+                <when test="timeRange == '30d'">
+                    AND COALESCE(b.publish_time, b.create_time) >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                </when>
+                <when test="timeRange == '90d'">
+                    AND COALESCE(b.publish_time, b.create_time) >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+                </when>
+                <when test="timeRange == 'year'">
+                    AND COALESCE(b.publish_time, b.create_time) >= DATE_FORMAT(NOW(), '%Y-01-01 00:00:00')
+                </when>
+            </choose>
+        </if>
+        <choose>
+            <when test="sort == 'popular'">
+                ORDER BY b.view_count DESC, like_count DESC, COALESCE(b.publish_time, b.create_time) DESC
+            </when>
+            <when test="sort == 'liked'">
+                ORDER BY like_count DESC, b.view_count DESC, COALESCE(b.publish_time, b.create_time) DESC
+            </when>
+            <otherwise>
+                ORDER BY b.is_top DESC, COALESCE(b.publish_time, b.create_time) DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectAdminBlogPage" resultMap="BlogListWithTagsMap">
+        SELECT DISTINCT
+            b.id, b.public_id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
             b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -152,8 +210,8 @@
         </choose>
     </select>
 
-    <select id="selectBlogDetail" resultMap="BlogDetailMap">
-        SELECT b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id, 
+    <select id="selectPublicBlogDetailByPublicId" resultMap="BlogDetailMap">
+        SELECT b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
                b.status, b.visibility, b.is_top, b.view_count,
                (SELECT COUNT(*) FROM tb_user_like ul 
                 WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -165,7 +223,35 @@
         FROM tb_blog b
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
+        WHERE b.public_id = #{publicId}
+          AND b.deleted = 0
+          AND b.status = 1
+          AND b.visibility = 1
+    </select>
+
+    <select id="selectInternalBlogDetailById" resultMap="BlogDetailMap">
+        SELECT b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+               b.status, b.visibility, b.is_top, b.view_count,
+               (SELECT COUNT(*) FROM tb_user_like ul
+                WHERE ul.target_type = 'blog' AND ul.target_id = b.id
+                AND ul.status = 1 AND ul.deleted = 0) AS like_count,
+               (SELECT COUNT(*) FROM tb_comment c
+                WHERE c.blog_id = b.id AND c.status = 1 AND c.deleted = 0) AS comment_count,
+               b.publish_time, b.status_changed_time, b.create_time, b.update_time,
+               u.nickname as author_name, u.avatar as author_avatar, c.name as category_name
+        FROM tb_blog b
+        LEFT JOIN tb_user u ON b.author_id = u.id
+        LEFT JOIN tb_category c ON b.category_id = c.id
         WHERE b.id = #{id} AND b.deleted = 0
+    </select>
+
+    <select id="selectPublicIdByLegacyId" resultType="java.lang.String">
+        SELECT b.public_id
+        FROM tb_blog b
+        WHERE b.id = #{id}
+          AND b.deleted = 0
+          AND b.status = 1
+          AND b.visibility = 1
     </select>
 
     <update id="incrementViewCount">
@@ -176,7 +262,7 @@
 
     <select id="selectRelatedBlogs" resultMap="BlogDetailMap">
         SELECT DISTINCT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -189,7 +275,7 @@
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
         LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
-        WHERE b.deleted = 0 AND b.status = 1 AND b.id != #{blogId}
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1 AND b.id != #{blogId}
         AND (
             b.category_id = #{categoryId}
             <if test="tagIds != null and tagIds.size() > 0">
@@ -207,7 +293,7 @@
 
     <select id="selectPreviousBlog" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -219,7 +305,7 @@
         FROM tb_blog b
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
-        WHERE b.deleted = 0 AND b.status = 1
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1
         <if test="categoryId != null">
             AND b.category_id = #{categoryId}
         </if>
@@ -230,7 +316,7 @@
 
     <select id="selectNextBlog" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -242,7 +328,7 @@
         FROM tb_blog b
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
-        WHERE b.deleted = 0 AND b.status = 1
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1
         <if test="categoryId != null">
             AND b.category_id = #{categoryId}
         </if>
@@ -253,7 +339,7 @@
 
     <select id="selectHotBlogs" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -265,14 +351,14 @@
         FROM tb_blog b
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
-        WHERE b.deleted = 0 AND b.status = 1
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1
         ORDER BY b.view_count DESC, like_count DESC, b.publish_time DESC
         LIMIT #{limit}
     </select>
 
     <select id="selectLatestBlogs" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -284,7 +370,7 @@
         FROM tb_blog b
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
-        WHERE b.deleted = 0 AND b.status = 1
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1
         ORDER BY b.publish_time DESC
         LIMIT #{limit}
     </select>
@@ -294,6 +380,7 @@
         FROM tb_blog b
         WHERE b.deleted = 0
           AND b.status = 1
+          AND b.visibility = 1
           AND b.id IN
           <foreach collection="ids" item="id" open="(" separator="," close=")">
               #{id}
@@ -302,7 +389,7 @@
 
     <select id="selectBlogsByCategory" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -314,14 +401,14 @@
         FROM tb_blog b
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
-        WHERE b.deleted = 0 AND b.status = 1 AND b.category_id = #{categoryId}
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1 AND b.category_id = #{categoryId}
         ORDER BY b.publish_time DESC
         LIMIT #{limit}
     </select>
 
     <select id="selectBlogsByTags" resultMap="BlogDetailMap">
         SELECT DISTINCT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -334,7 +421,7 @@
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category c ON b.category_id = c.id
         INNER JOIN tb_blog_tag bt ON b.id = bt.blog_id
-        WHERE b.deleted = 0 AND b.status = 1
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1
         <if test="excludeBlogId != null">
             AND b.id != #{excludeBlogId}
         </if>
@@ -348,7 +435,7 @@
 
     <select id="selectDraftsByAuthor" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -368,7 +455,7 @@
 
     <select id="selectBlogsByAuthor" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -391,14 +478,14 @@
     <!-- 新增：查询热门博客（包含标签，不包含content） -->
     <select id="selectHotBlogsWithTags" resultMap="BlogListWithTagsMap">
         SELECT
-            b.id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.id, b.public_id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
             b.visibility, b.is_top, b.view_count, b.like_count, b.comment_count,
             b.publish_time, b.create_time, b.update_time, b.status_changed_time,
             b.author_name, b.author_avatar, b.category_name,
             t.id as tag_id, t.name as tag_name, t.color as tag_color
         FROM (
             SELECT 
-                blog.id, blog.title, blog.summary, blog.cover_img, blog.author_id, blog.category_id, blog.status,
+                blog.id, blog.public_id, blog.title, blog.summary, blog.cover_img, blog.author_id, blog.category_id, blog.status,
                 blog.visibility, blog.is_top, blog.view_count,
                 (SELECT COUNT(*) FROM tb_user_like ul 
                  WHERE ul.target_type = 'blog' AND ul.target_id = blog.id 
@@ -410,7 +497,7 @@
             FROM tb_blog blog
             LEFT JOIN tb_user u ON blog.author_id = u.id
             LEFT JOIN tb_category c ON blog.category_id = c.id
-            WHERE blog.deleted = 0 AND blog.status = 1
+            WHERE blog.deleted = 0 AND blog.status = 1 AND blog.visibility = 1
             ORDER BY blog.view_count DESC, (SELECT COUNT(*) FROM tb_user_like ul WHERE ul.target_type = 'blog' AND ul.target_id = blog.id AND ul.status = 1 AND ul.deleted = 0) DESC, blog.publish_time DESC
             LIMIT #{limit}
         ) b
@@ -422,14 +509,14 @@
     <!-- 新增：查询最新博客（包含标签，不包含content） -->
     <select id="selectLatestBlogsWithTags" resultMap="BlogListWithTagsMap">
         SELECT
-            b.id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.id, b.public_id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
             b.visibility, b.is_top, b.view_count, b.like_count, b.comment_count,
             b.publish_time, b.create_time, b.update_time, b.status_changed_time,
             b.author_name, b.author_avatar, b.category_name,
             t.id as tag_id, t.name as tag_name, t.color as tag_color
         FROM (
             SELECT 
-                blog.id, blog.title, blog.summary, blog.cover_img, blog.author_id, blog.category_id, blog.status,
+                blog.id, blog.public_id, blog.title, blog.summary, blog.cover_img, blog.author_id, blog.category_id, blog.status,
                 blog.visibility, blog.is_top, blog.view_count,
                 (SELECT COUNT(*) FROM tb_user_like ul 
                  WHERE ul.target_type = 'blog' AND ul.target_id = blog.id 
@@ -441,7 +528,7 @@
             FROM tb_blog blog
             LEFT JOIN tb_user u ON blog.author_id = u.id
             LEFT JOIN tb_category c ON blog.category_id = c.id
-            WHERE blog.deleted = 0 AND blog.status = 1
+            WHERE blog.deleted = 0 AND blog.status = 1 AND blog.visibility = 1
             ORDER BY blog.publish_time DESC
             LIMIT #{limit}
         ) b
@@ -453,7 +540,7 @@
     <!-- 新增：查询相关博客（包含标签，不包含content） -->
     <select id="selectRelatedBlogsWithTags" resultMap="BlogListWithTagsMap">
         SELECT DISTINCT
-            b.id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.id, b.public_id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
             b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -468,7 +555,7 @@
         LEFT JOIN tb_category c ON b.category_id = c.id
         LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
         LEFT JOIN tb_tag t ON bt.tag_id = t.id AND t.deleted = 0
-        WHERE b.deleted = 0 AND b.status = 1 AND b.id != #{blogId}
+        WHERE b.deleted = 0 AND b.status = 1 AND b.visibility = 1 AND b.id != #{blogId}
         AND (
             b.category_id = #{categoryId}
             <if test="tagIds != null and tagIds.size() > 0">
@@ -511,6 +598,7 @@
             LEFT JOIN tb_blog_tag bt ON b.id = bt.blog_id
             WHERE b.deleted = 0
               AND b.status = 1
+              AND b.visibility = 1
               AND b.id != #{blogId}
               AND (
                 <trim suffixOverrides="OR">
@@ -538,7 +626,7 @@
 
     <select id="selectBlogsByIdsWithTags" resultMap="BlogListWithTagsMap">
         SELECT
-            b.id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
+            b.id, b.public_id, b.title, b.summary, b.cover_img, b.author_id, b.category_id, b.status,
             b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id
@@ -555,6 +643,7 @@
         LEFT JOIN tb_tag t ON bt.tag_id = t.id AND t.deleted = 0
         WHERE b.deleted = 0
           AND b.status = 1
+          AND b.visibility = 1
           AND b.id IN
           <foreach collection="ids" item="id" open="(" separator="," close=")">
               #{id}
@@ -569,7 +658,7 @@
     <!-- 查询用户点赞的博客 -->
     <select id="selectLikedBlogsByUser" resultMap="BlogDetailMap">
         SELECT 
-            b.id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
+            b.id, b.public_id, b.title, b.summary, b.content, b.cover_img, b.author_id, b.category_id,
             b.status, b.visibility, b.is_top, b.view_count,
             (SELECT COUNT(*) FROM tb_user_like ul 
              WHERE ul.target_type = 'blog' AND ul.target_id = b.id 
@@ -583,7 +672,7 @@
         INNER JOIN tb_user_like ul ON b.id = ul.target_id AND ul.target_type = 'blog'
         LEFT JOIN tb_user u ON b.author_id = u.id
         LEFT JOIN tb_category cat ON b.category_id = cat.id
-        WHERE ul.user_id = #{userId} AND ul.status = 1 AND b.status = 1
+        WHERE ul.user_id = #{userId} AND ul.status = 1 AND b.status = 1 AND b.visibility = 1
         ORDER BY ul.create_time DESC
     </select>
 

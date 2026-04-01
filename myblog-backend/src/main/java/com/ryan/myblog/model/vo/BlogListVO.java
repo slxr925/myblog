@@ -17,6 +17,11 @@ public class BlogListVO {
     private Long id;
 
     /**
+     * 公开访问ID（UUID）
+     */
+    private String publicId;
+
+    /**
      * 标题
      */
     private String title;

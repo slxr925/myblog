@@ -29,6 +29,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { api } from '../../utils/api';
+import { getPublicBlogPath } from '../../utils/blogLinks';
 import { UserCollectionVO, CollectionFolderVO } from '../../types/api';
 import { toast } from 'sonner';
 
@@ -153,8 +154,8 @@ const CollectionList: React.FC<CollectionListProps> = ({ folderId, onRefresh }) 
     }
   };
 
-  const openBlog = (blogId: number) => {
-    window.open(`/blog/${blogId}`, '_blank');
+  const openBlog = (item: UserCollectionVO) => {
+    window.open(getPublicBlogPath({ publicId: item.publicId ?? item.blog?.publicId, id: item.blogId }), '_blank');
   };
 
   return (
@@ -253,7 +254,7 @@ const CollectionList: React.FC<CollectionListProps> = ({ folderId, onRefresh }) 
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => openBlog(item.blogId)}
+                                onClick={() => openBlog(item)}
                               >
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 打开博客

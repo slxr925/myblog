@@ -36,6 +36,11 @@ public class UserCollectionVO {
     private Long blogId;
 
     /**
+     * 公开访问ID（扁平化字段）
+     */
+    private String publicId;
+
+    /**
      * 博客标题（扁平化字段）
      */
     private String blogTitle;

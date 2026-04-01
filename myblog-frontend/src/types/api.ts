@@ -68,6 +68,7 @@ export interface Tag {
 // 博客详情VO
 export interface BlogDetailVO {
   id: number;
+  publicId?: string;
   title: string;
   summary: string;
   content: string;
@@ -114,6 +115,7 @@ export interface BlogDocument {
 
 export interface BlogListVO {
   id: number;
+  publicId?: string;
   title: string;
   summary?: string;
   coverImage?: string;
@@ -151,6 +153,7 @@ export interface PageResult<T> {
 
 export interface BlogRecommendationVO {
   id: number;
+  publicId?: string;
   title: string;
   categoryId?: number;
   categoryName?: string;
@@ -164,6 +167,10 @@ export interface RecommendationSectionVO {
   title: string;
   source: 'related' | 'hot' | 'category' | 'latest';
   items: BlogRecommendationVO[];
+}
+
+export interface BlogLegacyRedirectVO {
+  publicId: string;
 }
 
 // 博客详情增强VO
@@ -180,6 +187,7 @@ export interface BlogDetailEnhancedVO {
 // 前端博客文章类型
 export interface BlogPost {
   id: number;
+  publicId?: string;
   title: string;
   excerpt: string;
   highlightedTitle?: string;
@@ -265,6 +273,7 @@ export enum UserStatus {
 export interface CommentVO {
   id: number;
   blogId: number;
+  publicId?: string;
   userId: number;
   username: string;
   nickname?: string;  // 添加nickname字段
@@ -372,6 +381,7 @@ export interface UserCollectionVO {
   folderId: number;
   folderName: string;
   blogId: number;
+  publicId?: string;
   blogTitle: string;
   blogSummary?: string;
   authorName: string;
@@ -433,6 +443,7 @@ export interface FollowPageResponse {
 export interface BrowseHistoryVO {
   id: number;
   blogId: number;
+  publicId?: string;
   title: string;
   summary: string;
   coverImg?: string;
