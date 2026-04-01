@@ -5,13 +5,13 @@ import type { BlogPost } from '../types/api';
 interface BlogCardProps {
   post: BlogPost;
   index: number;
-  onClick: (postId: number | string) => void;
+  onClick: (post: Pick<BlogPost, 'id' | 'publicId'>) => void;
 }
 
 // Editorial-style blog card component
 const BlogCard = memo(({ post, index, onClick }: BlogCardProps) => {
   const handleClick = () => {
-    onClick(post.id);
+    onClick({ id: post.id, publicId: post.publicId });
   };
 
   return (
