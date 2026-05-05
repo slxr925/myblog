@@ -41,7 +41,9 @@ import type {
   BlogRevisionVO,
   BlogRevisionDiffVO,
   AiUsageDailyVO,
-  AiUsageUserVO
+  AiUsageUserVO,
+  OpenAiConfigUpdateDTO,
+  OpenAiConfigVO
 } from '../types/api';
 
 // 创建axios实例
@@ -72,6 +74,16 @@ type ApiError = Error & {
   originalError?: unknown;
   isAuthError?: boolean;
 };
+
+type AiStreamEventName = 'status' | 'delta' | 'relatedArticles' | 'done' | 'error';
+
+export interface AiChatStreamHandlers {
+  onStatus?: (message: string) => void;
+  onDelta?: (text: string) => void;
+  onRelatedArticles?: (items: any[]) => void;
+  onDone?: (data: any) => void;
+  onError?: (message: string) => void;
+}
 
 const refreshAccessToken = async (): Promise<TokenResponse> => {
   const refreshToken = localStorage.getItem('refreshToken');
@@ -846,6 +858,15 @@ export const api = {
       return apiClient.get('/admin/ai-usage/daily', { params: { userId, days } }) as Promise<AiUsageDailyVO[]>;
     },
 
+    // OpenAI运行期配置
+    getOpenAiConfig: async (): Promise<OpenAiConfigVO> => {
+      return apiClient.get('/admin/openai-config') as Promise<OpenAiConfigVO>;
+    },
+
+    updateOpenAiConfig: async (data: OpenAiConfigUpdateDTO): Promise<OpenAiConfigVO> => {
+      return apiClient.put('/admin/openai-config', data) as Promise<OpenAiConfigVO>;
+    },
+
     // ========== Arthas增强监控API ==========
 
     // 获取Arthas监控Dashboard（包含系统+性能+业务指标）
@@ -1140,6 +1161,75 @@ export const api = {
       return apiClient.post('/ai/chat', params, {
         timeout: 60000, // 60秒超时，因为AI响应较慢
       });
+    },
+
+    chatStream: async (
+      params: { question: string; conversationId?: string; history?: any[] },
+      handlers: AiChatStreamHandlers,
+    ): Promise<void> => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${getBaseURL()}/ai/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(params),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`AI stream request failed: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const dispatchEvent = (rawEvent: string) => {
+        const lines = rawEvent.split(/\r?\n/);
+        let eventName: AiStreamEventName = 'delta';
+        const dataLines: string[] = [];
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventName = line.slice('event:'.length).trim() as AiStreamEventName;
+          } else if (line.startsWith('data:')) {
+            dataLines.push(line.slice('data:'.length).trimStart());
+          }
+        }
+
+        if (dataLines.length === 0) return;
+        const rawData = dataLines.join('\n');
+        let data: any = rawData;
+        try {
+          data = JSON.parse(rawData);
+        } catch {
+          // keep string data
+        }
+
+        if (eventName === 'status') handlers.onStatus?.(data.message || String(data));
+        if (eventName === 'delta') handlers.onDelta?.(data.text || String(data));
+        if (eventName === 'relatedArticles') handlers.onRelatedArticles?.(data.items || []);
+        if (eventName === 'done') handlers.onDone?.(data);
+        if (eventName === 'error') {
+          const message = data.message || String(data);
+          handlers.onError?.(message);
+          throw new Error(message);
+        }
+      };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split(/\r?\n\r?\n/);
+        buffer = events.pop() || '';
+        events.forEach(dispatchEvent);
+      }
+
+      if (buffer.trim()) {
+        dispatchEvent(buffer);
+      }
     },
 
     // 生成文章标题（需要更长超时时间）

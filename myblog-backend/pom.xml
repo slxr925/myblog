@@ -195,6 +195,13 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
+        <!-- Tests -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Arthas Spring Boot Starter (JVM诊断工具) -->
         <dependency>
             <groupId>com.taobao.arthas</groupId>

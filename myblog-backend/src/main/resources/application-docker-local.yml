@@ -48,7 +48,12 @@ spring:
         enabled: ${AI_ENABLED:true}
         options:
           model: ${OPENAI_MODEL:GLM-4.7}
-          temperature: 0.7
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+          max-tokens-chat: ${OPENAI_MAX_TOKENS_CHAT:700}
+          max-tokens-title: ${OPENAI_MAX_TOKENS_TITLE:80}
+          max-tokens-summary: ${OPENAI_MAX_TOKENS_SUMMARY:260}
+          max-tokens-keywords: ${OPENAI_MAX_TOKENS_KEYWORDS:120}
+          max-tokens-polish: ${OPENAI_MAX_TOKENS_POLISH:1200}
         completions-path: ${OPENAI_COMPLETIONS_PATH:/chat/completions}
 
 # Elasticsearch配置

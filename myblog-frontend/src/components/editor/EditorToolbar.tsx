@@ -205,7 +205,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             {onPolishContent && (
               <Button variant="outline" size="sm" onClick={onPolishContent} disabled={!content.trim() || isPolishing}>
                 {isPolishing ? <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-foreground" /> : <Wand2 className="h-4 w-4" />}
-                AI润色正文
+                {isPolishing ? '正在润色...' : 'AI润色正文'}
               </Button>
             )}
 

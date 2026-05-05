@@ -83,6 +83,12 @@ else
     echo -e "${GREEN}✓ 使用现有 .env 配置${NC}"
 fi
 
+# 后端容器以 spring(uid 1000) 运行，后台 AI 配置页需要写入挂载的 /app/.env。
+# 保持文件仅容器用户和 root 可读写，避免下次部署后恢复成 root-only 导致保存失败。
+chown 1000:1000 .env
+chmod 600 .env
+echo -e "${GREEN}✓ .env 写入权限已配置${NC}"
+
 if [ -z "$MYSQL_PASSWORD" ] || [ -z "$JWT_SECRET" ]; then
     echo -e "${RED}错误: MYSQL_PASSWORD 或 JWT_SECRET 未配置${NC}"
     exit 1

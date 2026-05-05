@@ -151,11 +151,18 @@ services:
       JWT_SECRET: myBlogSecretKeyForJWTTokenGeneration2024!@#$%
       # AI配置
       AI_ENABLED: "true"
+      ENV_CONFIG_FILE: /app/.env
       OPENAI_BASE_URL: https://api.minimaxi.com/v1
       OPENAI_MODEL: MiniMax-M2.5
       OPENAI_COMPLETIONS_PATH: /chat/completions
+      OPENAI_MAX_TOKENS_CHAT: 700
+      OPENAI_MAX_TOKENS_TITLE: 80
+      OPENAI_MAX_TOKENS_SUMMARY: 260
+      OPENAI_MAX_TOKENS_KEYWORDS: 120
+      OPENAI_MAX_TOKENS_POLISH: 1200
     volumes:
       - ./myblog-backend:/app:rw
+      - ./.env.local:/app/.env:rw
       - ~/.m2:/root/.m2:rw # 缓存Maven依赖
     depends_on:
       mysql:

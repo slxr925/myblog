@@ -421,7 +421,7 @@ const BlogDetail: React.FC = () => {
                     {isGeneratingSummary ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        生成中
+                        正在生成摘要
                       </>
                     ) : (
                       <>
@@ -441,7 +441,7 @@ const BlogDetail: React.FC = () => {
                     {isExtractingKeywords ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        提取中
+                        正在提取关键词
                       </>
                     ) : (
                       <>

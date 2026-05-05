@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
+  Bot,
   FileText,
   FolderOpen,
   Hash,
@@ -28,6 +29,7 @@ type AdminNavKey =
   | 'reports'
   | 'audit'
   | 'ai'
+  | 'openai'
 
 interface AdminShellProps {
   activeMenu: AdminNavKey
@@ -52,6 +54,7 @@ const menuItems: Array<{
   { id: 'reports', icon: AlertCircle, label: '举报管理' },
   { id: 'audit', icon: Shield, label: '审计日志' },
   { id: 'ai', icon: Sparkles, label: 'AI用量' },
+  { id: 'openai', icon: Bot, label: 'AI配置' },
 ]
 
 export const getMenuHref = (id: AdminNavKey) => {

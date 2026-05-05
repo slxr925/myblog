@@ -601,6 +601,40 @@ export interface AiUsageUserVO {
   tokenCount: number;
 }
 
+export interface OpenAiConfigVO {
+  aiEnabled: boolean;
+  apiKeyConfigured: boolean;
+  apiKeyMasked: string;
+  baseUrl: string;
+  model: string;
+  completionsPath: string;
+  temperature: number;
+  maxTokensChat: number;
+  maxTokensTitle: number;
+  maxTokensSummary: number;
+  maxTokensKeywords: number;
+  maxTokensPolish: number;
+  available: boolean;
+  envFileExists: boolean;
+  envFilePath: string;
+  lastModifiedAt?: string;
+}
+
+export interface OpenAiConfigUpdateDTO {
+  aiEnabled?: boolean;
+  apiKey?: string;
+  clearApiKey?: boolean;
+  baseUrl?: string;
+  model?: string;
+  completionsPath?: string;
+  temperature?: number;
+  maxTokensChat?: number;
+  maxTokensTitle?: number;
+  maxTokensSummary?: number;
+  maxTokensKeywords?: number;
+  maxTokensPolish?: number;
+}
+
 // 未读数量响应
 export interface UnreadCountVO {
   total: number;

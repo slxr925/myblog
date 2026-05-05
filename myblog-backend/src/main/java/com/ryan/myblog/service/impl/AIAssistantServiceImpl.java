@@ -2,42 +2,45 @@ package com.ryan.myblog.service.impl;
 
 import com.ryan.myblog.model.dto.AIChatRequest;
 import com.ryan.myblog.model.dto.AIChatResponse;
-import com.ryan.myblog.service.AIAssistantService;
-import com.ryan.myblog.service.BlogService;
-import com.ryan.myblog.service.CategoryService;
-import com.ryan.myblog.service.TagService;
-import com.ryan.myblog.model.vo.BlogListVO;
-import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.entity.Category;
 import com.ryan.myblog.model.entity.Tag;
+import com.ryan.myblog.model.vo.BlogDetailVO;
+import com.ryan.myblog.model.vo.BlogListVO;
+import com.ryan.myblog.service.AIAssistantService;
+import com.ryan.myblog.service.AiAction;
+import com.ryan.myblog.service.BlogService;
+import com.ryan.myblog.service.CategoryService;
+import com.ryan.myblog.service.OpenAiRuntimeConfigService;
+import com.ryan.myblog.service.TagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * AI智能助手服务实现
+ * AI智能助手服务实现。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AIAssistantServiceImpl implements AIAssistantService {
 
-        // 清洗模型思考内容：<think>...</think> / <thinking>...</thinking>（大小写不敏感）
         private static final Pattern THINK_BLOCK_PATTERN = Pattern.compile(
                         "(?is)<\\s*(?:think|thinking)\\b[^>]*>.*?<\\s*/\\s*(?:think|thinking)\\s*>");
-        // 兜底清理残留标签
         private static final Pattern THINK_TAG_PATTERN = Pattern.compile(
                         "(?is)</?\\s*(?:think|thinking)\\b[^>]*>");
-        // 性能优化参数
+
         private static final int CHAT_HISTORY_LIMIT = 10;
         private static final int CHAT_HISTORY_MESSAGE_MAX_CHARS = 300;
         private static final int SUMMARY_MAX_CONTENT_CHARS = 3000;
@@ -48,23 +51,14 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private static final int DEFAULT_CACHE_TTL_SECONDS = 60 * 60 * 24;
         private static final long CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000L;
         private static final long RELATED_ARTICLES_CACHE_TTL_MS = 5 * 60 * 1000L;
+        private static final long SSE_TIMEOUT_MS = 60_000L;
 
         private final BlogService blogService;
         private final CategoryService categoryService;
         private final TagService tagService;
         private final com.ryan.myblog.service.CacheService cacheService;
+        private final OpenAiRuntimeConfigService openAiRuntimeConfigService;
 
-        @Autowired(required = false)
-        private OpenAiChatModel chatModel;
-
-        @Value("${spring.ai.enabled:false}")
-        private boolean aiEnabled;
-
-        @Value("${spring.ai.openai.api-key:}")
-        private String apiKey;
-
-        // 运行期缓存，减少高频AI请求时的数据库与对象构建开销
-        private volatile ChatClient cachedChatClient;
         private volatile String cachedBlogContext;
         private volatile long blogContextExpiresAt = 0L;
         private volatile List<BlogListVO> cachedRelatedArticleCandidates = java.util.Collections.emptyList();
@@ -72,79 +66,114 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
         @jakarta.annotation.PostConstruct
         public void logAIConfig() {
-                log.info("AIAssistantService配置: aiEnabled={}, apiKey长度={}, chatModel注入={}",
-                                aiEnabled,
-                                apiKey != null ? apiKey.length() : 0,
-                                chatModel != null);
-                if (chatModel != null) {
-                        cachedChatClient = ChatClient.builder(chatModel).build();
-                }
+                var config = openAiRuntimeConfigService.getConfig();
+                log.info("AIAssistantService配置: aiEnabled={}, apiKeyConfigured={}, available={}, baseUrl={}, model={}",
+                                config.getAiEnabled(),
+                                config.getApiKeyConfigured(),
+                                config.getAvailable(),
+                                config.getBaseUrl(),
+                                config.getModel());
         }
 
         @Override
         public AIChatResponse chat(AIChatRequest request) {
-                long startTime = System.currentTimeMillis();
+                String requestId = newRequestId(AiAction.CHAT);
+                long totalStart = System.currentTimeMillis();
 
                 try {
-                        // 构建上下文信息
+                        long contextStart = System.currentTimeMillis();
                         String context = buildContext();
+                        long contextMs = elapsed(contextStart);
 
-                        // 判断是否启用AI
-                        if (!aiEnabled || apiKey == null || apiKey.isEmpty()) {
-                                // 降级策略：使用规则匹配
+                        if (!isAIAvailable()) {
                                 String answer = handleWithRules(request.getQuestion(), context);
                                 List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(answer);
-                                return AIChatResponse.builder()
-                                                .answer(answer)
-                                                .conversationId(generateConversationId())
-                                                .aiEnabled(false)
-                                                .responseTime(System.currentTimeMillis() - startTime)
-                                                .relatedArticles(relatedArticles)
-                                                .build();
+                                logAiSuccess(requestId, AiAction.CHAT, 0, false, contextMs, -1, -1, 0, elapsed(totalStart), answer.length());
+                                return buildChatResponse(request, answer, false, totalStart, relatedArticles);
                         }
 
-                        // 使用AI处理
                         String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), context);
                         String cachedAnswer = getCachedValue(chatCacheKey, CHAT_CACHE_TTL_SECONDS);
                         if (cachedAnswer != null) {
                                 List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(cachedAnswer);
-                                return AIChatResponse.builder()
-                                                .answer(cachedAnswer)
-                                                .conversationId(request.getConversationId() != null
-                                                                ? request.getConversationId()
-                                                                : generateConversationId())
-                                                .aiEnabled(true)
-                                                .responseTime(System.currentTimeMillis() - startTime)
-                                                .relatedArticles(relatedArticles)
-                                                .build();
+                                logAiSuccess(requestId, AiAction.CHAT, 0, true, contextMs, -1, -1, 0, elapsed(totalStart), cachedAnswer.length());
+                                return buildChatResponse(request, cachedAnswer, true, totalStart, relatedArticles);
                         }
 
-                        String answer = handleWithAI(request.getQuestion(), context, request.getHistory());
+                        String prompt = buildChatPrompt(request.getQuestion(), context, request.getHistory());
+                        String answer = callAI(AiAction.CHAT, prompt, requestId, contextMs, totalStart);
                         cacheValue(chatCacheKey, answer, CHAT_CACHE_TTL_SECONDS);
                         List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(answer);
-                        return AIChatResponse.builder()
-                                        .answer(answer)
-                                        .conversationId(request.getConversationId() != null
-                                                        ? request.getConversationId()
-                                                        : generateConversationId())
-                                        .aiEnabled(true)
-                                        .responseTime(System.currentTimeMillis() - startTime)
-                                        .relatedArticles(relatedArticles)
-                                        .build();
+                        return buildChatResponse(request, answer, true, totalStart, relatedArticles);
 
                 } catch (Exception e) {
-                        log.error("AI助手处理失败", e);
-                        // 降级处理
+                        log.error("AI助手处理失败 requestId={} action={} totalMs={}", requestId, AiAction.CHAT, elapsed(totalStart), e);
                         String context = buildContext();
                         String answer = handleWithRules(request.getQuestion(), context);
                         List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(answer);
-                        return AIChatResponse.builder()
-                                        .answer(answer)
-                                        .conversationId(generateConversationId())
-                                        .aiEnabled(false)
-                                        .responseTime(System.currentTimeMillis() - startTime)
-                                        .relatedArticles(relatedArticles)
-                                        .build();
+                        return buildChatResponse(request, answer, false, totalStart, relatedArticles);
+                }
+        }
+
+        @Override
+        public SseEmitter streamChat(AIChatRequest request) {
+                SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+                String requestId = newRequestId(AiAction.CHAT);
+                CompletableFuture.runAsync(() -> streamChatInternal(request, emitter, requestId));
+                return emitter;
+        }
+
+        private void streamChatInternal(AIChatRequest request, SseEmitter emitter, String requestId) {
+                long totalStart = System.currentTimeMillis();
+                long contextMs = -1L;
+                int promptChars = 0;
+                boolean cacheHit = false;
+
+                try {
+                        sendSse(emitter, "status", Map.of("message", "正在理解问题..."));
+                        long contextStart = System.currentTimeMillis();
+                        String context = buildContext();
+                        contextMs = elapsed(contextStart);
+
+                        if (!isAIAvailable()) {
+                                String answer = handleWithRules(request.getQuestion(), context);
+                                sendAnswerChunks(emitter, answer);
+                                sendDone(emitter, request, totalStart, false, false);
+                                logAiSuccess(requestId, AiAction.CHAT, 0, false, contextMs, -1, -1, 0,
+                                                elapsed(totalStart), answer.length());
+                                return;
+                        }
+
+                        String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), context);
+                        String cachedAnswer = getCachedValue(chatCacheKey, CHAT_CACHE_TTL_SECONDS);
+                        if (cachedAnswer != null) {
+                                cacheHit = true;
+                                sendSse(emitter, "status", Map.of("message", "已命中缓存，正在整理回答..."));
+                                sendAnswerChunks(emitter, cachedAnswer);
+                                sendRelatedArticles(emitter, cachedAnswer);
+                                sendDone(emitter, request, totalStart, true, true);
+                                logAiSuccess(requestId, AiAction.CHAT, 0, true, contextMs, -1, -1, 0, elapsed(totalStart), cachedAnswer.length());
+                                return;
+                        }
+
+                        sendSse(emitter, "status", Map.of("message", "正在生成回答..."));
+                        String prompt = buildChatPrompt(request.getQuestion(), context, request.getHistory());
+                        promptChars = prompt.length();
+                        StreamResult streamResult = streamAI(AiAction.CHAT, prompt, requestId, contextMs, totalStart, emitter);
+                        String answer = ensureNonBlankAiResult(streamResult.answer(), "聊天回复");
+                        cacheValue(chatCacheKey, answer, CHAT_CACHE_TTL_SECONDS);
+                        sendRelatedArticles(emitter, answer);
+                        sendDone(emitter, request, totalStart, false, true);
+
+                } catch (Exception e) {
+                        log.error("AI流式调用失败 requestId={} action={} promptChars={} cacheHit={} contextMs={} totalMs={}",
+                                        requestId, AiAction.CHAT, promptChars, cacheHit, contextMs, elapsed(totalStart), e);
+                        try {
+                                sendSse(emitter, "error", Map.of("message", "AI服务暂时不可用，请稍后再试"));
+                                emitter.complete();
+                        } catch (Exception sendError) {
+                                emitter.completeWithError(sendError);
+                        }
                 }
         }
 
@@ -159,9 +188,6 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 "快来问我吧！";
         }
 
-        /**
-         * 构建博客上下文信息
-         */
         private String buildContext() {
                 long now = System.currentTimeMillis();
                 if (cachedBlogContext != null && now < blogContextExpiresAt) {
@@ -183,13 +209,11 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private String doBuildContext() {
                 StringBuilder context = new StringBuilder();
 
-                // 获取所有分类 - 使用WithCount方法避免缓存问题
                 List<Category> categories = categoryService.getAllCategoriesWithCount();
                 context.append("博客分类：\n");
                 categories.forEach(cat -> context.append("- ").append(cat.getName())
                                 .append(": ").append(cat.getDescription()).append("\n"));
 
-                // 获取所有标签
                 List<Tag> tags = tagService.getAllTags();
                 context.append("\n技术标签：\n");
                 context.append(tags.stream()
@@ -197,28 +221,24 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 .map(Tag::getName)
                                 .collect(Collectors.joining("、")));
 
-                // 获取最新文章
                 List<BlogListVO> recentBlogs = blogService.getRecentBlogs(5);
                 context.append("\n\n最新文章：\n");
                 recentBlogs.forEach(blog -> context.append("- 《").append(blog.getTitle()).append("》\n"));
 
-                // 获取热门文章
                 List<BlogDetailVO> hotBlogsDetail = blogService.getHotBlogs(5);
                 List<BlogListVO> hotBlogs = hotBlogsDetail.stream()
                                 .map(blog -> {
                                         BlogListVO vo = new BlogListVO();
                                         vo.setId(blog.getId());
                                         vo.setTitle(blog.getTitle());
-                                        vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue()
-                                                        : 0L);
+                                        vo.setViewCount(blog.getViewCount() != null ? blog.getViewCount().longValue() : 0L);
                                         return vo;
                                 })
                                 .collect(Collectors.toList());
-                context.append("\n\u70ed\u95e8\u6587\u7ae0\uff1a\n");
-                hotBlogs.forEach(blog -> context.append("- \u300a").append(blog.getTitle())
-                                .append("\u300b (").append(blog.getViewCount()).append("\u6b21\u9605\u8bfb)\n"));
+                context.append("\n热门文章：\n");
+                hotBlogs.forEach(blog -> context.append("- 《").append(blog.getTitle())
+                                .append("》 (").append(blog.getViewCount()).append("次阅读)\n"));
 
-                // 技术栈信息
                 context.append("\n技术栈：\n");
                 context.append("后端：Spring Boot 3.5 + MyBatis Plus + MySQL + Redis + Elasticsearch\n");
                 context.append("前端：React 19 + TypeScript + Vite + TailwindCSS\n");
@@ -227,17 +247,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 return context.toString();
         }
 
-        /**
-         * 使用AI处理问题
-         */
-        private String handleWithAI(String question, String context, List<AIChatRequest.ChatMessage> history) {
-                ChatClient chatClient = getChatClient();
-                if (chatClient == null) {
-                        log.warn("OpenAiChatModel未初始化，降级为规则匹配");
-                        return handleWithRules(question, context);
-                }
-
-                // 构建历史对话上下文
+        private String buildChatPrompt(String question, String context, List<AIChatRequest.ChatMessage> history) {
                 StringBuilder historyContext = new StringBuilder();
                 if (history != null && !history.isEmpty()) {
                         int startIndex = Math.max(0, history.size() - CHAT_HISTORY_LIMIT);
@@ -253,46 +263,17 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         historyContext.append("\n");
                 }
 
-                String prompt = String.format(
-                                "你是MyBlog博客的智能助手，由博主Ryan创建。你既是博客导航员，也是一个友好的技术聊天伙伴。\n\n" +
-                                                "【核心原则】\n" +
-                                                "1. 推荐文章时，只能推荐【博客信息】中明确列出的文章，不能编造不存在的文章\n" +
-                                                "2. 引用数据（阅读量、日期等）必须使用上下文中提供的准确数字，没有就不提\n" +
-                                                "3. 同一篇文章只推荐一次\n\n" +
-                                                "【你的能力】\n" +
-                                                "1. 帮助用户了解和探索博客中的文章\n" +
-                                                "2. 回答技术相关的问题，可以结合你的知识进行解答\n" +
-                                                "3. 如果博客中有相关文章，可以顺便推荐\n" +
-                                                "4. 进行友好的日常对话，但记住你的主要身份是博客助手\n\n" +
-                                                "【回答风格】\n" +
-                                                "- 友好、简洁、有帮助\n" +
-                                                "- 技术问题可以详细解答，同时推荐相关博客文章\n" +
-                                                "- 非技术问题也可以聊，但可以适时引导到博客内容\n\n" +
-                                                "【博客信息】\n%s\n\n" +
-                                                "%s" +
-                                                "【用户问题】%s",
-                                context, historyContext.toString(), question);
-
-                String rawResult = chatClient.prompt()
-                                .user(prompt)
-                                .call()
-                                .content();
-                String result = sanitizeAiOutput(rawResult);
-                if (!rawResult.equals(result)) {
-                        log.warn("检测到聊天回答包含模型思考内容并已过滤，原始长度={}, 过滤后长度={}", rawResult.length(), result.length());
-                }
-                return ensureNonBlankAiResult(result, "聊天回复");
+                return String.format(
+                                "你是MyBlog博客助手。请直接、简洁、有帮助地回答。\n" +
+                                                "规则：推荐文章时只能使用【博客信息】中出现的文章；不要编造文章、阅读量或日期；不要输出思考过程。\n\n" +
+                                                "【博客信息】\n%s\n\n%s【用户问题】%s",
+                                context, historyContext, question);
         }
 
-        /**
-         * 使用规则匹配处理（降级策略）
-         */
         private String handleWithRules(String question, String context) {
                 String lowerQ = question.toLowerCase();
 
-                // 技术栈相关
-                if (lowerQ.contains("技术栈") || lowerQ.contains("用了什么技术") ||
-                                lowerQ.contains("技术选型")) {
+                if (lowerQ.contains("技术栈") || lowerQ.contains("用了什么技术") || lowerQ.contains("技术选型")) {
                         return "MyBlog采用现代化技术栈：\n\n" +
                                         "🔹 后端：Spring Boot 3.5 + MyBatis Plus + MySQL + Redis + Elasticsearch\n" +
                                         "🔹 前端：React 19 + TypeScript + Vite + TailwindCSS\n" +
@@ -300,9 +281,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                         "完整的前后端分离架构，支持全文搜索和分布式缓存！";
                 }
 
-                // 文章相关
-                if (lowerQ.contains("有什么文章") || lowerQ.contains("文章列表") ||
-                                lowerQ.contains("推荐文章")) {
+                if (lowerQ.contains("有什么文章") || lowerQ.contains("文章列表") || lowerQ.contains("推荐文章")) {
                         List<BlogListVO> recentBlogs = blogService.getRecentBlogs(5);
                         String articles = recentBlogs.stream()
                                         .map(b -> "• " + b.getTitle())
@@ -310,7 +289,6 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         return "这里有一些最新文章：\n\n" + articles + "\n\n你可以在首页浏览更多内容！";
                 }
 
-                // 热门文章
                 if (lowerQ.contains("热门") || lowerQ.contains("最火") || lowerQ.contains("阅读量")) {
                         List<BlogDetailVO> hotBlogsDetail = blogService.getHotBlogs(5);
                         String articles = hotBlogsDetail.stream()
@@ -320,7 +298,6 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         return "最热门的文章有：\n\n" + articles;
                 }
 
-                // 分类相关
                 if (lowerQ.contains("分类") || lowerQ.contains("类别")) {
                         List<Category> categories = categoryService.getAllCategoriesWithCount();
                         String cats = categories.stream()
@@ -329,7 +306,6 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         return "博客包含以下分类：\n\n" + cats;
                 }
 
-                // 标签相关
                 if (lowerQ.contains("标签") || lowerQ.contains("tag")) {
                         List<Tag> tags = tagService.getAllTags();
                         String tagList = tags.stream()
@@ -339,7 +315,6 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         return "常用技术标签有：\n\n" + tagList + "\n\n等" + tags.size() + "个标签";
                 }
 
-                // 默认回复
                 return "我可以帮你了解这个博客的内容和技术栈！\n\n" +
                                 "你可以问我：\n" +
                                 "• 这个博客有什么文章？\n" +
@@ -349,20 +324,23 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 "快来试试吧！";
         }
 
+        private AIChatResponse buildChatResponse(AIChatRequest request, String answer, boolean aiEnabled, long startTime, List<AIChatResponse.RelatedArticle> relatedArticles) {
+                return AIChatResponse.builder()
+                                .answer(answer)
+                                .conversationId(request.getConversationId() != null ? request.getConversationId() : generateConversationId())
+                                .aiEnabled(aiEnabled)
+                                .responseTime(elapsed(startTime))
+                                .relatedArticles(relatedArticles)
+                                .build();
+        }
+
         private String generateConversationId() {
                 return UUID.randomUUID().toString();
         }
 
-        /**
-         * 从回答中提取相关文章
-         */
         private List<AIChatResponse.RelatedArticle> extractRelatedArticles(String answer) {
                 List<AIChatResponse.RelatedArticle> articles = new java.util.ArrayList<>();
-
-                // 获取候选文章（带短时缓存）
                 List<BlogListVO> allBlogs = getRelatedArticleCandidates();
-
-                // 检查回答中是否包含文章标题
                 for (BlogListVO blog : allBlogs) {
                         if (answer.contains(blog.getTitle())) {
                                 articles.add(AIChatResponse.RelatedArticle.builder()
@@ -371,7 +349,6 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                                 .build());
                         }
                 }
-
                 return articles;
         }
 
@@ -394,8 +371,9 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
         @Override
         public String generateTitle(String content, String style) {
+                String requestId = newRequestId(AiAction.TITLE);
+                long totalStart = System.currentTimeMillis();
                 if (!isAIAvailable()) {
-                        // 降级：提取前50字作为标题
                         int length = Math.min(50, content.length());
                         return content.substring(0, length).replaceAll("\\s+", " ").trim() + "...";
                 }
@@ -403,56 +381,48 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 String cacheKey = buildCacheKey("title", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
+                        logAiSuccess(requestId, AiAction.TITLE, 0, true, 0, -1, -1, 0, elapsed(totalStart), cached.length());
                         return cached;
                 }
 
                 String prompt = String.format(
-                                "请为以下文章生成一个吸引人的标题，要求：\n" +
-                                                "1. 简洁明了，不超过30字\n" +
-                                                "2. 突出文章核心内容\n" +
-                                                buildStyleHint(style) +
-                                                "3. 只返回标题文本，不要其他说明\n\n" +
-                                                "文章内容：\n%s",
-                                truncateContent(content, 1000));
+                                "为文章生成一个中文标题。要求：不超过30字；突出核心内容；只返回标题，不解释。\n%s\n文章内容：\n%s",
+                                buildStyleHint(style), truncateContent(content, 1000));
 
-                String result = callAI(prompt);
-                result = ensureNonBlankAiResult(result, "标题");
+                String result = ensureNonBlankAiResult(callAI(AiAction.TITLE, prompt, requestId, 0, totalStart), "标题");
                 cacheValue(cacheKey, result);
                 return result;
         }
 
         @Override
         public String polishContent(String content, String style) {
+                String requestId = newRequestId(AiAction.POLISH);
+                long totalStart = System.currentTimeMillis();
                 if (!isAIAvailable()) {
-                        return content; // 降级：返回原文
+                        return content;
                 }
 
                 String cacheKey = buildCacheKey("polish", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
+                        logAiSuccess(requestId, AiAction.POLISH, 0, true, 0, -1, -1, 0, elapsed(totalStart), cached.length());
                         return cached;
                 }
 
                 String prompt = String.format(
-                                "请润色以下文章内容，要求：\n" +
-                                                "1. 保持原意不变\n" +
-                                                "2. 优化语句表达，使其更流畅\n" +
-                                                "3. 修正语法和错别字\n" +
-                                                buildStyleHint(style) +
-                                                "4. 只返回润色后的内容，不要其他说明\n\n" +
-                                                "原文：\n%s",
-                                truncateContent(content, POLISH_MAX_CONTENT_CHARS));
+                                "润色下面文章。要求：保持原意；修正错别字和语病；表达更流畅；只返回润色后的正文，不解释。\n%s\n原文：\n%s",
+                                buildStyleHint(style), truncateContent(content, POLISH_MAX_CONTENT_CHARS));
 
-                String result = callAI(prompt);
-                result = ensureNonBlankAiResult(result, "润色内容");
+                String result = ensureNonBlankAiResult(callAI(AiAction.POLISH, prompt, requestId, 0, totalStart), "润色内容");
                 cacheValue(cacheKey, result);
                 return result;
         }
 
         @Override
         public String generateSummary(String content, String style) {
+                String requestId = newRequestId(AiAction.SUMMARY);
+                long totalStart = System.currentTimeMillis();
                 if (!isAIAvailable()) {
-                        // 降级：提取前200字
                         int length = Math.min(200, content.length());
                         return content.substring(0, length).replaceAll("\\s+", " ").trim() + "...";
                 }
@@ -460,28 +430,24 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 String cacheKey = buildCacheKey("summary", content, style);
                 String cached = getCachedValue(cacheKey);
                 if (cached != null) {
+                        logAiSuccess(requestId, AiAction.SUMMARY, 0, true, 0, -1, -1, 0, elapsed(totalStart), cached.length());
                         return cached;
                 }
 
                 String prompt = String.format(
-                                "请为以下文章生成摘要，要求：\n" +
-                                                "1. 简洁明了，100-200字\n" +
-                                                "2. 准确概括文章核心内容\n" +
-                                                buildStyleHint(style) +
-                                                "3. 只返回摘要文本，不要其他说明\n\n" +
-                                                "文章内容：\n%s",
-                                truncateContent(content, SUMMARY_MAX_CONTENT_CHARS));
+                                "为文章生成中文摘要。要求：100-200字；准确概括核心内容；只返回摘要，不解释。\n%s\n文章内容：\n%s",
+                                buildStyleHint(style), truncateContent(content, SUMMARY_MAX_CONTENT_CHARS));
 
-                String result = callAI(prompt);
-                result = ensureNonBlankAiResult(result, "摘要");
+                String result = ensureNonBlankAiResult(callAI(AiAction.SUMMARY, prompt, requestId, 0, totalStart), "摘要");
                 cacheValue(cacheKey, result);
                 return result;
         }
 
         @Override
         public List<String> extractKeywords(String content, String style) {
+                String requestId = newRequestId(AiAction.KEYWORDS);
+                long totalStart = System.currentTimeMillis();
                 if (!isAIAvailable()) {
-                        // 降级：基于规则提取关键词，避免前端出现“成功但为空”
                         return extractKeywordsByRules(content, 8);
                 }
 
@@ -490,28 +456,22 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 if (cached != null) {
                         List<String> cachedKeywords = parseKeywords(cached);
                         if (!cachedKeywords.isEmpty()) {
+                                logAiSuccess(requestId, AiAction.KEYWORDS, 0, true, 0, -1, -1, 0, elapsed(totalStart), cached.length());
                                 return cachedKeywords;
                         }
-                        log.warn("检测到关键词缓存无有效内容，已清理: key={}", cacheKey);
                         deleteCacheQuietly(cacheKey);
                 }
 
                 String prompt = String.format(
-                                "请从以下文章中提取5-8个关键词，要求：\n" +
-                                                "1. 关键词需准确反映文章内容\n" +
-                                                buildStyleHint(style) +
-                                                "2. 以逗号分隔\n" +
-                                                "3. 只返回关键词列表，不要其他说明\n\n" +
-                                                "文章内容：\n%s",
-                                truncateContent(content, 2000));
+                                "从文章中提取5-8个中文或英文关键词。要求：用逗号分隔；只返回关键词列表，不解释。\n%s\n文章内容：\n%s",
+                                buildStyleHint(style), truncateContent(content, 2000));
 
-                String result = callAI(prompt);
-                result = ensureNonBlankAiResult(result, "关键词");
+                String result = ensureNonBlankAiResult(callAI(AiAction.KEYWORDS, prompt, requestId, 0, totalStart), "关键词");
                 List<String> parsedKeywords = parseKeywords(result);
                 if (parsedKeywords.isEmpty()) {
                         List<String> fallbackKeywords = extractKeywordsByRules(content, 8);
                         if (!fallbackKeywords.isEmpty()) {
-                                log.warn("AI关键词解析为空，已回退规则提取: key={}", cacheKey);
+                                log.warn("AI关键词解析为空，已回退规则提取 requestId={} key={}", requestId, cacheKey);
                                 return fallbackKeywords;
                         }
                         throw new RuntimeException("AI提取关键词结果为空，请重试");
@@ -523,20 +483,21 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private List<String> parseKeywords(String rawText) {
                 return java.util.Arrays.stream(rawText.split("[,，、\\n\\r]"))
                                 .map(String::trim)
-                                .map(s -> s.replaceAll("^[0-9]+[\\.)、：:\\-\\s]+", "")) // 去除序号前缀
-                                        .map(String::trim)
-                                        .filter(s -> !s.isEmpty())
-                                        .limit(8)
-                                        .collect(Collectors.toList());
+                                .map(s -> s.replaceAll("^[0-9]+[\\.)、：:\\-\\s]+", ""))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .limit(8)
+                                .collect(Collectors.toList());
         }
 
         private String buildCacheKey(String action, String content, String style) {
                 String base = action + ":" + (content != null ? content.hashCode() : 0) + ":" + (style != null ? style : "default");
-                return "ai:cache:" + base;
+                return "ai:cache:" + openAiRuntimeConfigService.getRuntimeFingerprint().hashCode() + ":" + base;
         }
 
         private String buildChatCacheKey(String question, List<AIChatRequest.ChatMessage> history, String context) {
                 StringBuilder fingerprint = new StringBuilder();
+                fingerprint.append("runtime=").append(openAiRuntimeConfigService.getRuntimeFingerprint()).append('|');
                 fingerprint.append(question != null ? question.trim() : "");
                 fingerprint.append("|ctx=").append(context != null ? context.hashCode() : 0);
 
@@ -565,12 +526,10 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         }
                         String sanitized = sanitizeAiOutput(cached);
                         if (sanitized.isBlank()) {
-                                log.warn("检测到AI缓存仅包含无效内容，已清理: key={}", key);
                                 deleteCacheQuietly(key);
                                 return null;
                         }
                         if (!cached.equals(sanitized)) {
-                                // 避免历史脏缓存持续污染输出，读取时回写净化结果
                                 cacheValue(key, sanitized, ttlSeconds);
                         }
                         return sanitized;
@@ -604,67 +563,130 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 return "风格要求：" + style + "\n";
         }
 
-        /**
-         * 检查AI是否可用
-         */
         private boolean isAIAvailable() {
-                return aiEnabled && apiKey != null && !apiKey.isEmpty() && chatModel != null;
+                return openAiRuntimeConfigService.isAiAvailable();
         }
 
-        /**
-         * 调用AI模型
-         */
-        private String callAI(String prompt) {
-                log.info("准备调用AI，Prompt长度: {}", prompt.length());
-                long start = System.currentTimeMillis();
+        private String callAI(AiAction action, String prompt, String requestId, long contextMs, long totalStart) {
+                long modelStart = System.currentTimeMillis();
+                int maxTokens = openAiRuntimeConfigService.getMaxTokens(action);
+                log.info("AI调用开始 requestId={} action={} promptChars={} maxTokens={}",
+                                requestId, action, prompt.length(), maxTokens);
                 try {
                         ChatClient chatClient = getChatClient();
                         if (chatClient == null) {
                                 throw new RuntimeException("AI模型尚未初始化");
                         }
                         String rawResult = chatClient.prompt()
+                                        .options(openAiRuntimeConfigService.getChatOptions(action))
                                         .user(prompt)
                                         .call()
                                         .content();
+                        long modelTotalMs = elapsed(modelStart);
+                        long postStart = System.currentTimeMillis();
                         String result = sanitizeAiOutput(rawResult);
+                        long postProcessMs = elapsed(postStart);
                         if (!rawResult.equals(result)) {
-                                log.warn("检测到模型思考内容并已过滤，原始长度={}, 过滤后长度={}", rawResult.length(), result.length());
+                                log.warn("检测到模型思考内容并已过滤 requestId={} action={} rawChars={} sanitizedChars={}",
+                                                requestId, action, rawResult.length(), result.length());
                         }
-                        log.info("AI调用成功，耗时: {}ms, 结果长度: {}", System.currentTimeMillis() - start, result.length());
+                        logAiSuccess(requestId, action, prompt.length(), false, contextMs, -1, modelTotalMs,
+                                        postProcessMs, elapsed(totalStart), result.length());
                         return result;
                 } catch (Exception e) {
-                        log.error("AI调用失败，耗时: {}ms", System.currentTimeMillis() - start, e);
+                        log.error("AI调用失败 requestId={} action={} promptChars={} maxTokens={} modelTotalMs={} totalMs={}",
+                                        requestId, action, prompt.length(), maxTokens, elapsed(modelStart), elapsed(totalStart), e);
                         throw new RuntimeException("AI服务暂时不可用，请稍后再试");
                 }
         }
 
+        private StreamResult streamAI(AiAction action, String prompt, String requestId, long contextMs, long totalStart, SseEmitter emitter) {
+                long modelStart = System.currentTimeMillis();
+                int maxTokens = openAiRuntimeConfigService.getMaxTokens(action);
+                AtomicBoolean firstChunk = new AtomicBoolean(true);
+                AtomicLong firstTokenMs = new AtomicLong(-1L);
+                StringBuilder rawAnswer = new StringBuilder();
+                StreamingThinkSanitizer streamingSanitizer = new StreamingThinkSanitizer();
+
+                log.info("AI流式调用开始 requestId={} action={} promptChars={} maxTokens={}",
+                                requestId, action, prompt.length(), maxTokens);
+                ChatClient chatClient = getChatClient();
+                if (chatClient == null) {
+                        throw new RuntimeException("AI模型尚未初始化");
+                }
+                chatClient.prompt()
+                                .options(openAiRuntimeConfigService.getChatOptions(action))
+                                .user(prompt)
+                                .stream()
+                                .content()
+                                .doOnNext(chunk -> {
+                                        if (firstChunk.compareAndSet(true, false)) {
+                                                firstTokenMs.set(elapsed(modelStart));
+                                        }
+                                        rawAnswer.append(chunk);
+                                        String sanitizedChunk = streamingSanitizer.accept(chunk);
+                                        if (!sanitizedChunk.isEmpty()) {
+                                                sendSse(emitter, "delta", Map.of("text", sanitizedChunk));
+                                        }
+                                })
+                                .blockLast();
+
+                String tail = streamingSanitizer.finish();
+                if (!tail.isEmpty()) {
+                        sendSse(emitter, "delta", Map.of("text", tail));
+                }
+
+                long modelTotalMs = elapsed(modelStart);
+                long postStart = System.currentTimeMillis();
+                String answer = sanitizeAiOutput(rawAnswer.toString());
+                long postProcessMs = elapsed(postStart);
+                logAiSuccess(requestId, action, prompt.length(), false, contextMs, firstTokenMs.get(), modelTotalMs,
+                                postProcessMs, elapsed(totalStart), answer.length());
+                return new StreamResult(answer, firstTokenMs.get(), modelTotalMs, postProcessMs);
+        }
+
         private ChatClient getChatClient() {
-                ChatClient localRef = cachedChatClient;
-                if (localRef != null) {
-                        return localRef;
-                }
-                if (chatModel == null) {
-                        return null;
-                }
-                synchronized (this) {
-                        if (cachedChatClient == null) {
-                                cachedChatClient = ChatClient.builder(chatModel).build();
-                        }
-                        return cachedChatClient;
+                return openAiRuntimeConfigService.getChatClient();
+        }
+
+        private void sendSse(SseEmitter emitter, String eventName, Object data) {
+                try {
+                        emitter.send(SseEmitter.event().name(eventName).data(data));
+                } catch (IOException e) {
+                        throw new IllegalStateException("SSE发送失败", e);
                 }
         }
 
-        /**
-         * 应用层统一过滤模型思考内容，禁止将thinking链路返回给前端
-         */
+        private void sendAnswerChunks(SseEmitter emitter, String answer) {
+                int chunkSize = 80;
+                for (int i = 0; i < answer.length(); i += chunkSize) {
+                        sendSse(emitter, "delta", Map.of("text", answer.substring(i, Math.min(i + chunkSize, answer.length()))));
+                }
+        }
+
+        private void sendRelatedArticles(SseEmitter emitter, String answer) {
+                List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(answer);
+                if (!relatedArticles.isEmpty()) {
+                        sendSse(emitter, "relatedArticles", Map.of("items", relatedArticles));
+                }
+        }
+
+        private void sendDone(SseEmitter emitter, AIChatRequest request, long totalStart, boolean cached, boolean aiEnabled) {
+                sendSse(emitter, "done", Map.of(
+                                "conversationId", request.getConversationId() != null ? request.getConversationId() : generateConversationId(),
+                                "responseTime", elapsed(totalStart),
+                                "cached", cached,
+                                "aiEnabled", aiEnabled));
+                emitter.complete();
+        }
+
         private String sanitizeAiOutput(String rawOutput) {
                 if (rawOutput == null || rawOutput.isBlank()) {
                         return "";
                 }
                 String sanitized = THINK_BLOCK_PATTERN.matcher(rawOutput).replaceAll("");
                 sanitized = THINK_TAG_PATTERN.matcher(sanitized).replaceAll("");
-                sanitized = sanitized.trim();
-                return sanitized;
+                return sanitized.trim();
         }
 
         private String ensureNonBlankAiResult(String text, String action) {
@@ -686,26 +708,21 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                 java.util.LinkedHashSet<String> results = new java.util.LinkedHashSet<>();
 
-                // 提取英文技术词（如 redis、springboot、docker、k8s、mysql8）
                 java.util.regex.Matcher enMatcher = Pattern.compile("\\b[a-zA-Z][a-zA-Z0-9_+\\-#]{2,24}\\b")
                                 .matcher(normalized);
                 while (enMatcher.find() && results.size() < limit) {
                         String token = enMatcher.group().toLowerCase();
-                        if (isEnglishKeywordNoise(token)) {
-                                continue;
+                        if (!isEnglishKeywordNoise(token)) {
+                                results.add(token);
                         }
-                        results.add(token);
                 }
 
-                // 提取中文词块（2-8字）
-                java.util.regex.Matcher zhMatcher = Pattern.compile("[\\p{IsHan}]{2,8}")
-                                .matcher(normalized);
+                java.util.regex.Matcher zhMatcher = Pattern.compile("[\\p{IsHan}]{2,8}").matcher(normalized);
                 while (zhMatcher.find() && results.size() < limit) {
                         String token = zhMatcher.group().trim();
-                        if (isChineseKeywordNoise(token)) {
-                                continue;
+                        if (!isChineseKeywordNoise(token)) {
+                                results.add(token);
                         }
-                        results.add(token);
                 }
 
                 return results.stream().limit(limit).collect(Collectors.toList());
@@ -713,28 +730,132 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
         private boolean isEnglishKeywordNoise(String token) {
                 return token.length() < 3 ||
-                                java.util.Set.of(
-                                                "the", "and", "for", "with", "this", "that", "from", "into", "http",
+                                java.util.Set.of("the", "and", "for", "with", "this", "that", "from", "into", "http",
                                                 "https", "www", "com", "org", "net", "null", "true", "false")
                                                 .contains(token);
         }
 
         private boolean isChineseKeywordNoise(String token) {
-                return java.util.Set.of(
-                                "我们", "你们", "他们", "以及", "如果", "因为", "所以", "然后", "就是", "这个", "那个",
+                return java.util.Set.of("我们", "你们", "他们", "以及", "如果", "因为", "所以", "然后", "就是", "这个", "那个",
                                 "需要", "进行", "通过", "一个", "一些", "可以", "没有", "自己", "这里", "如何")
                                 .contains(token);
         }
 
-        /**
-         * 截断内容
-         */
         private String truncateContent(String content, int maxLength) {
                 if (content == null || content.isEmpty()) {
                         return "";
                 }
-                return content.length() > maxLength
-                                ? content.substring(0, maxLength) + "..."
-                                : content;
+                return content.length() > maxLength ? content.substring(0, maxLength) + "..." : content;
+        }
+
+        private String newRequestId(AiAction action) {
+                return action.name().toLowerCase() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        }
+
+        private long elapsed(long startMs) {
+                return System.currentTimeMillis() - startMs;
+        }
+
+        private void logAiSuccess(String requestId, AiAction action, int promptChars, boolean cacheHit, long contextMs,
+                                  long modelFirstTokenMs, long modelTotalMs, long postProcessMs, long totalMs, int resultChars) {
+                log.info("AI调用完成 requestId={} action={} promptChars={} cacheHit={} contextMs={} modelFirstTokenMs={} modelTotalMs={} postProcessMs={} totalMs={} resultChars={} maxTokens={}",
+                                requestId, action, promptChars, cacheHit, contextMs, modelFirstTokenMs, modelTotalMs,
+                                postProcessMs, totalMs, resultChars, openAiRuntimeConfigService.getMaxTokens(action));
+        }
+
+        private record StreamResult(String answer, long firstTokenMs, long modelTotalMs, long postProcessMs) {
+        }
+
+        private static final class StreamingThinkSanitizer {
+                private static final int LOOKBEHIND_CHARS = 32;
+                private final StringBuilder buffer = new StringBuilder();
+                private boolean insideThinkBlock = false;
+
+                String accept(String chunk) {
+                        if (chunk == null || chunk.isEmpty()) {
+                                return "";
+                        }
+                        buffer.append(chunk);
+                        StringBuilder output = new StringBuilder();
+                        while (true) {
+                                String current = buffer.toString();
+                                String lower = current.toLowerCase();
+                                if (insideThinkBlock) {
+                                        int closeIndex = findCloseThinkTag(lower);
+                                        if (closeIndex < 0) {
+                                                keepTailOnly();
+                                                return output.toString();
+                                        }
+                                        int closeEnd = current.indexOf('>', closeIndex);
+                                        if (closeEnd < 0) {
+                                                keepTailOnly();
+                                                return output.toString();
+                                        }
+                                        buffer.delete(0, closeEnd + 1);
+                                        insideThinkBlock = false;
+                                        continue;
+                                }
+
+                                int openIndex = findOpenThinkTag(lower);
+                                if (openIndex < 0) {
+                                        int emitLength = Math.max(0, buffer.length() - LOOKBEHIND_CHARS);
+                                        if (emitLength > 0) {
+                                                output.append(buffer.substring(0, emitLength));
+                                                buffer.delete(0, emitLength);
+                                        }
+                                        return stripThinkTags(output.toString());
+                                }
+
+                                if (openIndex > 0) {
+                                        output.append(buffer.substring(0, openIndex));
+                                }
+                                buffer.delete(0, openIndex);
+                                insideThinkBlock = true;
+                        }
+                }
+
+                String finish() {
+                        if (insideThinkBlock) {
+                                buffer.setLength(0);
+                                return "";
+                        }
+                        String tail = stripThinkTags(buffer.toString());
+                        buffer.setLength(0);
+                        return tail;
+                }
+
+                private void keepTailOnly() {
+                        if (buffer.length() > LOOKBEHIND_CHARS) {
+                                buffer.delete(0, buffer.length() - LOOKBEHIND_CHARS);
+                        }
+                }
+
+                private static int findOpenThinkTag(String lower) {
+                        int think = lower.indexOf("<think");
+                        int thinking = lower.indexOf("<thinking");
+                        if (think < 0) {
+                                return thinking;
+                        }
+                        if (thinking < 0) {
+                                return think;
+                        }
+                        return Math.min(think, thinking);
+                }
+
+                private static int findCloseThinkTag(String lower) {
+                        int think = lower.indexOf("</think");
+                        int thinking = lower.indexOf("</thinking");
+                        if (think < 0) {
+                                return thinking;
+                        }
+                        if (thinking < 0) {
+                                return think;
+                        }
+                        return Math.min(think, thinking);
+                }
+
+                private static String stripThinkTags(String text) {
+                        return THINK_TAG_PATTERN.matcher(text).replaceAll("");
+                }
         }
 }

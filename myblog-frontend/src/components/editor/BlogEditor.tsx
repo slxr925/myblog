@@ -459,7 +459,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                     />
                     <Button variant="outline" onClick={handleGenerateTitle} disabled={!formData.content || isGeneratingTitle}>
                       {isGeneratingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      AI生成标题
+                      {isGeneratingTitle ? '正在生成标题...' : 'AI生成标题'}
                     </Button>
                   </div>
                 </div>
@@ -481,7 +481,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                       disabled={!formData.content || isGeneratingSummary}
                     >
                       {isGeneratingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      AI生成摘要
+                      {isGeneratingSummary ? '正在生成摘要...' : 'AI生成摘要'}
                     </Button>
                   </div>
                 </div>

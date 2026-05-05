@@ -9,7 +9,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * AI助手控制器
@@ -43,6 +48,20 @@ public class AIAssistantController {
         }
         AIChatResponse response = aiAssistantService.chat(request);
         return Result.success(response);
+    }
+
+    /**
+     * AI聊天流式接口
+     */
+    @Operation(summary = "AI聊天（流式）", description = "与AI助手进行对话，使用SSE逐段返回")
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(key = "ai_chat_stream", limit = 20, window = 60)
+    public SseEmitter streamChat(@RequestBody AIChatRequest request) {
+        log.info("AI聊天流式请求: {}", request.getQuestion());
+        if (!checkQuota(request.getQuestion(), request.getHistory())) {
+            return quotaExceededEmitter();
+        }
+        return aiAssistantService.streamChat(request);
     }
 
     /**
@@ -123,5 +142,18 @@ public class AIAssistantController {
         }
         int estimatedTokens = Math.max(1, length / 4);
         return aiUsageService.checkAndConsume(userId, estimatedTokens, maxRequestsPerDay, maxTokensPerDay);
+    }
+
+    private SseEmitter quotaExceededEmitter() {
+        SseEmitter emitter = new SseEmitter(5_000L);
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("error")
+                    .data(Map.of("message", "AI使用额度已达上限，请稍后再试")));
+            emitter.complete();
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+        }
+        return emitter;
     }
 }

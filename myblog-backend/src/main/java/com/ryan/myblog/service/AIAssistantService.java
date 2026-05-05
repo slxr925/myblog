@@ -2,6 +2,7 @@ package com.ryan.myblog.service;
 
 import com.ryan.myblog.model.dto.AIChatRequest;
 import com.ryan.myblog.model.dto.AIChatResponse;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -18,6 +19,14 @@ public interface AIAssistantService {
      * @return AI回答
      */
     AIChatResponse chat(AIChatRequest request);
+
+    /**
+     * 以SSE流式处理用户问题。
+     *
+     * @param request 用户问题
+     * @return SSE emitter
+     */
+    SseEmitter streamChat(AIChatRequest request);
 
     /**
      * 获取助手介绍信息

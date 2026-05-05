@@ -1,5 +1,8 @@
 # 应用配置
 app:
+  env:
+    config-file: ${ENV_CONFIG_FILE:.env}
+
   # 缓存预热配置
   cache:
     warmup:
@@ -52,7 +55,12 @@ spring:
         completions-path: ${OPENAI_COMPLETIONS_PATH:/chat/completions}  # 自定义API路径
         options:
           model: ${OPENAI_MODEL:GLM-4.7}
-          temperature: 0.7
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+          max-tokens-chat: ${OPENAI_MAX_TOKENS_CHAT:700}
+          max-tokens-title: ${OPENAI_MAX_TOKENS_TITLE:80}
+          max-tokens-summary: ${OPENAI_MAX_TOKENS_SUMMARY:260}
+          max-tokens-keywords: ${OPENAI_MAX_TOKENS_KEYWORDS:120}
+          max-tokens-polish: ${OPENAI_MAX_TOKENS_POLISH:1200}
 
   # 自动配置排除
   autoconfigure:

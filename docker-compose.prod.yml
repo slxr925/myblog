@@ -52,6 +52,13 @@ services:
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       OPENAI_COMPLETIONS_PATH: ${OPENAI_COMPLETIONS_PATH:-/v1/chat/completions}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.7}
+      OPENAI_MAX_TOKENS_CHAT: ${OPENAI_MAX_TOKENS_CHAT:-700}
+      OPENAI_MAX_TOKENS_TITLE: ${OPENAI_MAX_TOKENS_TITLE:-80}
+      OPENAI_MAX_TOKENS_SUMMARY: ${OPENAI_MAX_TOKENS_SUMMARY:-260}
+      OPENAI_MAX_TOKENS_KEYWORDS: ${OPENAI_MAX_TOKENS_KEYWORDS:-120}
+      OPENAI_MAX_TOKENS_POLISH: ${OPENAI_MAX_TOKENS_POLISH:-1200}
+      ENV_CONFIG_FILE: /app/.env
       # Kafka配置
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       JAVA_OPTS: "-Xms1g -Xmx2g -XX:+UseG1GC -XX:+UseContainerSupport"
@@ -61,6 +68,7 @@ services:
     volumes:
       - ./data/backend/logs:/app/logs
       - ./data/backend/uploads:/app/uploads
+      - ./.env:/app/.env:rw
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

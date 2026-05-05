@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Activity,
   Bell,
+  Bot,
   CalendarDays,
   ClipboardList,
   FileText,
@@ -28,6 +29,7 @@ import { MonitoringDashboard } from '../components/admin/MonitoringDashboard'
 import { ReportManagement } from '../components/admin/ReportManagement'
 import { AuditLogList } from '../components/admin/AuditLogList'
 import { AiUsagePanel } from '../components/admin/AiUsagePanel'
+import { OpenAiConfigPanel } from '../components/admin/OpenAiConfigPanel'
 import { ActivityChart } from '../components/charts/ActivityChart'
 import {
   AdminPageHeader,
@@ -46,6 +48,7 @@ type AdminView =
   | 'reports'
   | 'audit'
   | 'ai'
+  | 'openai'
 
 const ADMIN_VIEWS: AdminView[] = [
   'dashboard',
@@ -57,6 +60,7 @@ const ADMIN_VIEWS: AdminView[] = [
   'reports',
   'audit',
   'ai',
+  'openai',
 ]
 
 const isValidAdminView = (value: string | null): value is AdminView => {
@@ -95,6 +99,8 @@ const renderTitle = (view: AdminView) => {
       return '审计日志'
     case 'ai':
       return 'AI用量'
+    case 'openai':
+      return 'AI配置'
     default:
       return '控制台'
   }
@@ -177,6 +183,8 @@ export const Admin: React.FC = () => {
         return <AuditLogList />
       case 'ai':
         return <AiUsagePanel />
+      case 'openai':
+        return <OpenAiConfigPanel />
       default:
         return renderDashboard()
     }
@@ -237,8 +245,8 @@ export const Admin: React.FC = () => {
         icon: Sparkles,
         primaryLabel: 'AI 用量',
         primaryAction: () => navigate('/dashboard?tab=ai'),
-        secondaryLabel: '审计日志',
-        secondaryAction: () => navigate('/dashboard?tab=audit'),
+        secondaryLabel: 'AI 配置',
+        secondaryAction: () => navigate('/dashboard?tab=openai'),
       },
     ]
 
@@ -370,6 +378,10 @@ export const Admin: React.FC = () => {
                 <Button variant="outline" className="justify-start" onClick={() => navigate('/dashboard?tab=ai')}>
                   <Sparkles className="h-4 w-4" />
                   查看 AI 用量
+                </Button>
+                <Button variant="outline" className="justify-start" onClick={() => navigate('/dashboard?tab=openai')}>
+                  <Bot className="h-4 w-4" />
+                  修改 AI 配置
                 </Button>
               </div>
             </AdminSectionCard>
