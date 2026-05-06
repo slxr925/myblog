@@ -49,7 +49,8 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private static final int RELATED_ARTICLES_SCAN_LIMIT = 50;
         private static final int CHAT_CACHE_TTL_SECONDS = 300;
         private static final int DEFAULT_CACHE_TTL_SECONDS = 60 * 60 * 24;
-        private static final String CHAT_PROMPT_VERSION = "v2";
+        private static final String CHAT_PROMPT_VERSION = "v3";
+        private static final String OUT_OF_SCOPE_ANSWER = "我只能回答和 MyBlog、技术、编程、软件工程、AI 使用或技术写作相关的问题。这个问题超出了当前助手范围。";
         private static final long CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000L;
         private static final long RELATED_ARTICLES_CACHE_TTL_MS = 5 * 60 * 1000L;
         private static final long SSE_TIMEOUT_MS = 60_000L;
@@ -82,6 +83,12 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 long totalStart = System.currentTimeMillis();
 
                 try {
+                        if (!isSupportedQuestion(request.getQuestion())) {
+                                logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
+                                                elapsed(totalStart), OUT_OF_SCOPE_ANSWER.length());
+                                return buildChatResponse(request, OUT_OF_SCOPE_ANSWER, false, totalStart, List.of());
+                        }
+
                         long contextStart = System.currentTimeMillis();
                         String context = buildContext();
                         long contextMs = elapsed(contextStart);
@@ -132,6 +139,16 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                 try {
                         sendSse(emitter, "status", Map.of("message", "正在理解问题..."));
+
+                        if (!isSupportedQuestion(request.getQuestion())) {
+                                sendSse(emitter, "status", Map.of("message", "这个问题超出助手范围"));
+                                sendAnswerChunks(emitter, OUT_OF_SCOPE_ANSWER);
+                                sendDone(emitter, request, totalStart, false, false);
+                                logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
+                                                elapsed(totalStart), OUT_OF_SCOPE_ANSWER.length());
+                                return;
+                        }
+
                         long contextStart = System.currentTimeMillis();
                         String context = buildContext();
                         contextMs = elapsed(contextStart);
@@ -266,8 +283,9 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                 if (!isBlogScopedQuestion(question)) {
                         return String.format(
-                                        "你是MyBlog站点内的通用AI助手。请直接、简洁、有帮助地回答。\n" +
-                                                        "如果用户问题和本站文章、分类、标签、项目或站点信息无关，就按通用问题回答，不要强行关联博客内容。\n" +
+                                        "你是MyBlog站点内的技术助手。请直接、简洁、有帮助地回答。\n" +
+                                                        "只回答技术、编程、软件工程、AI使用或技术写作相关问题；不要强行关联博客内容。\n" +
+                                                        "如果用户转向天气、生活、娱乐、情感、金融、医疗、法律等非技术话题，请简短说明超出当前助手范围。\n" +
                                                         "不要输出思考过程。\n\n%s【用户问题】%s",
                                         historyContext, question);
                 }
@@ -278,6 +296,10 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                                 "如果站内信息不足，先说明不足，再给出通用建议。不要输出思考过程。\n\n" +
                                                 "【MyBlog站内信息】\n%s\n\n%s【用户问题】%s",
                                 context, historyContext, question);
+        }
+
+        private boolean isSupportedQuestion(String question) {
+                return isBlogScopedQuestion(question) || isTechnicalQuestion(question);
         }
 
         private boolean isBlogScopedQuestion(String question) {
@@ -305,6 +327,51 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 || text.contains("post")
                                 || text.contains("category")
                                 || text.contains("tag");
+        }
+
+        private boolean isTechnicalQuestion(String question) {
+                if (question == null || question.isBlank()) {
+                        return false;
+                }
+                String text = question.toLowerCase();
+                return text.contains("技术")
+                                || text.contains("编程")
+                                || text.contains("代码")
+                                || text.contains("开发")
+                                || text.contains("软件")
+                                || text.contains("工程")
+                                || text.contains("架构")
+                                || text.contains("前端")
+                                || text.contains("后端")
+                                || text.contains("数据库")
+                                || text.contains("算法")
+                                || text.contains("接口")
+                                || text.contains("部署")
+                                || text.contains("性能")
+                                || text.contains("缓存")
+                                || text.contains("日志")
+                                || text.contains("测试")
+                                || text.contains("模型")
+                                || text.contains("提示词")
+                                || text.contains("报错")
+                                || text.contains("bug")
+                                || text.contains("api")
+                                || text.contains("java")
+                                || text.contains("spring")
+                                || text.contains("react")
+                                || text.contains("typescript")
+                                || text.contains("javascript")
+                                || text.contains("docker")
+                                || text.contains("linux")
+                                || text.contains("mysql")
+                                || text.contains("redis")
+                                || text.contains("kafka")
+                                || text.contains("elasticsearch")
+                                || text.contains("openai")
+                                || text.contains("deepseek")
+                                || text.contains("ai")
+                                || text.contains("llm")
+                                || text.contains("prompt");
         }
 
         private String handleWithRules(String question, String context) {

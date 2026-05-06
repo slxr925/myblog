@@ -1,6 +1,7 @@
 package com.ryan.myblog.service.impl;
 
 import com.ryan.myblog.model.dto.AIChatRequest;
+import com.ryan.myblog.model.dto.AIChatResponse;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CategoryService;
@@ -16,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class AIAssistantServiceImplTest {
@@ -46,10 +48,24 @@ class AIAssistantServiceImplTest {
                 "最新文章：\n- 《只应该在站内问题出现的文章》",
                 List.of());
 
-        assertTrue(prompt.contains("通用AI助手"));
+        assertTrue(prompt.contains("技术助手"));
+        assertTrue(prompt.contains("只回答技术"));
         assertTrue(prompt.contains("不要强行关联博客内容"));
         assertFalse(prompt.contains("MyBlog站内信息"));
         assertFalse(prompt.contains("只应该在站内问题出现的文章"));
+    }
+
+    @Test
+    void offTopicQuestionIsRejectedBeforeModelAndBlogContext() {
+        AIAssistantServiceImpl service = newService();
+        AIChatRequest request = new AIChatRequest();
+        request.setQuestion("今天天气怎么样？");
+
+        AIChatResponse response = service.chat(request);
+
+        assertTrue(response.getAnswer().contains("超出了当前助手范围"));
+        assertFalse(response.getAiEnabled());
+        verifyNoInteractions(blogService, categoryService, tagService, cacheService);
     }
 
     @Test
@@ -66,6 +82,23 @@ class AIAssistantServiceImplTest {
         assertTrue(prompt.contains("MyBlog站内信息"));
         assertTrue(prompt.contains("只能使用"));
         assertTrue(prompt.contains("Spring AI 实践"));
+    }
+
+    @Test
+    void technicalQuestionIsSupportedWithoutBlogScope() {
+        AIAssistantServiceImpl service = newService();
+
+        Boolean supported = ReflectionTestUtils.invokeMethod(
+                service,
+                "isSupportedQuestion",
+                "Java Stream 的 map 和 flatMap 有什么区别？");
+        Boolean blogScoped = ReflectionTestUtils.invokeMethod(
+                service,
+                "isBlogScopedQuestion",
+                "Java Stream 的 map 和 flatMap 有什么区别？");
+
+        assertTrue(Boolean.TRUE.equals(supported));
+        assertFalse(Boolean.TRUE.equals(blogScoped));
     }
 
     private AIAssistantServiceImpl newService() {
