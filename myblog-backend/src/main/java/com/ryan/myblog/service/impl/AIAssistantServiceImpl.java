@@ -49,6 +49,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private static final int RELATED_ARTICLES_SCAN_LIMIT = 50;
         private static final int CHAT_CACHE_TTL_SECONDS = 300;
         private static final int DEFAULT_CACHE_TTL_SECONDS = 60 * 60 * 24;
+        private static final String CHAT_PROMPT_VERSION = "v2";
         private static final long CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000L;
         private static final long RELATED_ARTICLES_CACHE_TTL_MS = 5 * 60 * 1000L;
         private static final long SSE_TIMEOUT_MS = 60_000L;
@@ -263,11 +264,47 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         historyContext.append("\n");
                 }
 
+                if (!isBlogScopedQuestion(question)) {
+                        return String.format(
+                                        "你是MyBlog站点内的通用AI助手。请直接、简洁、有帮助地回答。\n" +
+                                                        "如果用户问题和本站文章、分类、标签、项目或站点信息无关，就按通用问题回答，不要强行关联博客内容。\n" +
+                                                        "不要输出思考过程。\n\n%s【用户问题】%s",
+                                        historyContext, question);
+                }
+
                 return String.format(
-                                "你是MyBlog博客助手。请直接、简洁、有帮助地回答。\n" +
-                                                "规则：推荐文章时只能使用【博客信息】中出现的文章；不要编造文章、阅读量或日期；不要输出思考过程。\n\n" +
-                                                "【博客信息】\n%s\n\n%s【用户问题】%s",
+                                "你是MyBlog站点内的通用AI助手。当前问题需要使用站内信息辅助回答。\n" +
+                                                "规则：推荐、引用或评价具体文章时，只能使用【MyBlog站内信息】中出现的文章；不要编造文章、阅读量、日期或作者。" +
+                                                "如果站内信息不足，先说明不足，再给出通用建议。不要输出思考过程。\n\n" +
+                                                "【MyBlog站内信息】\n%s\n\n%s【用户问题】%s",
                                 context, historyContext, question);
+        }
+
+        private boolean isBlogScopedQuestion(String question) {
+                if (question == null || question.isBlank()) {
+                        return false;
+                }
+                String text = question.toLowerCase();
+                return text.contains("myblog")
+                                || text.contains("博客")
+                                || text.contains("文章")
+                                || text.contains("站内")
+                                || text.contains("本站")
+                                || text.contains("这个站")
+                                || text.contains("这个网站")
+                                || text.contains("这个项目")
+                                || text.contains("分类")
+                                || text.contains("标签")
+                                || text.contains("推荐")
+                                || text.contains("热门")
+                                || text.contains("阅读量")
+                                || text.contains("技术栈")
+                                || text.contains("作者")
+                                || text.contains("blog")
+                                || text.contains("article")
+                                || text.contains("post")
+                                || text.contains("category")
+                                || text.contains("tag");
         }
 
         private String handleWithRules(String question, String context) {
@@ -498,6 +535,8 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private String buildChatCacheKey(String question, List<AIChatRequest.ChatMessage> history, String context) {
                 StringBuilder fingerprint = new StringBuilder();
                 fingerprint.append("runtime=").append(openAiRuntimeConfigService.getRuntimeFingerprint()).append('|');
+                fingerprint.append("prompt=").append(CHAT_PROMPT_VERSION).append('|');
+                fingerprint.append("blogScoped=").append(isBlogScopedQuestion(question)).append('|');
                 fingerprint.append(question != null ? question.trim() : "");
                 fingerprint.append("|ctx=").append(context != null ? context.hashCode() : 0);
 

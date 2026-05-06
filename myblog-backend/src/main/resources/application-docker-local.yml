@@ -43,11 +43,11 @@ spring:
     enabled: ${AI_ENABLED:true}
     openai:
       api-key: ${OPENAI_API_KEY:}
-      base-url: ${OPENAI_BASE_URL:https://open.bigmodel.cn/api/coding/paas/v4}
+      base-url: ${OPENAI_BASE_URL:https://api.deepseek.com}
       chat:
         enabled: ${AI_ENABLED:true}
         options:
-          model: ${OPENAI_MODEL:GLM-4.7}
+          model: ${OPENAI_MODEL:deepseek-v4-flash}
           temperature: ${OPENAI_TEMPERATURE:0.7}
           max-tokens-chat: ${OPENAI_MAX_TOKENS_CHAT:700}
           max-tokens-title: ${OPENAI_MAX_TOKENS_TITLE:80}

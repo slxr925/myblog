@@ -27,9 +27,9 @@ const createFormState = (config?: OpenAiConfigVO): FormState => ({
   aiEnabled: config?.aiEnabled ?? false,
   apiKey: '',
   clearApiKey: false,
-  baseUrl: config?.baseUrl ?? 'https://api.openai.com',
-  model: config?.model ?? 'gpt-4o-mini',
-  completionsPath: config?.completionsPath ?? '/v1/chat/completions',
+  baseUrl: config?.baseUrl ?? 'https://api.deepseek.com',
+  model: config?.model ?? 'deepseek-v4-flash',
+  completionsPath: config?.completionsPath ?? '/chat/completions',
   temperature: String(config?.temperature ?? 0.7),
   maxTokensChat: String(config?.maxTokensChat ?? 700),
   maxTokensTitle: String(config?.maxTokensTitle ?? 80),
@@ -153,7 +153,7 @@ export const OpenAiConfigPanel: React.FC = () => {
               id="openai-base-url"
               value={form.baseUrl}
               onChange={(event) => updateField('baseUrl', event.target.value)}
-              placeholder="https://api.openai.com"
+              placeholder="https://api.deepseek.com"
             />
           </div>
 
@@ -163,7 +163,7 @@ export const OpenAiConfigPanel: React.FC = () => {
               id="openai-model"
               value={form.model}
               onChange={(event) => updateField('model', event.target.value)}
-              placeholder="gpt-4o-mini"
+              placeholder="deepseek-v4-flash"
             />
           </div>
 
@@ -173,7 +173,7 @@ export const OpenAiConfigPanel: React.FC = () => {
               id="openai-path"
               value={form.completionsPath}
               onChange={(event) => updateField('completionsPath', event.target.value)}
-              placeholder="/v1/chat/completions"
+              placeholder="/chat/completions"
             />
           </div>
 

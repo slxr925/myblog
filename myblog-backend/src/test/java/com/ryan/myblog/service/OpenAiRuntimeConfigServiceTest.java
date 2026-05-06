@@ -104,6 +104,18 @@ class OpenAiRuntimeConfigServiceTest {
     }
 
     @Test
+    void usesDeepSeekFlashDefaultsWhenProviderConfigIsMissing() {
+        Path envFile = tempDir.resolve(".env");
+
+        OpenAiRuntimeConfigService service = new OpenAiRuntimeConfigService(envFile, emptyFallback());
+
+        OpenAiConfigVO config = service.getConfig();
+        assertEquals("https://api.deepseek.com", config.getBaseUrl());
+        assertEquals("deepseek-v4-flash", config.getModel());
+        assertEquals("/chat/completions", config.getCompletionsPath());
+    }
+
+    @Test
     void updateConfigRestoresCriticalRuntimeKeysWhenEnvFileIsIncomplete() throws Exception {
         Path envFile = tempDir.resolve(".env");
         Files.writeString(envFile, """

@@ -49,9 +49,9 @@ services:
       # AI配置
       AI_ENABLED: ${AI_ENABLED:-false}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      OPENAI_COMPLETIONS_PATH: ${OPENAI_COMPLETIONS_PATH:-/v1/chat/completions}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
+      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-v4-flash}
+      OPENAI_COMPLETIONS_PATH: ${OPENAI_COMPLETIONS_PATH:-/chat/completions}
       OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.7}
       OPENAI_MAX_TOKENS_CHAT: ${OPENAI_MAX_TOKENS_CHAT:-700}
       OPENAI_MAX_TOKENS_TITLE: ${OPENAI_MAX_TOKENS_TITLE:-80}

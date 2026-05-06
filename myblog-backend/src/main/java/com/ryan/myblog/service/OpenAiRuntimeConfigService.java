@@ -46,6 +46,10 @@ public class OpenAiRuntimeConfigService {
     private static final String KEY_MAX_TOKENS_KEYWORDS = "OPENAI_MAX_TOKENS_KEYWORDS";
     private static final String KEY_MAX_TOKENS_POLISH = "OPENAI_MAX_TOKENS_POLISH";
 
+    private static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
+    private static final String DEFAULT_MODEL = "deepseek-v4-flash";
+    private static final String DEFAULT_COMPLETIONS_PATH = "/chat/completions";
+
     private static final int DEFAULT_MAX_TOKENS_CHAT = 700;
     private static final int DEFAULT_MAX_TOKENS_TITLE = 80;
     private static final int DEFAULT_MAX_TOKENS_SUMMARY = 260;
@@ -179,17 +183,17 @@ public class OpenAiRuntimeConfigService {
         Map<String, String> values = readEnvValues();
         boolean enabled = parseBoolean(firstValue(values, KEY_AI_ENABLED, "spring.ai.enabled", "false"));
         String apiKey = firstValue(values, KEY_API_KEY, "spring.ai.openai.api-key", "");
-        String baseUrl = firstValue(values, KEY_BASE_URL, "spring.ai.openai.base-url", "https://api.openai.com");
-        String model = firstValue(values, KEY_MODEL, "spring.ai.openai.chat.options.model", "gpt-4o-mini");
-        String completionsPath = firstValue(values, KEY_COMPLETIONS_PATH, "spring.ai.openai.chat.completions-path", "/v1/chat/completions");
+        String baseUrl = firstValue(values, KEY_BASE_URL, "spring.ai.openai.base-url", DEFAULT_BASE_URL);
+        String model = firstValue(values, KEY_MODEL, "spring.ai.openai.chat.options.model", DEFAULT_MODEL);
+        String completionsPath = firstValue(values, KEY_COMPLETIONS_PATH, "spring.ai.openai.chat.completions-path", DEFAULT_COMPLETIONS_PATH);
         double temperature = parseDouble(firstValue(values, KEY_TEMPERATURE, "spring.ai.openai.chat.options.temperature", "0.7"), 0.7d);
         int maxTokensChat = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_CHAT, "spring.ai.openai.chat.options.max-tokens-chat", String.valueOf(DEFAULT_MAX_TOKENS_CHAT)), DEFAULT_MAX_TOKENS_CHAT);
         int maxTokensTitle = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_TITLE, "spring.ai.openai.chat.options.max-tokens-title", String.valueOf(DEFAULT_MAX_TOKENS_TITLE)), DEFAULT_MAX_TOKENS_TITLE);
         int maxTokensSummary = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_SUMMARY, "spring.ai.openai.chat.options.max-tokens-summary", String.valueOf(DEFAULT_MAX_TOKENS_SUMMARY)), DEFAULT_MAX_TOKENS_SUMMARY);
         int maxTokensKeywords = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_KEYWORDS, "spring.ai.openai.chat.options.max-tokens-keywords", String.valueOf(DEFAULT_MAX_TOKENS_KEYWORDS)), DEFAULT_MAX_TOKENS_KEYWORDS);
         int maxTokensPolish = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_POLISH, "spring.ai.openai.chat.options.max-tokens-polish", String.valueOf(DEFAULT_MAX_TOKENS_POLISH)), DEFAULT_MAX_TOKENS_POLISH);
-        return new OpenAiConfigSnapshot(enabled, trimToEmpty(apiKey), trimToDefault(baseUrl, "https://api.openai.com"),
-                trimToDefault(model, "gpt-4o-mini"), trimToDefault(completionsPath, "/v1/chat/completions"), temperature,
+        return new OpenAiConfigSnapshot(enabled, trimToEmpty(apiKey), trimToDefault(baseUrl, DEFAULT_BASE_URL),
+                trimToDefault(model, DEFAULT_MODEL), trimToDefault(completionsPath, DEFAULT_COMPLETIONS_PATH), temperature,
                 maxTokensChat, maxTokensTitle, maxTokensSummary, maxTokensKeywords, maxTokensPolish);
     }
 
