@@ -197,22 +197,22 @@ export const AIAssistant: React.FC = () => {
         history: history.length > 0 ? history : undefined,
       };
 
-      let hasDelta = false;
+      let streamedAnswer = '';
       await api.ai.chatStream(requestPayload, {
         onStatus: (message) => {
-          if (hasDelta) return;
+          if (streamedAnswer) return;
           setMessages(prev => prev.map(msg => (
             msg.id === assistantMessageId ? { ...msg, content: message } : msg
           )));
         },
         onDelta: (text) => {
           if (!text) return;
+          streamedAnswer += text;
           setMessages(prev => prev.map(msg => (
             msg.id === assistantMessageId
-              ? { ...msg, content: hasDelta ? `${msg.content}${text}` : text }
+              ? { ...msg, content: streamedAnswer }
               : msg
           )));
-          hasDelta = true;
         },
         onRelatedArticles: (items) => {
           setMessages(prev => prev.map(msg => (
