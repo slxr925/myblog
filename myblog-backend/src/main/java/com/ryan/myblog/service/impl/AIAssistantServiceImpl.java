@@ -83,6 +83,13 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 long totalStart = System.currentTimeMillis();
 
                 try {
+                        if (isAssistantMetaQuestion(request.getQuestion())) {
+                                String answer = buildAssistantCapabilityAnswer();
+                                logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
+                                                elapsed(totalStart), answer.length());
+                                return buildChatResponse(request, answer, false, totalStart, List.of());
+                        }
+
                         if (!isSupportedQuestion(request.getQuestion())) {
                                 logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
                                                 elapsed(totalStart), OUT_OF_SCOPE_ANSWER.length());
@@ -139,6 +146,15 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                 try {
                         sendSse(emitter, "status", Map.of("message", "正在理解问题..."));
+
+                        if (isAssistantMetaQuestion(request.getQuestion())) {
+                                String answer = buildAssistantCapabilityAnswer();
+                                sendAnswerChunks(emitter, answer);
+                                sendDone(emitter, request, totalStart, false, false);
+                                logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
+                                                elapsed(totalStart), answer.length());
+                                return;
+                        }
 
                         if (!isSupportedQuestion(request.getQuestion())) {
                                 sendSse(emitter, "status", Map.of("message", "这个问题超出助手范围"));
@@ -197,13 +213,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
         @Override
         public String getIntroduction() {
-                return "你好！我是MyBlog智能助手🤖\n\n" +
-                                "我可以帮你：\n" +
-                                "• 查找感兴趣的文章\n" +
-                                "• 了解博客的技术栈\n" +
-                                "• 推荐相关主题的内容\n" +
-                                "• 回答关于项目的问题\n\n" +
-                                "快来问我吧！";
+                return buildAssistantCapabilityAnswer();
         }
 
         private String buildContext() {
@@ -299,7 +309,26 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         }
 
         private boolean isSupportedQuestion(String question) {
-                return isBlogScopedQuestion(question) || isTechnicalQuestion(question);
+                return isAssistantMetaQuestion(question) || isBlogScopedQuestion(question) || isTechnicalQuestion(question);
+        }
+
+        private boolean isAssistantMetaQuestion(String question) {
+                if (question == null || question.isBlank()) {
+                        return false;
+                }
+                String text = question.trim().toLowerCase();
+                return text.matches("^(你好|您好|哈喽|hello|hi|hey|在吗|在不在)[！!。,.，\\s]*$")
+                                || text.contains("你可以做什么")
+                                || text.contains("你能做什么")
+                                || text.contains("你会做什么")
+                                || text.contains("你有什么功能")
+                                || text.contains("你是谁")
+                                || text.contains("介绍一下你")
+                                || text.contains("怎么用你")
+                                || text.contains("帮助")
+                                || text.contains("help")
+                                || text.contains("what can you do")
+                                || text.contains("who are you");
         }
 
         private boolean isBlogScopedQuestion(String question) {
@@ -372,6 +401,16 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 || text.contains("ai")
                                 || text.contains("llm")
                                 || text.contains("prompt");
+        }
+
+        private String buildAssistantCapabilityAnswer() {
+                return "你好，我是 MyBlog 的 AI 助手。\n\n" +
+                                "我可以帮你：\n" +
+                                "• 查找、推荐和解释站内文章\n" +
+                                "• 了解 MyBlog 的技术栈、分类和标签\n" +
+                                "• 回答技术、编程、软件工程、AI 使用和技术写作相关问题\n" +
+                                "• 辅助生成标题、摘要、关键词和润色内容\n\n" +
+                                "我不会回答天气、生活闲聊、娱乐八卦等和技术或本站无关的问题。";
         }
 
         private String handleWithRules(String question, String context) {

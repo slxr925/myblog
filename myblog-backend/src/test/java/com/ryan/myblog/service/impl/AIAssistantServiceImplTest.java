@@ -69,6 +69,34 @@ class AIAssistantServiceImplTest {
     }
 
     @Test
+    void greetingQuestionReturnsAssistantIntroWithoutModelAndBlogContext() {
+        AIAssistantServiceImpl service = newService();
+        AIChatRequest request = new AIChatRequest();
+        request.setQuestion("你好");
+
+        AIChatResponse response = service.chat(request);
+
+        assertTrue(response.getAnswer().contains("我是 MyBlog 的 AI 助手"));
+        assertTrue(response.getAnswer().contains("我可以帮你"));
+        assertFalse(response.getAiEnabled());
+        verifyNoInteractions(blogService, categoryService, tagService, cacheService);
+    }
+
+    @Test
+    void capabilityQuestionReturnsAssistantIntroWithoutModelAndBlogContext() {
+        AIAssistantServiceImpl service = newService();
+        AIChatRequest request = new AIChatRequest();
+        request.setQuestion("你可以做什么？");
+
+        AIChatResponse response = service.chat(request);
+
+        assertTrue(response.getAnswer().contains("技术、编程、软件工程"));
+        assertTrue(response.getAnswer().contains("天气、生活闲聊"));
+        assertFalse(response.getAiEnabled());
+        verifyNoInteractions(blogService, categoryService, tagService, cacheService);
+    }
+
+    @Test
     void blogQuestionInjectsBlogContextWithArticleConstraint() {
         AIAssistantServiceImpl service = newService();
 
