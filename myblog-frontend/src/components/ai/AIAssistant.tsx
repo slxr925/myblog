@@ -39,8 +39,16 @@ interface PersistedMessage {
   relatedArticles?: RelatedArticle[];
 }
 
-const AI_ASSISTANT_STORAGE_KEY = 'myblog:ai-assistant:state:v1';
+interface AssistantMemoryState {
+  userKey: string;
+  isOpen: boolean;
+  conversationId: string;
+  messages: PersistedMessage[];
+}
+
 const AI_ASSISTANT_MAX_PERSISTED_MESSAGES = 60;
+const LEGACY_AI_ASSISTANT_STORAGE_KEY = 'myblog:ai-assistant:state:v1';
+let assistantMemoryState: AssistantMemoryState | null = null;
 
 export const AIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,8 +59,9 @@ export const AIAssistant: React.FC = () => {
   const [isSessionReady, setIsSessionReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
   const { openAuthModal } = useAuthModal();
+  const userKey = isAuthenticated && user ? String(user.id ?? user.username) : '';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,74 +71,77 @@ export const AIAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // 路由切换会重建组件，这里恢复上次会话状态
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(AI_ASSISTANT_STORAGE_KEY);
-      if (!raw) {
-        setIsSessionReady(true);
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as {
-        isOpen?: boolean;
-        conversationId?: string;
-        messages?: PersistedMessage[];
-      };
-
-      if (typeof parsed.isOpen === 'boolean') {
-        setIsOpen(parsed.isOpen);
-      }
-      if (typeof parsed.conversationId === 'string') {
-        setConversationId(parsed.conversationId);
-      }
-      if (Array.isArray(parsed.messages)) {
-        const restoredMessages = parsed.messages
-          .filter((msg) => msg && typeof msg.id === 'string' && typeof msg.content === 'string')
-          .map((msg) => ({
-            id: msg.id,
-            content: msg.content,
-            isUser: !!msg.isUser,
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-            relatedArticles: msg.relatedArticles,
-          }));
-        setMessages(restoredMessages);
-      }
-    } catch (error) {
-      console.warn('恢复AI助手会话失败:', error);
-      sessionStorage.removeItem(AI_ASSISTANT_STORAGE_KEY);
-    } finally {
-      setIsSessionReady(true);
-    }
+    sessionStorage.removeItem(LEGACY_AI_ASSISTANT_STORAGE_KEY);
   }, []);
 
+  // 路由切换会重建组件，这里只从当前 JS 运行期内存恢复；刷新/关闭/重新登录都会清空
   useEffect(() => {
-    if (!isSessionReady) {
+    if (isAuthLoading) {
       return;
     }
-    try {
-      const persistedMessages: PersistedMessage[] = messages
-        .slice(-AI_ASSISTANT_MAX_PERSISTED_MESSAGES)
+
+    if (!userKey) {
+      assistantMemoryState = null;
+      setIsOpen(false);
+      setMessages([]);
+      setConversationId('');
+      setInputValue('');
+      setIsLoading(false);
+      setIsSessionReady(true);
+      return;
+    }
+
+    const state = assistantMemoryState?.userKey === userKey ? assistantMemoryState : null;
+    if (!state) {
+      setMessages([]);
+      setConversationId('');
+      setInputValue('');
+      setIsLoading(false);
+      setIsSessionReady(true);
+      return;
+    }
+
+    setIsOpen(state.isOpen);
+    setConversationId(state.conversationId);
+    setMessages(
+      state.messages
+        .filter((msg) => msg && typeof msg.id === 'string' && typeof msg.content === 'string')
         .map((msg) => ({
           id: msg.id,
           content: msg.content,
-          isUser: msg.isUser,
-          timestamp: msg.timestamp.toISOString(),
+          isUser: !!msg.isUser,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
           relatedArticles: msg.relatedArticles,
-        }));
+        })),
+    );
+    setIsSessionReady(true);
+  }, [isAuthLoading, userKey]);
 
-      sessionStorage.setItem(
-        AI_ASSISTANT_STORAGE_KEY,
-        JSON.stringify({
-          isOpen,
-          conversationId,
-          messages: persistedMessages,
-        }),
-      );
-    } catch (error) {
-      console.warn('保存AI助手会话失败:', error);
+  useEffect(() => {
+    if (!isSessionReady || !userKey) {
+      if (!userKey) {
+        assistantMemoryState = null;
+      }
+      return;
     }
-  }, [isOpen, conversationId, messages, isSessionReady]);
+    const persistedMessages: PersistedMessage[] = messages
+      .slice(-AI_ASSISTANT_MAX_PERSISTED_MESSAGES)
+      .map((msg) => ({
+        id: msg.id,
+        content: msg.content,
+        isUser: msg.isUser,
+        timestamp: msg.timestamp.toISOString(),
+        relatedArticles: msg.relatedArticles,
+      }));
+
+    assistantMemoryState = {
+      userKey,
+      isOpen,
+      conversationId,
+      messages: persistedMessages,
+    };
+  }, [isOpen, conversationId, messages, isSessionReady, userKey]);
 
   // 获取介绍信息
   useEffect(() => {
