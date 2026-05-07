@@ -5,6 +5,7 @@ spring:
     exclude:
       - com.alibaba.arthas.spring.ArthasAutoConfiguration
       - com.alibaba.arthas.spring.ArtHashConfiguration
+      - org.springframework.ai.vectorstore.elasticsearch.autoconfigure.ElasticsearchVectorStoreAutoConfiguration
   
   # AI配置 - 通过环境变量配置
   ai:
