@@ -40,6 +40,7 @@ import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,6 +60,12 @@ public class BlogRagServiceImpl implements BlogRagService {
     private static final int CHUNK_OVERLAP = 120;
     private static final int SNIPPET_MAX_CHARS = 360;
     private static final int HYBRID_RECALL_MULTIPLIER = 3;
+    private static final Set<String> STOP_WORDS = Set.of(
+            "帮我", "推荐", "一些", "相关", "文章", "博客", "内容", "一下", "看看", "有关", "关于", "这个", "那个",
+            "的", "了", "和", "与", "及", "或", "是", "有哪些", "有些", "please", "recommend", "article", "articles",
+            "blog", "blogs", "related", "some", "about", "the", "and", "or");
+    private static final List<String> KNOWN_CHINESE_TERMS = List.of(
+            "宿主机", "慢查询", "数据库", "索引", "容器", "配置", "访问", "后端", "前端", "缓存", "部署", "调试", "性能");
 
     private final BlogMapper blogMapper;
     private final CategoryMapper categoryMapper;
@@ -120,6 +127,7 @@ public class BlogRagServiceImpl implements BlogRagService {
         }
         long start = System.currentTimeMillis();
         String trimmedQuestion = question.trim();
+        String keywordQuery = normalizeSearchQuery(trimmedQuestion);
         int resultLimit = Math.max(1, topK);
         int recallLimit = Math.max(resultLimit, resultLimit * HYBRID_RECALL_MULTIPLIER);
         List<RagSearchResult> vectorResults = List.of();
@@ -144,16 +152,19 @@ public class BlogRagServiceImpl implements BlogRagService {
             log.warn("RAG向量检索失败，尝试关键词召回: {}", e.getMessage());
         }
 
-        try {
-            keywordResults = keywordSearch(trimmedQuestion, recallLimit);
-        } catch (Exception e) {
-            log.warn("RAG关键词检索失败，继续使用向量结果: {}", e.getMessage());
+        if (hasText(keywordQuery)) {
+            try {
+                keywordResults = keywordSearch(keywordQuery, recallLimit);
+            } catch (Exception e) {
+                log.warn("RAG关键词检索失败，继续使用向量结果 query={} error={}", keywordQuery, e.getMessage());
+            }
         }
 
-        List<RagSearchResult> results = mergeAndRerank(trimmedQuestion, vectorResults, keywordResults, resultLimit);
-        log.info("RAG混合检索完成 hitCount={} vectorHits={} keywordHits={} topK={} threshold={} elapsedMs={}",
-                results.size(), vectorResults.size(), keywordResults.size(), resultLimit, similarityThreshold,
-                System.currentTimeMillis() - start);
+        List<RagSearchResult> results = mergeAndRerank(hasText(keywordQuery) ? keywordQuery : trimmedQuestion,
+                vectorResults, keywordResults, resultLimit);
+        log.info("RAG混合检索完成 query={} keywordQuery={} hitCount={} vectorHits={} keywordHits={} topK={} threshold={} elapsedMs={} topResults={}",
+                trimmedQuestion, keywordQuery, results.size(), vectorResults.size(), keywordResults.size(), resultLimit,
+                similarityThreshold, System.currentTimeMillis() - start, formatTopResults(results));
         return results;
     }
 
@@ -537,6 +548,59 @@ public class BlogRagServiceImpl implements BlogRagService {
         return clamp01(score);
     }
 
+    private String normalizeSearchQuery(String question) {
+        return String.join(" ", extractSearchTerms(question));
+    }
+
+    private Set<String> extractSearchTerms(String question) {
+        if (!hasText(question)) {
+            return Set.of();
+        }
+        Set<String> terms = new LinkedHashSet<>();
+        String normalized = lower(question);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("[a-z0-9+#.]+|[\\p{IsHan}]+")
+                .matcher(normalized);
+        while (matcher.find()) {
+            String token = matcher.group();
+            if (token.matches("[a-z0-9+#.]+")) {
+                addSearchTerm(terms, token);
+            } else {
+                addChineseSearchTerms(terms, token);
+            }
+        }
+        return terms;
+    }
+
+    private void addChineseSearchTerms(Set<String> terms, String token) {
+        String cleaned = token;
+        for (String stopWord : STOP_WORDS) {
+            cleaned = cleaned.replace(stopWord, " ");
+        }
+        boolean matchedKnownTerm = false;
+        for (String term : KNOWN_CHINESE_TERMS) {
+            if (cleaned.contains(term)) {
+                terms.add(term);
+                matchedKnownTerm = true;
+            }
+        }
+        if (!matchedKnownTerm) {
+            for (String part : cleaned.split("\\s+")) {
+                addSearchTerm(terms, part);
+            }
+        }
+    }
+
+    private void addSearchTerm(Set<String> terms, String token) {
+        String term = token == null ? "" : token.trim();
+        if (term.length() >= 2 && !isStopWord(term)) {
+            terms.add(term);
+        }
+    }
+
+    private boolean isStopWord(String token) {
+        return token == null || STOP_WORDS.contains(token.trim().toLowerCase());
+    }
+
     private double recencyBoost(String publishTime) {
         if (!hasText(publishTime)) {
             return 0.0;
@@ -577,7 +641,7 @@ public class BlogRagServiceImpl implements BlogRagService {
     }
 
     private String candidateKey(RagSearchResult result) {
-        return String.valueOf(result.getBlogId()) + ":" + String.valueOf(result.getChunkIndex());
+        return String.valueOf(result.getBlogId());
     }
 
     private String matchSource(RagSearchResult result) {
@@ -606,6 +670,18 @@ public class BlogRagServiceImpl implements BlogRagService {
                 .rerankScore(source.getRerankScore())
                 .matchSource(source.getMatchSource())
                 .build();
+    }
+
+    private String formatTopResults(List<RagSearchResult> results) {
+        return safeList(results).stream()
+                .map(result -> String.format("{blogId=%s,title=%s,source=%s,vector=%.4f,keyword=%.4f,rerank=%.4f}",
+                        result.getBlogId(),
+                        result.getTitle(),
+                        result.getMatchSource(),
+                        nullToZero(result.getVectorScore()),
+                        nullToZero(result.getKeywordScore()),
+                        nullToZero(result.getRerankScore())))
+                .collect(Collectors.joining("; "));
     }
 
     private boolean indexExists() {

@@ -20,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -138,6 +139,88 @@ class BlogRagServiceImplTest {
         assertEquals(2L, reranked.getFirst().getBlogId());
         assertEquals("hybrid", reranked.getFirst().getMatchSource());
         assertEquals(1L, reranked.get(1).getBlogId());
+    }
+
+    @Test
+    void extractSearchTermsKeepsCoreTechnicalKeywordFromRecommendationQuestion() {
+        BlogRagServiceImpl service = newService();
+
+        @SuppressWarnings("unchecked")
+        Set<String> terms = ReflectionTestUtils.invokeMethod(
+                service,
+                "extractSearchTerms",
+                "帮我推荐一些mysql相关的文章");
+
+        assertNotNull(terms);
+        assertEquals(Set.of("mysql"), terms);
+    }
+
+    @Test
+    void extractSearchTermsKeepsUsefulMixedTechnicalTerms() {
+        BlogRagServiceImpl service = newService();
+
+        @SuppressWarnings("unchecked")
+        Set<String> terms = ReflectionTestUtils.invokeMethod(
+                service,
+                "extractSearchTerms",
+                "推荐 Docker 容器访问宿主机相关内容");
+
+        assertNotNull(terms);
+        assertEquals(Set.of("docker", "容器", "访问", "宿主机"), terms);
+    }
+
+    @Test
+    void normalizeSearchQueryReturnsEmptyWhenQuestionHasOnlyIntentWords() {
+        BlogRagServiceImpl service = newService();
+
+        String query = ReflectionTestUtils.invokeMethod(
+                service,
+                "normalizeSearchQuery",
+                "帮我推荐一些相关文章");
+
+        assertEquals("", query);
+    }
+
+    @Test
+    void mergeAndRerankReturnsOneResultPerBlog() {
+        BlogRagServiceImpl service = newService();
+        RagSearchResult firstChunk = RagSearchResult.builder()
+                .blogId(47L)
+                .title("MyBlog 全栈博客系统开发总结")
+                .snippet("MySQL 和 Docker 部署经验")
+                .chunkIndex(0)
+                .keywordScore(10.0)
+                .build();
+        RagSearchResult secondChunk = RagSearchResult.builder()
+                .blogId(47L)
+                .title("MyBlog 全栈博客系统开发总结")
+                .snippet("AI 工具使用经验")
+                .chunkIndex(1)
+                .keywordScore(8.0)
+                .build();
+        RagSearchResult mysqlArticle = RagSearchResult.builder()
+                .blogId(31L)
+                .title("MySQL 索引优化实战")
+                .categoryName("学习笔记")
+                .tags(List.of(tag(3L, "MySQL", "#1890ff")))
+                .snippet("MySQL 索引和慢查询优化")
+                .chunkIndex(0)
+                .keywordScore(12.0)
+                .build();
+
+        @SuppressWarnings("unchecked")
+        List<RagSearchResult> reranked = ReflectionTestUtils.invokeMethod(
+                service,
+                "mergeAndRerank",
+                "mysql",
+                List.of(),
+                List.of(firstChunk, secondChunk, mysqlArticle),
+                5);
+
+        assertNotNull(reranked);
+        assertEquals(2, reranked.size());
+        assertEquals(31L, reranked.getFirst().getBlogId());
+        assertEquals(47L, reranked.get(1).getBlogId());
     }
 
     private BlogRagServiceImpl newService() {
