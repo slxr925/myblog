@@ -4,8 +4,12 @@ import com.ryan.myblog.model.dto.OpenAiConfigUpdateDTO;
 import com.ryan.myblog.model.vo.OpenAiConfigVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,16 +49,31 @@ public class OpenAiRuntimeConfigService {
     private static final String KEY_MAX_TOKENS_SUMMARY = "OPENAI_MAX_TOKENS_SUMMARY";
     private static final String KEY_MAX_TOKENS_KEYWORDS = "OPENAI_MAX_TOKENS_KEYWORDS";
     private static final String KEY_MAX_TOKENS_POLISH = "OPENAI_MAX_TOKENS_POLISH";
+    private static final String KEY_RAG_ENABLED = "RAG_ENABLED";
+    private static final String KEY_RAG_TOP_K = "RAG_TOP_K";
+    private static final String KEY_RAG_SIMILARITY_THRESHOLD = "RAG_SIMILARITY_THRESHOLD";
+    private static final String KEY_EMBEDDING_ENABLED = "EMBEDDING_ENABLED";
+    private static final String KEY_EMBEDDING_BASE_URL = "EMBEDDING_BASE_URL";
+    private static final String KEY_EMBEDDING_PATH = "EMBEDDING_PATH";
+    private static final String KEY_EMBEDDING_MODEL = "EMBEDDING_MODEL";
+    private static final String KEY_EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
+    private static final String KEY_EMBEDDING_DIMENSIONS = "EMBEDDING_DIMENSIONS";
 
     private static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
     private static final String DEFAULT_MODEL = "deepseek-v4-flash";
     private static final String DEFAULT_COMPLETIONS_PATH = "/chat/completions";
+    private static final String DEFAULT_EMBEDDING_BASE_URL = "https://api.siliconflow.cn";
+    private static final String DEFAULT_EMBEDDING_PATH = "/v1/embeddings";
+    private static final String DEFAULT_EMBEDDING_MODEL = "BAAI/bge-m3";
 
     private static final int DEFAULT_MAX_TOKENS_CHAT = 700;
     private static final int DEFAULT_MAX_TOKENS_TITLE = 80;
     private static final int DEFAULT_MAX_TOKENS_SUMMARY = 260;
     private static final int DEFAULT_MAX_TOKENS_KEYWORDS = 120;
     private static final int DEFAULT_MAX_TOKENS_POLISH = 1200;
+    private static final int DEFAULT_RAG_TOP_K = 5;
+    private static final double DEFAULT_RAG_SIMILARITY_THRESHOLD = 0.6d;
+    private static final int DEFAULT_EMBEDDING_DIMENSIONS = 1024;
 
     private static final List<String> MANAGED_KEYS = List.of(
             KEY_AI_ENABLED,
@@ -67,7 +86,16 @@ public class OpenAiRuntimeConfigService {
             KEY_MAX_TOKENS_TITLE,
             KEY_MAX_TOKENS_SUMMARY,
             KEY_MAX_TOKENS_KEYWORDS,
-            KEY_MAX_TOKENS_POLISH
+            KEY_MAX_TOKENS_POLISH,
+            KEY_RAG_ENABLED,
+            KEY_RAG_TOP_K,
+            KEY_RAG_SIMILARITY_THRESHOLD,
+            KEY_EMBEDDING_ENABLED,
+            KEY_EMBEDDING_BASE_URL,
+            KEY_EMBEDDING_PATH,
+            KEY_EMBEDDING_MODEL,
+            KEY_EMBEDDING_API_KEY,
+            KEY_EMBEDDING_DIMENSIONS
     );
 
     private static final List<String> PASSTHROUGH_KEYS = List.of(
@@ -130,11 +158,42 @@ public class OpenAiRuntimeConfigService {
         return currentState().chatClient();
     }
 
+    public EmbeddingModel getEmbeddingModel() {
+        return currentState().embeddingModel();
+    }
+
+    public boolean isRagAvailable() {
+        RuntimeState state = currentState();
+        OpenAiConfigSnapshot config = state.config();
+        return config.ragEnabled() && config.embeddingEnabled() && hasText(config.embeddingApiKey())
+                && state.embeddingModel() != null;
+    }
+
+    public int getEmbeddingDimensions() {
+        return currentState().config().embeddingDimensions();
+    }
+
+    public int getRagTopK() {
+        return currentState().config().ragTopK();
+    }
+
+    public double getRagSimilarityThreshold() {
+        return currentState().config().ragSimilarityThreshold();
+    }
+
+    public String getEmbeddingFingerprint() {
+        OpenAiConfigSnapshot config = currentState().config();
+        return config.ragEnabled() + "|" + config.embeddingEnabled() + "|" + config.embeddingBaseUrl() + "|"
+                + config.embeddingPath() + "|" + config.embeddingModel() + "|" + config.embeddingDimensions() + "|"
+                + config.embeddingApiKeyHash() + "|" + currentState().lastModifiedMillis();
+    }
+
     public String getRuntimeFingerprint() {
         OpenAiConfigSnapshot config = currentState().config();
         return config.baseUrl() + "|" + config.model() + "|" + config.completionsPath() + "|" + config.temperature() + "|"
                 + config.maxTokensChat() + "|" + config.maxTokensTitle() + "|" + config.maxTokensSummary() + "|"
-                + config.maxTokensKeywords() + "|" + config.maxTokensPolish() + "|" + config.apiKeyHash() + "|"
+                + config.maxTokensKeywords() + "|" + config.maxTokensPolish() + "|" + config.ragEnabled() + "|"
+                + config.ragTopK() + "|" + config.ragSimilarityThreshold() + "|" + config.apiKeyHash() + "|"
                 + currentState().lastModifiedMillis();
     }
 
@@ -175,8 +234,9 @@ public class OpenAiRuntimeConfigService {
     private RuntimeState loadRuntimeState() {
         OpenAiConfigSnapshot config = readConfig();
         ChatClient chatClient = buildChatClient(config);
+        EmbeddingModel embeddingModel = buildEmbeddingModel(config);
         long modifiedMillis = getLastModifiedMillis();
-        return new RuntimeState(config, chatClient, modifiedMillis);
+        return new RuntimeState(config, chatClient, embeddingModel, modifiedMillis);
     }
 
     private OpenAiConfigSnapshot readConfig() {
@@ -192,9 +252,23 @@ public class OpenAiRuntimeConfigService {
         int maxTokensSummary = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_SUMMARY, "spring.ai.openai.chat.options.max-tokens-summary", String.valueOf(DEFAULT_MAX_TOKENS_SUMMARY)), DEFAULT_MAX_TOKENS_SUMMARY);
         int maxTokensKeywords = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_KEYWORDS, "spring.ai.openai.chat.options.max-tokens-keywords", String.valueOf(DEFAULT_MAX_TOKENS_KEYWORDS)), DEFAULT_MAX_TOKENS_KEYWORDS);
         int maxTokensPolish = parsePositiveInt(firstValue(values, KEY_MAX_TOKENS_POLISH, "spring.ai.openai.chat.options.max-tokens-polish", String.valueOf(DEFAULT_MAX_TOKENS_POLISH)), DEFAULT_MAX_TOKENS_POLISH);
+        boolean ragEnabled = parseBoolean(firstValue(values, KEY_RAG_ENABLED, "app.rag.enabled", "false"));
+        int ragTopK = parsePositiveInt(firstValue(values, KEY_RAG_TOP_K, "app.rag.top-k", String.valueOf(DEFAULT_RAG_TOP_K)), DEFAULT_RAG_TOP_K);
+        double ragSimilarityThreshold = parseSimilarityThreshold(firstValue(values, KEY_RAG_SIMILARITY_THRESHOLD, "app.rag.similarity-threshold", String.valueOf(DEFAULT_RAG_SIMILARITY_THRESHOLD)), DEFAULT_RAG_SIMILARITY_THRESHOLD);
+        boolean embeddingEnabled = parseBoolean(firstValue(values, KEY_EMBEDDING_ENABLED, "app.rag.embedding.enabled", "false"));
+        String embeddingBaseUrl = firstValue(values, KEY_EMBEDDING_BASE_URL, "app.rag.embedding.base-url", DEFAULT_EMBEDDING_BASE_URL);
+        String embeddingPath = firstValue(values, KEY_EMBEDDING_PATH, "app.rag.embedding.path", DEFAULT_EMBEDDING_PATH);
+        String embeddingModel = firstValue(values, KEY_EMBEDDING_MODEL, "app.rag.embedding.model", DEFAULT_EMBEDDING_MODEL);
+        String embeddingApiKey = firstValue(values, KEY_EMBEDDING_API_KEY, "app.rag.embedding.api-key", "");
+        int embeddingDimensions = parsePositiveInt(firstValue(values, KEY_EMBEDDING_DIMENSIONS, "app.rag.embedding.dimensions", String.valueOf(DEFAULT_EMBEDDING_DIMENSIONS)), DEFAULT_EMBEDDING_DIMENSIONS);
         return new OpenAiConfigSnapshot(enabled, trimToEmpty(apiKey), trimToDefault(baseUrl, DEFAULT_BASE_URL),
                 trimToDefault(model, DEFAULT_MODEL), trimToDefault(completionsPath, DEFAULT_COMPLETIONS_PATH), temperature,
-                maxTokensChat, maxTokensTitle, maxTokensSummary, maxTokensKeywords, maxTokensPolish);
+                maxTokensChat, maxTokensTitle, maxTokensSummary, maxTokensKeywords, maxTokensPolish,
+                ragEnabled, ragTopK, ragSimilarityThreshold,
+                embeddingEnabled, trimToDefault(embeddingBaseUrl, DEFAULT_EMBEDDING_BASE_URL),
+                trimToDefault(embeddingPath, DEFAULT_EMBEDDING_PATH),
+                trimToDefault(embeddingModel, DEFAULT_EMBEDDING_MODEL), trimToEmpty(embeddingApiKey),
+                embeddingDimensions);
     }
 
     private Map<String, String> readEnvValues() {
@@ -225,6 +299,12 @@ public class OpenAiRuntimeConfigService {
         } else if (hasText(update.getApiKey())) {
             apiKey = update.getApiKey().trim();
         }
+        String embeddingApiKey = current.embeddingApiKey();
+        if (Boolean.TRUE.equals(update.getClearEmbeddingApiKey())) {
+            embeddingApiKey = "";
+        } else if (hasText(update.getEmbeddingApiKey())) {
+            embeddingApiKey = update.getEmbeddingApiKey().trim();
+        }
         return new OpenAiConfigSnapshot(
                 update.getAiEnabled() != null ? update.getAiEnabled() : current.aiEnabled(),
                 apiKey,
@@ -236,7 +316,16 @@ public class OpenAiRuntimeConfigService {
                 normalizeMaxTokens(update.getMaxTokensTitle(), current.maxTokensTitle(), DEFAULT_MAX_TOKENS_TITLE),
                 normalizeMaxTokens(update.getMaxTokensSummary(), current.maxTokensSummary(), DEFAULT_MAX_TOKENS_SUMMARY),
                 normalizeMaxTokens(update.getMaxTokensKeywords(), current.maxTokensKeywords(), DEFAULT_MAX_TOKENS_KEYWORDS),
-                normalizeMaxTokens(update.getMaxTokensPolish(), current.maxTokensPolish(), DEFAULT_MAX_TOKENS_POLISH)
+                normalizeMaxTokens(update.getMaxTokensPolish(), current.maxTokensPolish(), DEFAULT_MAX_TOKENS_POLISH),
+                update.getRagEnabled() != null ? update.getRagEnabled() : current.ragEnabled(),
+                normalizeMaxTokens(update.getRagTopK(), current.ragTopK(), DEFAULT_RAG_TOP_K),
+                normalizeSimilarityThreshold(update.getRagSimilarityThreshold(), current.ragSimilarityThreshold(), DEFAULT_RAG_SIMILARITY_THRESHOLD),
+                update.getEmbeddingEnabled() != null ? update.getEmbeddingEnabled() : current.embeddingEnabled(),
+                hasText(update.getEmbeddingBaseUrl()) ? update.getEmbeddingBaseUrl().trim() : current.embeddingBaseUrl(),
+                hasText(update.getEmbeddingPath()) ? update.getEmbeddingPath().trim() : current.embeddingPath(),
+                hasText(update.getEmbeddingModel()) ? update.getEmbeddingModel().trim() : current.embeddingModel(),
+                embeddingApiKey,
+                normalizeMaxTokens(update.getEmbeddingDimensions(), current.embeddingDimensions(), DEFAULT_EMBEDDING_DIMENSIONS)
         );
     }
 
@@ -261,6 +350,15 @@ public class OpenAiRuntimeConfigService {
         nextValues.put(KEY_MAX_TOKENS_SUMMARY, String.valueOf(config.maxTokensSummary()));
         nextValues.put(KEY_MAX_TOKENS_KEYWORDS, String.valueOf(config.maxTokensKeywords()));
         nextValues.put(KEY_MAX_TOKENS_POLISH, String.valueOf(config.maxTokensPolish()));
+        nextValues.put(KEY_RAG_ENABLED, Boolean.toString(config.ragEnabled()));
+        nextValues.put(KEY_RAG_TOP_K, String.valueOf(config.ragTopK()));
+        nextValues.put(KEY_RAG_SIMILARITY_THRESHOLD, formatDouble(config.ragSimilarityThreshold()));
+        nextValues.put(KEY_EMBEDDING_ENABLED, Boolean.toString(config.embeddingEnabled()));
+        nextValues.put(KEY_EMBEDDING_BASE_URL, config.embeddingBaseUrl());
+        nextValues.put(KEY_EMBEDDING_PATH, config.embeddingPath());
+        nextValues.put(KEY_EMBEDDING_MODEL, config.embeddingModel());
+        nextValues.put(KEY_EMBEDDING_API_KEY, config.embeddingApiKey());
+        nextValues.put(KEY_EMBEDDING_DIMENSIONS, String.valueOf(config.embeddingDimensions()));
 
         Set<String> written = new LinkedHashSet<>();
         List<String> nextLines = new ArrayList<>();
@@ -331,6 +429,27 @@ public class OpenAiRuntimeConfigService {
         }
     }
 
+    private EmbeddingModel buildEmbeddingModel(OpenAiConfigSnapshot config) {
+        if (!config.embeddingEnabled() || !hasText(config.embeddingApiKey())) {
+            return null;
+        }
+        try {
+            OpenAiApi openAiApi = OpenAiApi.builder()
+                    .baseUrl(config.embeddingBaseUrl())
+                    .apiKey(config.embeddingApiKey())
+                    .embeddingsPath(config.embeddingPath())
+                    .build();
+            OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+                    .model(config.embeddingModel())
+                    .encodingFormat("float")
+                    .build();
+            return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, options);
+        } catch (Exception e) {
+            log.error("Embedding运行期配置加载失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
     private OpenAiConfigVO toVO(RuntimeState state) {
         OpenAiConfigSnapshot config = state.config();
         OpenAiConfigVO vo = new OpenAiConfigVO();
@@ -350,6 +469,19 @@ public class OpenAiRuntimeConfigService {
         vo.setEnvFileExists(Files.isRegularFile(envFile));
         vo.setEnvFilePath(envFile.toString());
         vo.setLastModifiedAt(state.lastModifiedMillis() > 0 ? Instant.ofEpochMilli(state.lastModifiedMillis()).toString() : null);
+        vo.setRagEnabled(config.ragEnabled());
+        vo.setRagTopK(config.ragTopK());
+        vo.setRagSimilarityThreshold(config.ragSimilarityThreshold());
+        vo.setEmbeddingEnabled(config.embeddingEnabled());
+        vo.setEmbeddingApiKeyConfigured(hasText(config.embeddingApiKey()));
+        vo.setEmbeddingApiKeyMasked(maskApiKey(config.embeddingApiKey()));
+        vo.setEmbeddingBaseUrl(config.embeddingBaseUrl());
+        vo.setEmbeddingPath(config.embeddingPath());
+        vo.setEmbeddingModel(config.embeddingModel());
+        vo.setEmbeddingDimensions(config.embeddingDimensions());
+        vo.setEmbeddingAvailable(state.embeddingModel() != null && config.embeddingEnabled() && hasText(config.embeddingApiKey()));
+        vo.setRagAvailable(config.ragEnabled() && state.embeddingModel() != null && config.embeddingEnabled() && hasText(config.embeddingApiKey()));
+        vo.setRagIndexName("blog_rag_chunks");
         return vo;
     }
 
@@ -466,11 +598,27 @@ public class OpenAiRuntimeConfigService {
         }
     }
 
+    private static double parseSimilarityThreshold(String value, double defaultValue) {
+        try {
+            double parsed = Double.parseDouble(value);
+            return parsed >= 0d && parsed <= 1d ? parsed : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
     private static int normalizeMaxTokens(Integer value, int currentValue, int defaultValue) {
         if (value == null) {
             return currentValue;
         }
         return value > 0 ? value : defaultValue;
+    }
+
+    private static double normalizeSimilarityThreshold(Double value, double currentValue, double defaultValue) {
+        if (value == null) {
+            return currentValue;
+        }
+        return value >= 0d && value <= 1d ? value : defaultValue;
     }
 
     private static String formatDouble(double value) {
@@ -492,7 +640,8 @@ public class OpenAiRuntimeConfigService {
     private record ParsedLine(String key, String value) {
     }
 
-    private record RuntimeState(OpenAiConfigSnapshot config, ChatClient chatClient, long lastModifiedMillis) {
+    private record RuntimeState(OpenAiConfigSnapshot config, ChatClient chatClient, EmbeddingModel embeddingModel,
+                                long lastModifiedMillis) {
     }
 
     private record OpenAiConfigSnapshot(
@@ -506,10 +655,23 @@ public class OpenAiRuntimeConfigService {
             int maxTokensTitle,
             int maxTokensSummary,
             int maxTokensKeywords,
-            int maxTokensPolish
+            int maxTokensPolish,
+            boolean ragEnabled,
+            int ragTopK,
+            double ragSimilarityThreshold,
+            boolean embeddingEnabled,
+            String embeddingBaseUrl,
+            String embeddingPath,
+            String embeddingModel,
+            String embeddingApiKey,
+            int embeddingDimensions
     ) {
         String apiKeyHash() {
             return apiKey != null ? Integer.toHexString(apiKey.hashCode()) : "";
+        }
+
+        String embeddingApiKeyHash() {
+            return embeddingApiKey != null ? Integer.toHexString(embeddingApiKey.hashCode()) : "";
         }
     }
 }

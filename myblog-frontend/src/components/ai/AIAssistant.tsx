@@ -13,6 +13,8 @@ interface RelatedArticle {
   id: number;
   publicId?: string;
   title: string;
+  snippet?: string;
+  score?: number;
 }
 
 interface Message {

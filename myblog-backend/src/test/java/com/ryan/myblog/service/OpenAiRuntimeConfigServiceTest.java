@@ -54,6 +54,14 @@ class OpenAiRuntimeConfigServiceTest {
         assertTrue(content.contains("OPENAI_MAX_TOKENS_SUMMARY=260"));
         assertTrue(content.contains("OPENAI_MAX_TOKENS_KEYWORDS=120"));
         assertTrue(content.contains("OPENAI_MAX_TOKENS_POLISH=1200"));
+        assertTrue(content.contains("RAG_ENABLED=false"));
+        assertTrue(content.contains("RAG_TOP_K=5"));
+        assertTrue(content.contains("RAG_SIMILARITY_THRESHOLD=0.6"));
+        assertTrue(content.contains("EMBEDDING_ENABLED=false"));
+        assertTrue(content.contains("EMBEDDING_BASE_URL=https://api.siliconflow.cn"));
+        assertTrue(content.contains("EMBEDDING_PATH=/v1/embeddings"));
+        assertTrue(content.contains("EMBEDDING_MODEL=BAAI/bge-m3"));
+        assertTrue(content.contains("EMBEDDING_DIMENSIONS=1024"));
         assertEquals("gpt-test", saved.getModel());
         assertEquals("sk-***new", saved.getApiKeyMasked());
         assertEquals(700, saved.getMaxTokensChat());
@@ -61,6 +69,38 @@ class OpenAiRuntimeConfigServiceTest {
         assertEquals(260, saved.getMaxTokensSummary());
         assertEquals(120, saved.getMaxTokensKeywords());
         assertEquals(1200, saved.getMaxTokensPolish());
+        assertEquals(5, saved.getRagTopK());
+        assertEquals(0.6d, saved.getRagSimilarityThreshold(), 0.0001d);
+    }
+
+    @Test
+    void updateConfigWritesIndependentEmbeddingKeysAndMasksSecret() throws Exception {
+        Path envFile = tempDir.resolve(".env");
+        Files.writeString(envFile, "OPENAI_API_KEY=chat-secret\n", StandardCharsets.UTF_8);
+
+        OpenAiRuntimeConfigService service = new OpenAiRuntimeConfigService(envFile, emptyFallback());
+        OpenAiConfigUpdateDTO update = new OpenAiConfigUpdateDTO();
+        update.setRagEnabled(true);
+        update.setEmbeddingEnabled(true);
+        update.setEmbeddingBaseUrl("https://api.siliconflow.cn");
+        update.setEmbeddingPath("/v1/embeddings");
+        update.setEmbeddingModel("BAAI/bge-m3");
+        update.setEmbeddingApiKey("sk-embedding-secret");
+        update.setEmbeddingDimensions(1024);
+
+        OpenAiConfigVO saved = service.updateConfig(update);
+
+        String content = Files.readString(envFile, StandardCharsets.UTF_8);
+        assertTrue(content.contains("OPENAI_API_KEY=chat-secret"));
+        assertTrue(content.contains("RAG_ENABLED=true"));
+        assertTrue(content.contains("EMBEDDING_ENABLED=true"));
+        assertTrue(content.contains("EMBEDDING_BASE_URL=https://api.siliconflow.cn"));
+        assertTrue(content.contains("EMBEDDING_PATH=/v1/embeddings"));
+        assertTrue(content.contains("EMBEDDING_MODEL=BAAI/bge-m3"));
+        assertTrue(content.contains("EMBEDDING_API_KEY=sk-embedding-secret"));
+        assertTrue(content.contains("EMBEDDING_DIMENSIONS=1024"));
+        assertEquals("sk-***ret", saved.getEmbeddingApiKeyMasked());
+        assertEquals("BAAI/bge-m3", saved.getEmbeddingModel());
     }
 
     @Test
@@ -101,6 +141,23 @@ class OpenAiRuntimeConfigServiceTest {
         assertEquals(180, service.getMaxTokens(AiAction.SUMMARY));
         assertEquals(90, service.getMaxTokens(AiAction.KEYWORDS));
         assertEquals(900, service.getMaxTokens(AiAction.POLISH));
+    }
+
+    @Test
+    void readsRagSearchControlsFromEnvFile() throws Exception {
+        Path envFile = tempDir.resolve(".env");
+        Files.writeString(envFile, """
+                RAG_TOP_K=8
+                RAG_SIMILARITY_THRESHOLD=0.55
+                """, StandardCharsets.UTF_8);
+
+        OpenAiRuntimeConfigService service = new OpenAiRuntimeConfigService(envFile, emptyFallback());
+        OpenAiConfigVO config = service.getConfig();
+
+        assertEquals(8, config.getRagTopK());
+        assertEquals(0.55d, config.getRagSimilarityThreshold(), 0.0001d);
+        assertEquals(8, service.getRagTopK());
+        assertEquals(0.55d, service.getRagSimilarityThreshold(), 0.0001d);
     }
 
     @Test

@@ -618,6 +618,22 @@ export interface OpenAiConfigVO {
   envFileExists: boolean;
   envFilePath: string;
   lastModifiedAt?: string;
+  ragEnabled?: boolean;
+  ragTopK?: number;
+  ragSimilarityThreshold?: number;
+  embeddingEnabled?: boolean;
+  embeddingApiKeyConfigured?: boolean;
+  embeddingApiKeyMasked?: string;
+  embeddingBaseUrl?: string;
+  embeddingPath?: string;
+  embeddingModel?: string;
+  embeddingDimensions?: number;
+  embeddingAvailable?: boolean;
+  ragAvailable?: boolean;
+  ragIndexName?: string;
+  ragChunkCount?: number;
+  ragRebuilding?: boolean;
+  ragLastRebuildAt?: string;
 }
 
 export interface OpenAiConfigUpdateDTO {
@@ -633,6 +649,16 @@ export interface OpenAiConfigUpdateDTO {
   maxTokensSummary?: number;
   maxTokensKeywords?: number;
   maxTokensPolish?: number;
+  ragEnabled?: boolean;
+  ragTopK?: number;
+  ragSimilarityThreshold?: number;
+  embeddingEnabled?: boolean;
+  embeddingBaseUrl?: string;
+  embeddingPath?: string;
+  embeddingModel?: string;
+  embeddingApiKey?: string;
+  clearEmbeddingApiKey?: boolean;
+  embeddingDimensions?: number;
 }
 
 // 未读数量响应

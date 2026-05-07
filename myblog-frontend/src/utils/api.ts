@@ -867,6 +867,10 @@ export const api = {
       return apiClient.put('/admin/openai-config', data) as Promise<OpenAiConfigVO>;
     },
 
+    rebuildRagIndex: async (): Promise<any> => {
+      return apiClient.post('/admin/openai-config/rag/rebuild');
+    },
+
     // ========== Arthas增强监控API ==========
 
     // 获取Arthas监控Dashboard（包含系统+性能+业务指标）

@@ -1,9 +1,12 @@
 package com.ryan.myblog.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
 
@@ -41,5 +44,12 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
         }
 
         return builder.build();
+    }
+
+    @Override
+    @Bean
+    @Primary
+    public RestClient elasticsearchRestClient(ClientConfiguration clientConfiguration) {
+        return super.elasticsearchRestClient(clientConfiguration);
     }
 }

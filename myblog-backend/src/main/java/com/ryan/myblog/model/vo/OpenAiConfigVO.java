@@ -24,4 +24,21 @@ public class OpenAiConfigVO {
     private Boolean envFileExists;
     private String envFilePath;
     private String lastModifiedAt;
+
+    private Boolean ragEnabled;
+    private Integer ragTopK;
+    private Double ragSimilarityThreshold;
+    private Boolean embeddingEnabled;
+    private Boolean embeddingApiKeyConfigured;
+    private String embeddingApiKeyMasked;
+    private String embeddingBaseUrl;
+    private String embeddingPath;
+    private String embeddingModel;
+    private Integer embeddingDimensions;
+    private Boolean embeddingAvailable;
+    private Boolean ragAvailable;
+    private String ragIndexName;
+    private Long ragChunkCount;
+    private Boolean ragRebuilding;
+    private String ragLastRebuildAt;
 }

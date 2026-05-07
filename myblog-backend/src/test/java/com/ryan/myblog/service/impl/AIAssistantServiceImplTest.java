@@ -3,6 +3,7 @@ package com.ryan.myblog.service.impl;
 import com.ryan.myblog.model.dto.AIChatRequest;
 import com.ryan.myblog.model.dto.AIChatResponse;
 import com.ryan.myblog.service.BlogService;
+import com.ryan.myblog.service.BlogRagService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CategoryService;
 import com.ryan.myblog.service.OpenAiRuntimeConfigService;
@@ -26,6 +27,9 @@ class AIAssistantServiceImplTest {
     private BlogService blogService;
 
     @Mock
+    private BlogRagService blogRagService;
+
+    @Mock
     private CategoryService categoryService;
 
     @Mock
@@ -46,6 +50,7 @@ class AIAssistantServiceImplTest {
                 "buildChatPrompt",
                 "Java Stream 的 map 和 flatMap 有什么区别？",
                 "最新文章：\n- 《只应该在站内问题出现的文章》",
+                List.of(),
                 List.of());
 
         assertTrue(prompt.contains("技术助手"));
@@ -105,6 +110,7 @@ class AIAssistantServiceImplTest {
                 "buildChatPrompt",
                 "推荐几篇站内文章",
                 "最新文章：\n- 《Spring AI 实践》",
+                List.of(),
                 List.of());
 
         assertTrue(prompt.contains("MyBlog站内信息"));
@@ -132,6 +138,7 @@ class AIAssistantServiceImplTest {
     private AIAssistantServiceImpl newService() {
         return new AIAssistantServiceImpl(
                 blogService,
+                blogRagService,
                 categoryService,
                 tagService,
                 cacheService,

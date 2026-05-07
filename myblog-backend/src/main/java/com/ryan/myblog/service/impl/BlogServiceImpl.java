@@ -23,6 +23,7 @@ import com.ryan.myblog.mapper.UserMapper;
 import com.ryan.myblog.mapper.CategoryMapper;
 import com.ryan.myblog.common.RedisKeyFactory;
 import com.ryan.myblog.service.BlogService;
+import com.ryan.myblog.service.BlogRagService;
 import com.ryan.myblog.service.CacheService;
 import com.ryan.myblog.service.CacheConsistencyService;
 import com.ryan.myblog.service.UnifiedCacheService;
@@ -77,6 +78,7 @@ public class BlogServiceImpl implements BlogService {
     private final RedisLikeService redisLikeService;
     private final CommentCountService commentCountService;
     private final SearchService searchService;
+    private final BlogRagService blogRagService;
     private final com.ryan.myblog.service.BrowseHistoryService browseHistoryService;
     private final TagService tagService;
     private final BlogDocumentConverter blogDocumentConverter;
@@ -131,6 +133,9 @@ public class BlogServiceImpl implements BlogService {
             } catch (Exception e) {
                 log.error("同步博客到Elasticsearch失败: {}", blog.getId(), e);
             }
+        }
+        if (isPubliclyVisible(blog)) {
+            blogRagService.upsertBlogAsync(blog.getId());
         }
 
         if (isPubliclyVisible(blog)) {
@@ -213,6 +218,11 @@ public class BlogServiceImpl implements BlogService {
                 log.error("从ES删除博客索引失败(不影响主流程): {}", existBlog.getId(), e);
             }
         }
+        if (isPubliclyVisible(existBlog)) {
+            blogRagService.upsertBlogAsync(existBlog.getId());
+        } else {
+            blogRagService.deleteBlogAsync(existBlog.getId());
+        }
 
         if (!wasPublished && isPubliclyVisible(existBlog)) {
             notifyFollowersOfNewArticle(existBlog);
@@ -260,6 +270,7 @@ public class BlogServiceImpl implements BlogService {
         } catch (Exception e) {
             log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
         }
+        blogRagService.deleteBlogAsync(id);
     }
 
     @Override
@@ -529,8 +540,13 @@ public class BlogServiceImpl implements BlogService {
                 log.error("同步发布的博客到Elasticsearch失败: {}", blog.getId(), e);
             }
         }
+        if (isPubliclyVisible(blog)) {
+            blogRagService.upsertBlogAsync(blog.getId());
+        }
 
-        notifyFollowersOfNewArticle(blog);
+        if (isPubliclyVisible(blog)) {
+            notifyFollowersOfNewArticle(blog);
+        }
     }
 
     @Override
@@ -561,6 +577,7 @@ public class BlogServiceImpl implements BlogService {
         } catch (Exception e) {
             log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
         }
+        blogRagService.deleteBlogAsync(id);
     }
 
     /**
@@ -860,6 +877,7 @@ public class BlogServiceImpl implements BlogService {
         } catch (Exception e) {
             log.error("从ES删除博客索引失败(不影响主流程): {}", id, e);
         }
+        blogRagService.deleteBlogAsync(id);
     }
 
     @Override

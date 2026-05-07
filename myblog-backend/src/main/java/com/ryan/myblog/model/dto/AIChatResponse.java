@@ -42,6 +42,9 @@ public class AIChatResponse {
     @Builder
     public static class RelatedArticle {
         private Long id;
+        private String publicId;
         private String title;
+        private String snippet;
+        private Double score;
     }
 }

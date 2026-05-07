@@ -6,8 +6,10 @@ import com.ryan.myblog.model.entity.Category;
 import com.ryan.myblog.model.entity.Tag;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogListVO;
+import com.ryan.myblog.model.vo.RagSearchResult;
 import com.ryan.myblog.service.AIAssistantService;
 import com.ryan.myblog.service.AiAction;
+import com.ryan.myblog.service.BlogRagService;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CategoryService;
 import com.ryan.myblog.service.OpenAiRuntimeConfigService;
@@ -56,6 +58,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private static final long SSE_TIMEOUT_MS = 60_000L;
 
         private final BlogService blogService;
+        private final BlogRagService blogRagService;
         private final CategoryService categoryService;
         private final TagService tagService;
         private final com.ryan.myblog.service.CacheService cacheService;
@@ -107,18 +110,20 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 return buildChatResponse(request, answer, false, totalStart, relatedArticles);
                         }
 
-                        String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), context);
+                        List<RagSearchResult> ragResults = searchRag(request.getQuestion());
+                        String effectiveContext = mergeRagContext(context, ragResults);
+                        String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), effectiveContext);
                         String cachedAnswer = getCachedValue(chatCacheKey, CHAT_CACHE_TTL_SECONDS);
                         if (cachedAnswer != null) {
-                                List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(cachedAnswer);
+                                List<AIChatResponse.RelatedArticle> relatedArticles = relatedArticlesForAnswer(ragResults, cachedAnswer);
                                 logAiSuccess(requestId, AiAction.CHAT, 0, true, contextMs, -1, -1, 0, elapsed(totalStart), cachedAnswer.length());
                                 return buildChatResponse(request, cachedAnswer, true, totalStart, relatedArticles);
                         }
 
-                        String prompt = buildChatPrompt(request.getQuestion(), context, request.getHistory());
+                        String prompt = buildChatPrompt(request.getQuestion(), context, request.getHistory(), ragResults);
                         String answer = callAI(AiAction.CHAT, prompt, requestId, contextMs, totalStart);
                         cacheValue(chatCacheKey, answer, CHAT_CACHE_TTL_SECONDS);
-                        List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(answer);
+                        List<AIChatResponse.RelatedArticle> relatedArticles = relatedArticlesForAnswer(ragResults, answer);
                         return buildChatResponse(request, answer, true, totalStart, relatedArticles);
 
                 } catch (Exception e) {
@@ -172,31 +177,34 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         if (!isAIAvailable()) {
                                 String answer = handleWithRules(request.getQuestion(), context);
                                 sendAnswerChunks(emitter, answer);
+                                sendRelatedArticles(emitter, answer);
                                 sendDone(emitter, request, totalStart, false, false);
                                 logAiSuccess(requestId, AiAction.CHAT, 0, false, contextMs, -1, -1, 0,
                                                 elapsed(totalStart), answer.length());
                                 return;
                         }
 
-                        String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), context);
+                        List<RagSearchResult> ragResults = searchRag(request.getQuestion());
+                        String effectiveContext = mergeRagContext(context, ragResults);
+                        String chatCacheKey = buildChatCacheKey(request.getQuestion(), request.getHistory(), effectiveContext);
                         String cachedAnswer = getCachedValue(chatCacheKey, CHAT_CACHE_TTL_SECONDS);
                         if (cachedAnswer != null) {
                                 cacheHit = true;
                                 sendSse(emitter, "status", Map.of("message", "已命中缓存，正在整理回答..."));
                                 sendAnswerChunks(emitter, cachedAnswer);
-                                sendRelatedArticles(emitter, cachedAnswer);
+                                sendRelatedArticles(emitter, ragResults, cachedAnswer);
                                 sendDone(emitter, request, totalStart, true, true);
                                 logAiSuccess(requestId, AiAction.CHAT, 0, true, contextMs, -1, -1, 0, elapsed(totalStart), cachedAnswer.length());
                                 return;
                         }
 
                         sendSse(emitter, "status", Map.of("message", "正在生成回答..."));
-                        String prompt = buildChatPrompt(request.getQuestion(), context, request.getHistory());
+                        String prompt = buildChatPrompt(request.getQuestion(), context, request.getHistory(), ragResults);
                         promptChars = prompt.length();
                         StreamResult streamResult = streamAI(AiAction.CHAT, prompt, requestId, contextMs, totalStart, emitter);
                         String answer = ensureNonBlankAiResult(streamResult.answer(), "聊天回复");
                         cacheValue(chatCacheKey, answer, CHAT_CACHE_TTL_SECONDS);
-                        sendRelatedArticles(emitter, answer);
+                        sendRelatedArticles(emitter, ragResults, answer);
                         sendDone(emitter, request, totalStart, false, true);
 
                 } catch (Exception e) {
@@ -275,7 +283,8 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                 return context.toString();
         }
 
-        private String buildChatPrompt(String question, String context, List<AIChatRequest.ChatMessage> history) {
+        private String buildChatPrompt(String question, String context, List<AIChatRequest.ChatMessage> history,
+                        List<RagSearchResult> ragResults) {
                 StringBuilder historyContext = new StringBuilder();
                 if (history != null && !history.isEmpty()) {
                         int startIndex = Math.max(0, history.size() - CHAT_HISTORY_LIMIT);
@@ -289,6 +298,16 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                                 .append("\n");
                         }
                         historyContext.append("\n");
+                }
+
+                String ragContext = buildRagContext(ragResults);
+                if (!ragContext.isBlank()) {
+                        return String.format(
+                                        "你是MyBlog站点内的技术助手。请优先基于【站内文章片段】回答用户问题。\n" +
+                                                        "规则：只能把片段中出现的文章作为站内依据；不要编造文章、阅读量、日期或作者。" +
+                                                        "如果片段不足以回答，先说明依据有限，再给出通用技术建议。不要输出思考过程。\n\n" +
+                                                        "【站内文章片段】\n%s\n\n%s【用户问题】%s",
+                                        ragContext, historyContext, question);
                 }
 
                 if (!isBlogScopedQuestion(question)) {
@@ -306,6 +325,37 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                                 "如果站内信息不足，先说明不足，再给出通用建议。不要输出思考过程。\n\n" +
                                                 "【MyBlog站内信息】\n%s\n\n%s【用户问题】%s",
                                 context, historyContext, question);
+        }
+
+        private List<RagSearchResult> searchRag(String question) {
+                try {
+                        return blogRagService.search(question,
+                                        openAiRuntimeConfigService.getRagTopK(),
+                                        openAiRuntimeConfigService.getRagSimilarityThreshold());
+                } catch (Exception e) {
+                        log.warn("RAG检索异常，继续普通问答: {}", e.getMessage());
+                        return List.of();
+                }
+        }
+
+        private String mergeRagContext(String context, List<RagSearchResult> ragResults) {
+                String ragContext = buildRagContext(ragResults);
+                return ragContext.isBlank() ? context : context + "\n\nRAG片段：\n" + ragContext;
+        }
+
+        private String buildRagContext(List<RagSearchResult> ragResults) {
+                if (ragResults == null || ragResults.isEmpty()) {
+                        return "";
+                }
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < ragResults.size(); i++) {
+                        RagSearchResult result = ragResults.get(i);
+                        builder.append(i + 1)
+                                        .append(". 《").append(result.getTitle()).append("》")
+                                        .append("：").append(truncateContent(result.getSnippet(), 700))
+                                        .append("\n");
+                }
+                return builder.toString().trim();
         }
 
         private boolean isSupportedQuestion(String question) {
@@ -493,6 +543,31 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         }
                 }
                 return articles;
+        }
+
+        private List<AIChatResponse.RelatedArticle> relatedArticlesForAnswer(List<RagSearchResult> ragResults, String answer) {
+                List<AIChatResponse.RelatedArticle> ragArticles = toRelatedArticles(ragResults);
+                return ragArticles.isEmpty() ? extractRelatedArticles(answer) : ragArticles;
+        }
+
+        private List<AIChatResponse.RelatedArticle> toRelatedArticles(List<RagSearchResult> ragResults) {
+                if (ragResults == null || ragResults.isEmpty()) {
+                        return List.of();
+                }
+                Map<Long, AIChatResponse.RelatedArticle> articles = new java.util.LinkedHashMap<>();
+                for (RagSearchResult result : ragResults) {
+                        if (result.getBlogId() == null || articles.containsKey(result.getBlogId())) {
+                                continue;
+                        }
+                        articles.put(result.getBlogId(), AIChatResponse.RelatedArticle.builder()
+                                        .id(result.getBlogId())
+                                        .publicId(result.getPublicId())
+                                        .title(result.getTitle())
+                                        .snippet(result.getSnippet())
+                                        .score(result.getScore())
+                                        .build());
+                }
+                return new java.util.ArrayList<>(articles.values());
         }
 
         private List<BlogListVO> getRelatedArticleCandidates() {
@@ -811,6 +886,13 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
         private void sendRelatedArticles(SseEmitter emitter, String answer) {
                 List<AIChatResponse.RelatedArticle> relatedArticles = extractRelatedArticles(answer);
+                if (!relatedArticles.isEmpty()) {
+                        sendSse(emitter, "relatedArticles", Map.of("items", relatedArticles));
+                }
+        }
+
+        private void sendRelatedArticles(SseEmitter emitter, List<RagSearchResult> ragResults, String answer) {
+                List<AIChatResponse.RelatedArticle> relatedArticles = relatedArticlesForAnswer(ragResults, answer);
                 if (!relatedArticles.isEmpty()) {
                         sendSse(emitter, "relatedArticles", Map.of("items", relatedArticles));
                 }

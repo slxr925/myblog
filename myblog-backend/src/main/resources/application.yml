@@ -33,6 +33,18 @@ app:
       max-requests-per-day: ${AI_MAX_REQUESTS_PER_DAY:50}
       max-tokens-per-day: ${AI_MAX_TOKENS_PER_DAY:50000}
 
+  rag:
+    enabled: ${RAG_ENABLED:false}
+    top-k: ${RAG_TOP_K:5}
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.6}
+    embedding:
+      enabled: ${EMBEDDING_ENABLED:false}
+      base-url: ${EMBEDDING_BASE_URL:https://api.siliconflow.cn}
+      path: ${EMBEDDING_PATH:/v1/embeddings}
+      model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+      api-key: ${EMBEDDING_API_KEY:}
+      dimensions: ${EMBEDDING_DIMENSIONS:1024}
+
 # 通知系统 - 基于Kafka
 # 本地开发：直接安装Kafka KRaft模式 (brew install kafka)
 # 生产环境：Docker部署Kafka
@@ -66,6 +78,7 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration  # 禁用OpenAI自动配置
+      - org.springframework.ai.vectorstore.elasticsearch.autoconfigure.ElasticsearchVectorStoreAutoConfiguration  # RAG向量库由业务服务按需创建
 
   # 数据库配置
   datasource:

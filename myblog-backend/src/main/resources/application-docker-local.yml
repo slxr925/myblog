@@ -61,6 +61,17 @@ app:
   elasticsearch:
     enabled: ${ELASTICSEARCH_ENABLED:true}
     uris: http://${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}
+  rag:
+    enabled: ${RAG_ENABLED:false}
+    top-k: ${RAG_TOP_K:5}
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.6}
+    embedding:
+      enabled: ${EMBEDDING_ENABLED:false}
+      base-url: ${EMBEDDING_BASE_URL:https://api.siliconflow.cn}
+      path: ${EMBEDDING_PATH:/v1/embeddings}
+      model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+      api-key: ${EMBEDDING_API_KEY:}
+      dimensions: ${EMBEDDING_DIMENSIONS:1024}
 
 # JWT配置
 jwt:

@@ -30,6 +30,7 @@ services:
       target: prod-prebuilt # 使用预构建JAR，快速部署
     container_name: myblog-backend
     restart: unless-stopped
+    user: "0:0"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       MYSQL_HOST: ${MYSQL_HOST:-172.17.0.1}

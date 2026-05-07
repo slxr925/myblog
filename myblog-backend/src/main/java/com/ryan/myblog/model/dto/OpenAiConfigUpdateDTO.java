@@ -40,4 +40,30 @@ public class OpenAiConfigUpdateDTO {
     private Integer maxTokensKeywords;
 
     private Integer maxTokensPolish;
+
+    private Boolean ragEnabled;
+
+    private Integer ragTopK;
+
+    @DecimalMin(value = "0.0", message = "RAG相似度阈值不能小于0")
+    @DecimalMax(value = "1.0", message = "RAG相似度阈值不能大于1")
+    private Double ragSimilarityThreshold;
+
+    private Boolean embeddingEnabled;
+
+    @Size(max = 512, message = "Embedding Base URL过长")
+    private String embeddingBaseUrl;
+
+    @Size(max = 256, message = "Embedding Path过长")
+    private String embeddingPath;
+
+    @Size(max = 128, message = "Embedding模型名称过长")
+    private String embeddingModel;
+
+    @Size(max = 4096, message = "Embedding API Key过长")
+    private String embeddingApiKey;
+
+    private Boolean clearEmbeddingApiKey = false;
+
+    private Integer embeddingDimensions;
 }

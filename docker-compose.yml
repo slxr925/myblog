@@ -135,6 +135,7 @@ services:
       target: dev # 使用开发阶段构建
     container_name: myblog-backend
     restart: unless-stopped
+    user: "0:0"
     env_file:
       - ./.env.local
     ports:
@@ -151,7 +152,7 @@ services:
       JWT_SECRET: myBlogSecretKeyForJWTTokenGeneration2024!@#$%
       # AI配置
       AI_ENABLED: "true"
-      ENV_CONFIG_FILE: /app/.env
+      ENV_CONFIG_FILE: /config/.env
       OPENAI_BASE_URL: https://api.deepseek.com
       OPENAI_MODEL: deepseek-v4-flash
       OPENAI_COMPLETIONS_PATH: /chat/completions
@@ -162,7 +163,7 @@ services:
       OPENAI_MAX_TOKENS_POLISH: 1200
     volumes:
       - ./myblog-backend:/app:rw
-      - ./.env.local:/app/.env:rw
+      - ./.env.local:/config/.env:rw
       - ~/.m2:/root/.m2:rw # 缓存Maven依赖
     depends_on:
       mysql:
