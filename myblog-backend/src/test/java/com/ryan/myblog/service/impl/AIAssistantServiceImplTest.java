@@ -2,6 +2,8 @@ package com.ryan.myblog.service.impl;
 
 import com.ryan.myblog.model.dto.AIChatRequest;
 import com.ryan.myblog.model.dto.AIChatResponse;
+import com.ryan.myblog.model.vo.RagSearchResult;
+import com.ryan.myblog.model.vo.TagVO;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.BlogRagService;
 import com.ryan.myblog.service.CacheService;
@@ -17,6 +19,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -119,6 +123,58 @@ class AIAssistantServiceImplTest {
     }
 
     @Test
+    void ragContextIncludesArticleMetadata() {
+        AIAssistantServiceImpl service = newService();
+        TagVO tag = tag(1L, "RAG");
+
+        String context = ReflectionTestUtils.invokeMethod(
+                service,
+                "buildRagContext",
+                List.of(RagSearchResult.builder()
+                        .blogId(42L)
+                        .title("Spring AI 实践")
+                        .categoryName("后端")
+                        .tags(List.of(tag))
+                        .publishTime("2026-05-01T09:30")
+                        .snippet("使用 Spring AI 构建 RAG。")
+                        .build()));
+
+        assertNotNull(context);
+        assertTrue(context.contains("分类：后端"));
+        assertTrue(context.contains("标签：RAG"));
+        assertTrue(context.contains("发布日期：2026-05-01"));
+    }
+
+    @Test
+    void relatedArticlesCopyRagMetadata() {
+        AIAssistantServiceImpl service = newService();
+        TagVO tag = tag(1L, "RAG");
+
+        @SuppressWarnings("unchecked")
+        List<AIChatResponse.RelatedArticle> articles = ReflectionTestUtils.invokeMethod(
+                service,
+                "toRelatedArticles",
+                List.of(RagSearchResult.builder()
+                        .blogId(42L)
+                        .publicId("pub-42")
+                        .title("Spring AI 实践")
+                        .categoryId(7L)
+                        .categoryName("后端")
+                        .tags(List.of(tag))
+                        .publishTime("2026-05-01T09:30")
+                        .snippet("使用 Spring AI 构建 RAG。")
+                        .score(0.91)
+                        .build()));
+
+        assertNotNull(articles);
+        AIChatResponse.RelatedArticle article = articles.getFirst();
+        assertEquals(7L, article.getCategoryId());
+        assertEquals("后端", article.getCategoryName());
+        assertEquals(List.of(tag), article.getTags());
+        assertEquals("2026-05-01T09:30", article.getPublishTime());
+    }
+
+    @Test
     void technicalQuestionIsSupportedWithoutBlogScope() {
         AIAssistantServiceImpl service = newService();
 
@@ -143,5 +199,12 @@ class AIAssistantServiceImplTest {
                 tagService,
                 cacheService,
                 openAiRuntimeConfigService);
+    }
+
+    private TagVO tag(Long id, String name) {
+        TagVO tag = new TagVO();
+        tag.setId(id);
+        tag.setName(name);
+        return tag;
     }
 }

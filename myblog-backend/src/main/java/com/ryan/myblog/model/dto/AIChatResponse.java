@@ -2,6 +2,7 @@ package com.ryan.myblog.model.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import com.ryan.myblog.model.vo.TagVO;
 import java.util.List;
 
 /**
@@ -44,6 +45,10 @@ public class AIChatResponse {
         private Long id;
         private String publicId;
         private String title;
+        private Long categoryId;
+        private String categoryName;
+        private List<TagVO> tags;
+        private String publishTime;
         private String snippet;
         private Double score;
     }

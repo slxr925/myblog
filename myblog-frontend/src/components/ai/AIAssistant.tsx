@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Loader2, Sparkles, ExternalLink } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, ExternalLink, CalendarDays, Tag } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { api } from '../../utils/api';
@@ -9,10 +9,20 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 
+interface RelatedArticleTag {
+  id?: number;
+  name: string;
+  color?: string;
+}
+
 interface RelatedArticle {
   id: number;
   publicId?: string;
   title: string;
+  categoryId?: number;
+  categoryName?: string;
+  tags?: RelatedArticleTag[];
+  publishTime?: string;
   snippet?: string;
   score?: number;
 }
@@ -51,6 +61,19 @@ interface AssistantMemoryState {
 const AI_ASSISTANT_MAX_PERSISTED_MESSAGES = 60;
 const LEGACY_AI_ASSISTANT_STORAGE_KEY = 'myblog:ai-assistant:state:v1';
 let assistantMemoryState: AssistantMemoryState | null = null;
+
+const formatArticleDate = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleDateString('zh-CN');
+  }
+  return value.length >= 10 ? value.slice(0, 10) : value;
+};
+
+const getTagName = (tag: RelatedArticleTag | string) => {
+  return typeof tag === 'string' ? tag : tag.name;
+};
 
 export const AIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -396,15 +419,49 @@ export const AIAssistant: React.FC = () => {
                                 相关文章
                               </p>
                               <div className="space-y-1.5">
-                                {message.relatedArticles.map((article) => (
+                                {message.relatedArticles.map((article) => {
+                                  const visibleTags = (article.tags || [])
+                                    .map(getTagName)
+                                    .filter(Boolean)
+                                    .slice(0, 3);
+                                  const publishDate = formatArticleDate(article.publishTime);
+
+                                  return (
                                   <button
                                     key={article.id}
                                     onClick={() => handleArticleClick(article)}
-                                    className="block w-full text-left text-xs text-accent hover:underline truncate transition-colors font-mono-display"
+                                    className="block w-full text-left rounded-sm border border-border/60 bg-background/60 px-2.5 py-2 transition-colors hover:border-accent/70 hover:bg-background"
                                   >
-                                    {article.title}
+                                    <span className="block text-xs font-medium text-foreground break-words leading-snug">
+                                      {article.title}
+                                    </span>
+                                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                                      <span className="max-w-full truncate border border-border/70 px-1.5 py-0.5 text-[10px] text-foreground">
+                                        {article.categoryName || '未分类'}
+                                      </span>
+                                      {publishDate && (
+                                        <span className="inline-flex items-center gap-1">
+                                          <CalendarDays className="h-3 w-3 shrink-0" />
+                                          {publishDate}
+                                        </span>
+                                      )}
+                                    </span>
+                                    {visibleTags.length > 0 && (
+                                      <span className="mt-1.5 flex flex-wrap gap-1">
+                                        {visibleTags.map((tagName) => (
+                                          <span
+                                            key={tagName}
+                                            className="inline-flex max-w-full items-center gap-1 truncate bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                          >
+                                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                                            <span className="truncate">{tagName}</span>
+                                          </span>
+                                        ))}
+                                      </span>
+                                    )}
                                   </button>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           )}

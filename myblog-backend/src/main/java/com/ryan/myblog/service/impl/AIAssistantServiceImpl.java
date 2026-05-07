@@ -352,6 +352,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         RagSearchResult result = ragResults.get(i);
                         builder.append(i + 1)
                                         .append(". 《").append(result.getTitle()).append("》")
+                                        .append(formatRagMetadata(result))
                                         .append("：").append(truncateContent(result.getSnippet(), 700))
                                         .append("\n");
                 }
@@ -563,6 +564,10 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                         .id(result.getBlogId())
                                         .publicId(result.getPublicId())
                                         .title(result.getTitle())
+                                        .categoryId(result.getCategoryId())
+                                        .categoryName(result.getCategoryName())
+                                        .tags(result.getTags())
+                                        .publishTime(result.getPublishTime())
                                         .snippet(result.getSnippet())
                                         .score(result.getScore())
                                         .build());
@@ -973,6 +978,39 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         return "";
                 }
                 return content.length() > maxLength ? content.substring(0, maxLength) + "..." : content;
+        }
+
+        private String formatRagMetadata(RagSearchResult result) {
+                List<String> parts = new java.util.ArrayList<>();
+                if (result.getCategoryName() != null && !result.getCategoryName().isBlank()) {
+                        parts.add("分类：" + result.getCategoryName());
+                }
+                String tags = formatTagNames(result);
+                if (!tags.isBlank()) {
+                        parts.add("标签：" + tags);
+                }
+                String publishDate = formatPublishDate(result.getPublishTime());
+                if (!publishDate.isBlank()) {
+                        parts.add("发布日期：" + publishDate);
+                }
+                return parts.isEmpty() ? "" : "（" + String.join("，", parts) + "）";
+        }
+
+        private String formatTagNames(RagSearchResult result) {
+                if (result.getTags() == null || result.getTags().isEmpty()) {
+                        return "";
+                }
+                return result.getTags().stream()
+                                .map(tag -> tag.getName() != null ? tag.getName().trim() : "")
+                                .filter(name -> !name.isEmpty())
+                                .collect(Collectors.joining("、"));
+        }
+
+        private String formatPublishDate(String publishTime) {
+                if (publishTime == null || publishTime.isBlank()) {
+                        return "";
+                }
+                return publishTime.length() >= 10 ? publishTime.substring(0, 10) : publishTime;
         }
 
         private String newRequestId(AiAction action) {
