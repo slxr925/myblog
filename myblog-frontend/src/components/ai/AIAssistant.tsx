@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Loader2, Sparkles, ExternalLink, CalendarDays, Tag } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { api } from '../../utils/api';
@@ -8,6 +9,7 @@ import { getPublicBlogPath } from '../../utils/blogLinks';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
+import { markdownConfig } from '../../config/markdown';
 
 interface RelatedArticleTag {
   id?: number;
@@ -73,6 +75,123 @@ const formatArticleDate = (value?: string) => {
 
 const getTagName = (tag: RelatedArticleTag | string) => {
   return typeof tag === 'string' ? tag : tag.name;
+};
+
+const CompactMarkdownMessage: React.FC<{ content: string }> = ({ content }) => {
+  const { remarkPlugins = [], rehypePlugins = [] } = markdownConfig;
+
+  return (
+    <div className="text-sm font-light leading-relaxed text-foreground break-words">
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        components={{
+          p: ({ children, ...props }) => (
+            <p className="mb-2 last:mb-0 whitespace-normal" {...props}>
+              {children}
+            </p>
+          ),
+          h1: ({ children, ...props }) => (
+            <h1 className="mt-3 mb-1.5 text-base font-semibold leading-snug text-foreground first:mt-0" {...props}>
+              {children}
+            </h1>
+          ),
+          h2: ({ children, ...props }) => (
+            <h2 className="mt-3 mb-1.5 text-[15px] font-semibold leading-snug text-foreground first:mt-0" {...props}>
+              {children}
+            </h2>
+          ),
+          h3: ({ children, ...props }) => (
+            <h3 className="mt-3 mb-1.5 text-sm font-semibold leading-snug text-foreground first:mt-0" {...props}>
+              {children}
+            </h3>
+          ),
+          h4: ({ children, ...props }) => (
+            <h4 className="mt-2.5 mb-1 text-sm font-medium leading-snug text-foreground first:mt-0" {...props}>
+              {children}
+            </h4>
+          ),
+          ul: ({ children, ...props }) => (
+            <ul className="mb-2 ml-4 list-disc space-y-1 last:mb-0" {...props}>
+              {children}
+            </ul>
+          ),
+          ol: ({ children, ...props }) => (
+            <ol className="mb-2 ml-4 list-decimal space-y-1 last:mb-0" {...props}>
+              {children}
+            </ol>
+          ),
+          li: ({ children, ...props }) => (
+            <li className="pl-0.5 leading-relaxed" {...props}>
+              {children}
+            </li>
+          ),
+          strong: ({ children, ...props }) => (
+            <strong className="font-semibold text-foreground" {...props}>
+              {children}
+            </strong>
+          ),
+          em: ({ children, ...props }) => (
+            <em className="italic" {...props}>
+              {children}
+            </em>
+          ),
+          code: ({ className, children, ...props }) => {
+            const isBlock = className?.includes('language-');
+            if (isBlock) {
+              return (
+                <code className="font-mono text-[12px]" {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className="rounded-sm bg-background/80 px-1 py-0.5 font-mono text-[12px] text-foreground" {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children, ...props }) => (
+            <pre className="my-2 max-w-full overflow-x-auto rounded-sm border border-border/70 bg-background/80 p-2" {...props}>
+              {children}
+            </pre>
+          ),
+          blockquote: ({ children, ...props }) => (
+            <blockquote className="my-2 border-l-2 border-accent/70 pl-3 text-muted-foreground" {...props}>
+              {children}
+            </blockquote>
+          ),
+          hr: (props) => (
+            <hr className="my-3 border-border/70" {...props} />
+          ),
+          a: ({ children, ...props }) => (
+            <a className="text-accent underline underline-offset-2" target="_blank" rel="noopener noreferrer" {...props}>
+              {children}
+            </a>
+          ),
+          table: ({ children, ...props }) => (
+            <div className="my-2 max-w-full overflow-x-auto">
+              <table className="w-full border-collapse text-xs" {...props}>
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children, ...props }) => (
+            <th className="border border-border bg-background px-2 py-1 text-left font-semibold" {...props}>
+              {children}
+            </th>
+          ),
+          td: ({ children, ...props }) => (
+            <td className="border border-border px-2 py-1 align-top" {...props}>
+              {children}
+            </td>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 };
 
 export const AIAssistant: React.FC = () => {
@@ -168,19 +287,44 @@ export const AIAssistant: React.FC = () => {
     };
   }, [isOpen, conversationId, messages, isSessionReady, userKey]);
 
-  // 获取介绍信息
+  // 获取介绍信息或恢复服务端会话
   useEffect(() => {
     if (isOpen && messages.length === 0 && isAuthenticated) {
-      api.ai.getIntroduction().then(intro => {
-        setMessages([{
-          id: Date.now().toString(),
-          content: intro,
-          isUser: false,
-          timestamp: new Date(),
-        }]);
-      }).catch(err => {
-        console.error('获取AI介绍失败:', err);
-      });
+      let cancelled = false;
+      const loadInitialConversation = async () => {
+        try {
+          const page = await api.ai.getConversations({ page: 1, size: 1 });
+          const latest = page.records?.[0];
+          if (latest?.conversationId) {
+            const detail = await api.ai.getConversation(latest.conversationId);
+            if (!cancelled && detail.messages && detail.messages.length > 0) {
+              setConversationId(detail.conversationId);
+              setMessages(detail.messages.map((msg) => ({
+                id: String(msg.id),
+                content: msg.content,
+                isUser: msg.role === 'user',
+                timestamp: msg.createTime ? new Date(msg.createTime) : new Date(),
+              })));
+              return;
+            }
+          }
+          const intro = await api.ai.getIntroduction();
+          if (!cancelled) {
+            setMessages([{
+              id: Date.now().toString(),
+              content: intro,
+              isUser: false,
+              timestamp: new Date(),
+            }]);
+          }
+        } catch (err) {
+          console.error('初始化AI会话失败:', err);
+        }
+      };
+      loadInitialConversation();
+      return () => {
+        cancelled = true;
+      };
     }
   }, [isOpen, isAuthenticated]);
 
@@ -406,10 +550,13 @@ export const AIAssistant: React.FC = () => {
                             : 'bg-muted border border-border rounded-bl-none'
                             }`}
                         >
-                          <p className={`text-sm whitespace-pre-wrap font-light ${message.isUser ? 'text-background' : 'text-foreground'
-                            }`}>
-                            {message.content}
-                          </p>
+                          {message.isUser ? (
+                            <p className="text-sm whitespace-pre-wrap font-light text-background break-words">
+                              {message.content}
+                            </p>
+                          ) : (
+                            <CompactMarkdownMessage content={message.content} />
+                          )}
 
                           {/* 相关文章链接 */}
                           {!message.isUser && message.relatedArticles && message.relatedArticles.length > 0 && (

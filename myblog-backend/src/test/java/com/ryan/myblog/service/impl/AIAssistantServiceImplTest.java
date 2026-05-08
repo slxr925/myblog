@@ -4,6 +4,7 @@ import com.ryan.myblog.model.dto.AIChatRequest;
 import com.ryan.myblog.model.dto.AIChatResponse;
 import com.ryan.myblog.model.vo.RagSearchResult;
 import com.ryan.myblog.model.vo.TagVO;
+import com.ryan.myblog.ai.agent.BlogAgentService;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.BlogRagService;
 import com.ryan.myblog.service.CacheService;
@@ -29,6 +30,9 @@ class AIAssistantServiceImplTest {
 
     @Mock
     private BlogService blogService;
+
+    @Mock
+    private BlogAgentService blogAgentService;
 
     @Mock
     private BlogRagService blogRagService;
@@ -194,6 +198,7 @@ class AIAssistantServiceImplTest {
     private AIAssistantServiceImpl newService() {
         return new AIAssistantServiceImpl(
                 blogService,
+                blogAgentService,
                 blogRagService,
                 categoryService,
                 tagService,

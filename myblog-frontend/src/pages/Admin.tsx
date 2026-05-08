@@ -29,6 +29,7 @@ import { MonitoringDashboard } from '../components/admin/MonitoringDashboard'
 import { ReportManagement } from '../components/admin/ReportManagement'
 import { AuditLogList } from '../components/admin/AuditLogList'
 import { AiUsagePanel } from '../components/admin/AiUsagePanel'
+import { AiObservabilityPanel } from '../components/admin/AiObservabilityPanel'
 import { OpenAiConfigPanel } from '../components/admin/OpenAiConfigPanel'
 import { ActivityChart } from '../components/charts/ActivityChart'
 import {
@@ -48,6 +49,7 @@ type AdminView =
   | 'reports'
   | 'audit'
   | 'ai'
+  | 'ai-observability'
   | 'openai'
 
 const ADMIN_VIEWS: AdminView[] = [
@@ -60,6 +62,7 @@ const ADMIN_VIEWS: AdminView[] = [
   'reports',
   'audit',
   'ai',
+  'ai-observability',
   'openai',
 ]
 
@@ -99,6 +102,8 @@ const renderTitle = (view: AdminView) => {
       return '审计日志'
     case 'ai':
       return 'AI用量'
+    case 'ai-observability':
+      return 'AI观测'
     case 'openai':
       return 'AI配置'
     default:
@@ -183,6 +188,8 @@ export const Admin: React.FC = () => {
         return <AuditLogList />
       case 'ai':
         return <AiUsagePanel />
+      case 'ai-observability':
+        return <AiObservabilityPanel />
       case 'openai':
         return <OpenAiConfigPanel />
       default:

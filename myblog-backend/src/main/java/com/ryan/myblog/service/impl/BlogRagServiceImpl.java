@@ -66,6 +66,11 @@ public class BlogRagServiceImpl implements BlogRagService {
             "blog", "blogs", "related", "some", "about", "the", "and", "or");
     private static final List<String> KNOWN_CHINESE_TERMS = List.of(
             "宿主机", "慢查询", "数据库", "索引", "容器", "配置", "访问", "后端", "前端", "缓存", "部署", "调试", "性能");
+    private static final Map<String, List<String>> COMPACT_TECH_ALIASES = Map.of(
+            "springboot", List.of("spring", "boot"),
+            "springcloud", List.of("spring", "cloud"),
+            "springai", List.of("spring", "ai"),
+            "mybatisplus", List.of("mybatis", "plus"));
 
     private final BlogMapper blogMapper;
     private final CategoryMapper categoryMapper;
@@ -592,6 +597,11 @@ public class BlogRagServiceImpl implements BlogRagService {
 
     private void addSearchTerm(Set<String> terms, String token) {
         String term = token == null ? "" : token.trim();
+        List<String> expandedTerms = COMPACT_TECH_ALIASES.get(term);
+        if (expandedTerms != null) {
+            terms.addAll(expandedTerms);
+            return;
+        }
         if (term.length() >= 2 && !isStopWord(term)) {
             terms.add(term);
         }

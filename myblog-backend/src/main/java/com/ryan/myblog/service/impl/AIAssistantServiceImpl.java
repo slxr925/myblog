@@ -7,6 +7,7 @@ import com.ryan.myblog.model.entity.Tag;
 import com.ryan.myblog.model.vo.BlogDetailVO;
 import com.ryan.myblog.model.vo.BlogListVO;
 import com.ryan.myblog.model.vo.RagSearchResult;
+import com.ryan.myblog.ai.agent.BlogAgentService;
 import com.ryan.myblog.service.AIAssistantService;
 import com.ryan.myblog.service.AiAction;
 import com.ryan.myblog.service.BlogRagService;
@@ -58,6 +59,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         private static final long SSE_TIMEOUT_MS = 60_000L;
 
         private final BlogService blogService;
+        private final BlogAgentService blogAgentService;
         private final BlogRagService blogRagService;
         private final CategoryService categoryService;
         private final TagService tagService;
@@ -97,6 +99,14 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
                                                 elapsed(totalStart), OUT_OF_SCOPE_ANSWER.length());
                                 return buildChatResponse(request, OUT_OF_SCOPE_ANSWER, false, totalStart, List.of());
+                        }
+
+                        if (blogAgentService.isAvailable()) {
+                                try {
+                                        return blogAgentService.chat(request);
+                                } catch (Exception e) {
+                                        log.warn("AI Agent处理失败，回退旧问答链路: {}", e.getMessage());
+                                }
                         }
 
                         long contextStart = System.currentTimeMillis();
@@ -168,6 +178,22 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
                                                 elapsed(totalStart), OUT_OF_SCOPE_ANSWER.length());
                                 return;
+                        }
+
+                        if (blogAgentService.isAvailable()) {
+                                try {
+                                        sendSse(emitter, "status", Map.of("message", "正在调用站内工具..."));
+                                        AIChatResponse response = blogAgentService.chat(request);
+                                        sendAnswerChunks(emitter, response.getAnswer());
+                                        if (response.getRelatedArticles() != null && !response.getRelatedArticles().isEmpty()) {
+                                                sendSse(emitter, "relatedArticles", Map.of("items", response.getRelatedArticles()));
+                                        }
+                                        sendDone(emitter, requestWithConversationId(request, response.getConversationId()),
+                                                        totalStart, false, true);
+                                        return;
+                                } catch (Exception e) {
+                                        log.warn("AI Agent流式处理失败，回退旧问答链路: {}", e.getMessage());
+                                }
                         }
 
                         long contextStart = System.currentTimeMillis();
@@ -910,6 +936,17 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 "cached", cached,
                                 "aiEnabled", aiEnabled));
                 emitter.complete();
+        }
+
+        private AIChatRequest requestWithConversationId(AIChatRequest request, String conversationId) {
+                if (request.getConversationId() != null || conversationId == null) {
+                        return request;
+                }
+                AIChatRequest copy = new AIChatRequest();
+                copy.setQuestion(request.getQuestion());
+                copy.setConversationId(conversationId);
+                copy.setHistory(request.getHistory());
+                return copy;
         }
 
         private String sanitizeAiOutput(String rawOutput) {

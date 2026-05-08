@@ -42,6 +42,10 @@ import type {
   BlogRevisionDiffVO,
   AiUsageDailyVO,
   AiUsageUserVO,
+  AiConversationVO,
+  AiObservabilityStatsVO,
+  AiRequestLogVO,
+  AiToolCallVO,
   OpenAiConfigUpdateDTO,
   OpenAiConfigVO
 } from '../types/api';
@@ -871,6 +875,22 @@ export const api = {
       return apiClient.post('/admin/openai-config/rag/rebuild');
     },
 
+    getAiObservabilityStats: async (days = 7): Promise<AiObservabilityStatsVO> => {
+      return apiClient.get('/admin/ai-observability/stats', { params: { days } }) as Promise<AiObservabilityStatsVO>;
+    },
+
+    getAiRequestLogs: async (params?: PageParams & { status?: string }): Promise<PageResult<AiRequestLogVO>> => {
+      return apiClient.get('/admin/ai-observability/requests', { params }) as Promise<PageResult<AiRequestLogVO>>;
+    },
+
+    getAiToolCalls: async (params?: PageParams & { status?: string }): Promise<PageResult<AiToolCallVO>> => {
+      return apiClient.get('/admin/ai-observability/tool-calls', { params }) as Promise<PageResult<AiToolCallVO>>;
+    },
+
+    getAiConversations: async (params?: PageParams): Promise<PageResult<AiConversationVO>> => {
+      return apiClient.get('/admin/ai-observability/conversations', { params }) as Promise<PageResult<AiConversationVO>>;
+    },
+
     // ========== Arthas增强监控API ==========
 
     // 获取Arthas监控Dashboard（包含系统+性能+业务指标）
@@ -1262,6 +1282,18 @@ export const api = {
       return apiClient.post('/ai/extract-keywords', { content, style }, {
         timeout: 60000,
       });
+    },
+
+    getConversations: (params?: PageParams): Promise<PageResult<AiConversationVO>> => {
+      return apiClient.get('/ai/conversations', { params }) as Promise<PageResult<AiConversationVO>>;
+    },
+
+    getConversation: (conversationId: string): Promise<AiConversationVO> => {
+      return apiClient.get(`/ai/conversations/${conversationId}`) as Promise<AiConversationVO>;
+    },
+
+    deleteConversation: async (conversationId: string): Promise<void> => {
+      await apiClient.delete(`/ai/conversations/${conversationId}`);
     },
   },
 

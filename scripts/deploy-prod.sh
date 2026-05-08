@@ -201,6 +201,12 @@ cmd_upload() {
         echo -e "${YELLOW}Warning: myblog-frontend/dist not found${NC}"
     fi
 
+    if [ -d "myblog-backend/database/migrations" ]; then
+        echo "Uploading database migrations..."
+        ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/myblog-backend/database/migrations"
+        scp myblog-backend/database/migrations/*.sql ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/myblog-backend/database/migrations/
+    fi
+
     echo -e "${GREEN}✓ Upload complete${NC}"
 }
 

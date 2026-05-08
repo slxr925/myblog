@@ -130,9 +130,9 @@ echo ""
 echo -e "${BLUE}=== 步骤 4.5: 上传部署脚本和配置 ===${NC}"
 
 if [ "$USE_SCP" = true ]; then
-    echo "上传: deploy/*.sh, docker-compose.prod.yml 和 Dockerfile.prod"
+    echo "上传: deploy/*.sh, database/migrations, docker-compose.prod.yml 和 Dockerfile.prod"
     # 确保远程目录存在
-    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy ${SERVER_PATH}/myblog-backend"
+    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy ${SERVER_PATH}/deploy/prod ${SERVER_PATH}/myblog-backend/database/migrations"
     
     # 上传脚本
     if scp deploy/prod/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/; then
@@ -142,6 +142,25 @@ if [ "$USE_SCP" = true ]; then
     else
         echo -e "${RED}✗ 部署脚本上传失败${NC}"
         exit 1
+    fi
+
+    # 同步到 deploy/prod 目录，保持脚本内相对路径和手工执行方式一致
+    if scp deploy/prod/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/prod/; then
+        ssh ${SERVER_USER}@${SERVER_HOST} "chmod +x ${SERVER_PATH}/deploy/prod/*.sh"
+        echo -e "${GREEN}✓ deploy/prod 脚本同步成功${NC}"
+    else
+        echo -e "${RED}✗ deploy/prod 脚本同步失败${NC}"
+        exit 1
+    fi
+
+    # 上传数据库迁移文件，确保服务器端 quick-deploy 可以执行新迁移
+    if [ -d "myblog-backend/database/migrations" ]; then
+        if scp myblog-backend/database/migrations/*.sql ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/myblog-backend/database/migrations/; then
+            echo -e "${GREEN}✓ 数据库迁移文件上传成功${NC}"
+        else
+            echo -e "${RED}✗ 数据库迁移文件上传失败${NC}"
+            exit 1
+        fi
     fi
     
     # 上传docker-compose配置

@@ -156,6 +156,20 @@ class BlogRagServiceImplTest {
     }
 
     @Test
+    void extractSearchTermsExpandsCompactSpringBootKeyword() {
+        BlogRagServiceImpl service = newService();
+
+        @SuppressWarnings("unchecked")
+        Set<String> terms = ReflectionTestUtils.invokeMethod(
+                service,
+                "extractSearchTerms",
+                "帮我推荐一些springboot相关的文章");
+
+        assertNotNull(terms);
+        assertEquals(Set.of("spring", "boot"), terms);
+    }
+
+    @Test
     void extractSearchTermsKeepsUsefulMixedTechnicalTerms() {
         BlogRagServiceImpl service = newService();
 

@@ -4,6 +4,7 @@ import com.ryan.myblog.model.dto.OpenAiConfigUpdateDTO;
 import com.ryan.myblog.model.vo.OpenAiConfigVO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -170,6 +171,23 @@ class OpenAiRuntimeConfigServiceTest {
         assertEquals("https://api.deepseek.com", config.getBaseUrl());
         assertEquals("deepseek-v4-flash", config.getModel());
         assertEquals("/chat/completions", config.getCompletionsPath());
+    }
+
+    @Test
+    void disablesDeepSeekV4ThinkingForOpenAiCompatibleToolCalls() throws Exception {
+        Path envFile = tempDir.resolve(".env");
+        Files.writeString(envFile, """
+                AI_ENABLED=true
+                OPENAI_API_KEY=sk-test
+                OPENAI_BASE_URL=https://api.deepseek.com
+                OPENAI_MODEL=deepseek-v4-flash
+                """, StandardCharsets.UTF_8);
+
+        OpenAiRuntimeConfigService service = new OpenAiRuntimeConfigService(envFile, emptyFallback());
+
+        OpenAiChatOptions options = service.getChatOptions(AiAction.CHAT);
+
+        assertEquals(Map.of("thinking", Map.of("type", "disabled")), options.getExtraBody());
     }
 
     @Test

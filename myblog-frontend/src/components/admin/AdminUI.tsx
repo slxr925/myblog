@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
+  Activity,
   AlertCircle,
   Bot,
   FileText,
@@ -29,6 +30,7 @@ type AdminNavKey =
   | 'reports'
   | 'audit'
   | 'ai'
+  | 'ai-observability'
   | 'openai'
 
 interface AdminShellProps {
@@ -54,6 +56,7 @@ const menuItems: Array<{
   { id: 'reports', icon: AlertCircle, label: '举报管理' },
   { id: 'audit', icon: Shield, label: '审计日志' },
   { id: 'ai', icon: Sparkles, label: 'AI用量' },
+  { id: 'ai-observability', icon: Activity, label: 'AI观测' },
   { id: 'openai', icon: Bot, label: 'AI配置' },
 ]
 

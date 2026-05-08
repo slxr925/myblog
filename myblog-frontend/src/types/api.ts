@@ -661,6 +661,65 @@ export interface OpenAiConfigUpdateDTO {
   embeddingDimensions?: number;
 }
 
+export interface AiMessageVO {
+  id: number;
+  role: string;
+  content: string;
+  tokenEstimate: number;
+  createTime: string;
+}
+
+export interface AiConversationVO {
+  conversationId: string;
+  userId?: number;
+  title: string;
+  summary?: string;
+  status: number;
+  createTime: string;
+  updateTime: string;
+  messages?: AiMessageVO[];
+}
+
+export interface AiToolCallVO {
+  id: number;
+  conversationId?: string;
+  messageId?: number;
+  toolName: string;
+  argumentsJson?: string;
+  resultSummary?: string;
+  status: string;
+  elapsedMs: number;
+  errorMessage?: string;
+  createTime: string;
+}
+
+export interface AiRequestLogVO {
+  id: number;
+  requestId: string;
+  conversationId?: string;
+  userId?: number;
+  action: string;
+  status: string;
+  promptKey?: string;
+  promptVersion?: string;
+  model?: string;
+  promptChars: number;
+  resultChars: number;
+  toolCallCount: number;
+  elapsedMs: number;
+  errorMessage?: string;
+  createTime: string;
+}
+
+export interface AiObservabilityStatsVO {
+  requestCount: number;
+  successCount: number;
+  errorCount: number;
+  averageElapsedMs: number;
+  toolCallCount: number;
+  toolErrorCount: number;
+}
+
 // 未读数量响应
 export interface UnreadCountVO {
   total: number;

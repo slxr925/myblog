@@ -210,11 +210,12 @@ public class OpenAiRuntimeConfigService {
 
     public OpenAiChatOptions getChatOptions(AiAction action) {
         OpenAiConfigSnapshot config = currentState().config();
-        return OpenAiChatOptions.builder()
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
                 .model(config.model())
                 .temperature(config.temperature())
-                .maxTokens(getMaxTokens(action))
-                .build();
+                .maxTokens(getMaxTokens(action));
+        applyProviderCompatibilityOptions(builder, config);
+        return builder.build();
     }
 
     private RuntimeState currentState() {
@@ -413,11 +414,12 @@ public class OpenAiRuntimeConfigService {
                     .apiKey(config.apiKey())
                     .completionsPath(config.completionsPath())
                     .build();
-            OpenAiChatOptions options = OpenAiChatOptions.builder()
+            OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder()
                     .model(config.model())
                     .temperature(config.temperature())
-                    .maxTokens(config.maxTokensChat())
-                    .build();
+                    .maxTokens(config.maxTokensChat());
+            applyProviderCompatibilityOptions(optionsBuilder, config);
+            OpenAiChatOptions options = optionsBuilder.build();
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
                     .defaultOptions(options)
@@ -427,6 +429,18 @@ public class OpenAiRuntimeConfigService {
             log.error("OpenAI运行期配置加载失败: {}", e.getMessage(), e);
             return null;
         }
+    }
+
+    private void applyProviderCompatibilityOptions(OpenAiChatOptions.Builder builder, OpenAiConfigSnapshot config) {
+        if (shouldDisableDeepSeekThinking(config)) {
+            builder.extraBody(Map.of("thinking", Map.of("type", "disabled")));
+        }
+    }
+
+    private boolean shouldDisableDeepSeekThinking(OpenAiConfigSnapshot config) {
+        String baseUrl = trimToEmpty(config.baseUrl()).toLowerCase();
+        String model = trimToEmpty(config.model()).toLowerCase();
+        return baseUrl.contains("deepseek") && model.startsWith("deepseek-v4");
     }
 
     private EmbeddingModel buildEmbeddingModel(OpenAiConfigSnapshot config) {
