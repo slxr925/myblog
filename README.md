@@ -3,6 +3,7 @@
 <div align="center">
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![Spring AI](https://img.shields.io/badge/Spring%20AI-1.1.5-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -15,13 +16,13 @@
 
 ---
 
-一个基于 **Spring Boot + React + Docker** 的全栈博客系统，支持内容管理、互动、搜索、通知与 AI 辅助能力。
+一个基于 **Spring Boot + Spring AI + React + Docker** 的全栈博客系统，支持内容管理、互动、搜索、通知与 AI 辅助能力。
 
 ## 发布页亮点
 
 - 🚀 **全栈一体交付**：后端服务、前端应用、搜索与缓存组件开箱即用
 - 🧱 **工程化优先**：类型约束、脚本化部署、迁移流程与健康检查完整
-- 🔍 **业务链路完整**：内容发布、互动、搜索、通知与 AI 辅助闭环
+- 🔍 **业务链路完整**：内容发布、互动、搜索、通知与 Spring AI 辅助闭环
 
 ## 项目目标
 
@@ -35,8 +36,18 @@
 - 内容体系：文章发布、编辑、分类标签、草稿
 - 互动体系：评论、点赞、收藏、通知
 - 搜索体系：关键词检索、实时建议、结果页筛选
-- AI 能力：摘要、关键词提取等内容辅助
+- AI 能力：智能问答、流式对话、标题生成、摘要、关键词提取、内容润色
 - 管理后台：文章/评论/用户治理与基础监控
+
+## AI 能力
+
+- **Spring AI 集成**：基于 Spring AI 1.1.5，引入 OpenAI ChatModel、ChatClient 与 Elasticsearch VectorStore
+- **模型兼容**：通过 OpenAI 兼容接口对接 DeepSeek 等模型服务，支持自定义 Base URL、模型、温度与各场景 Token 上限
+- **智能助手**：提供普通对话与 SSE 流式对话，结合站内文章、分类、标签与历史上下文生成回答
+- **内容创作辅助**：支持文章标题生成、摘要生成、关键词提取与正文润色，覆盖写作与发布前优化流程
+- **RAG 检索增强**：可选启用 Embedding 与 Elasticsearch 向量索引，按语义召回站内文章片段并返回相关文章
+- **Agent 工具调用**：封装文章搜索、文章上下文、内容分析与推荐工具，让 AI 能围绕站内内容执行更可靠的检索和推荐
+- **会话与观测**：保存 AI 会话与消息，记录请求、工具调用、耗时、状态与错误，后台支持用量统计、运行期配置和 RAG 重建
 
 ## 技术栈
 
@@ -44,6 +55,7 @@
 
 - Java 21
 - Spring Boot 3.x
+- Spring AI 1.1.5
 - Spring Security + JWT
 - MyBatis / MyBatis Plus
 - MySQL 8.x
