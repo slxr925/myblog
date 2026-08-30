@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 import { markdownConfig } from '../../config/markdown';
+import { AiQuotaStatus, useAiQuota } from '../../contexts/AiQuotaContext';
 
 interface RelatedArticleTag {
   id?: number;
@@ -205,6 +206,7 @@ export const AIAssistant: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
   const { openAuthModal } = useAuthModal();
+  const { quota, runAiAction } = useAiQuota();
   const userKey = isAuthenticated && user ? String(user.id ?? user.username) : '';
 
   const scrollToBottom = () => {
@@ -347,90 +349,70 @@ export const AIAssistant: React.FC = () => {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage, pendingMessage]);
-    setInputValue('');
-    setIsLoading(true);
-
+    let requestStarted = false;
     try {
-      // 构建对话历史（不包括当前问题，排除介绍消息）
-      const history = messages
-        .filter((_, index) => index > 0) // 跳过第一条介绍消息
-        .map(msg => ({
-          role: msg.isUser ? 'user' : 'assistant',
-          content: msg.content,
-        }));
+      const completed = await runAiAction(async (requestId) => {
+        requestStarted = true;
+        setMessages(prev => [...prev, userMessage, pendingMessage]);
+        setInputValue('');
+        setIsLoading(true);
 
-      const requestPayload = {
-        question: currentQuestion,
-        conversationId: conversationId || undefined,
-        history: history.length > 0 ? history : undefined,
-      };
-
-      let streamedAnswer = '';
-      await api.ai.chatStream(requestPayload, {
-        onStatus: (message) => {
-          if (streamedAnswer) return;
-          setMessages(prev => prev.map(msg => (
-            msg.id === assistantMessageId ? { ...msg, content: message } : msg
-          )));
-        },
-        onDelta: (text) => {
-          if (!text) return;
-          streamedAnswer += text;
-          setMessages(prev => prev.map(msg => (
-            msg.id === assistantMessageId
-              ? { ...msg, content: streamedAnswer }
-              : msg
-          )));
-        },
-        onRelatedArticles: (items) => {
-          setMessages(prev => prev.map(msg => (
-            msg.id === assistantMessageId ? { ...msg, relatedArticles: items } : msg
-          )));
-        },
-        onDone: (data) => {
-          if (!conversationId && data?.conversationId) {
-            setConversationId(data.conversationId);
-          }
-        },
-      });
-
-    } catch (error) {
-      console.error('AI流式聊天失败，回退普通接口:', error);
-      try {
         const history = messages
           .filter((_, index) => index > 0)
           .map(msg => ({
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.content,
           }));
-        const response: AIChatResponse = await api.ai.chat({
+        const requestPayload = {
           question: currentQuestion,
           conversationId: conversationId || undefined,
           history: history.length > 0 ? history : undefined,
-        });
-        const answer = (response.answer || '').trim();
-        if (!answer) {
-          throw new Error('AI返回内容为空');
-        }
-        if (!conversationId) {
-          setConversationId(response.conversationId);
-        }
+        };
+
+        let streamedAnswer = '';
+        await api.ai.chatStream(requestPayload, {
+          onStatus: (message) => {
+            if (streamedAnswer) return;
+            setMessages(prev => prev.map(msg => (
+              msg.id === assistantMessageId ? { ...msg, content: message } : msg
+            )));
+          },
+          onDelta: (text) => {
+            if (!text) return;
+            streamedAnswer += text;
+            setMessages(prev => prev.map(msg => (
+              msg.id === assistantMessageId ? { ...msg, content: streamedAnswer } : msg
+            )));
+          },
+          onRelatedArticles: (items) => {
+            setMessages(prev => prev.map(msg => (
+              msg.id === assistantMessageId ? { ...msg, relatedArticles: items } : msg
+            )));
+          },
+          onDone: (data) => {
+            if (!conversationId && data?.conversationId) {
+              setConversationId(data.conversationId);
+            }
+          },
+        }, requestId);
+        return true;
+      });
+      if (requestStarted && !completed) {
         setMessages(prev => prev.map(msg => (
           msg.id === assistantMessageId
-            ? { ...msg, content: answer, relatedArticles: response.relatedArticles }
-            : msg
-        )));
-      } catch (fallbackError) {
-        console.error('AI聊天失败:', fallbackError);
-        setMessages(prev => prev.map(msg => (
-          msg.id === assistantMessageId
-            ? { ...msg, content: '抱歉，我暂时无法回答。请稍后再试。' }
+            ? { ...msg, content: 'AI 服务暂时不可用，本次未计入额度。' }
             : msg
         )));
       }
+    } catch (error) {
+      console.error('AI流式聊天失败:', error);
+      setMessages(prev => prev.map(msg => (
+        msg.id === assistantMessageId
+          ? { ...msg, content: 'AI 服务暂时不可用，本次未计入额度。' }
+          : msg
+      )));
     } finally {
-      setIsLoading(false);
+      if (requestStarted) setIsLoading(false);
     }
   };
 
@@ -635,13 +617,13 @@ export const AIAssistant: React.FC = () => {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder={!isAuthenticated ? '请先登录' : '问我任何问题...'}
-                    disabled={isLoading || !isAuthenticated}
+                    placeholder={!isAuthenticated ? '请先登录' : quota?.available === false ? '今日额度已用完' : '问我任何问题...'}
+                    disabled={isLoading || !isAuthenticated || quota?.available === false}
                     className="flex-1 rounded-sm border-border focus:border-accent focus:ring-accent/20"
                   />
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isLoading || !isAuthenticated}
+                    disabled={!inputValue.trim() || isLoading || !isAuthenticated || quota?.available === false}
                     size="icon"
                     className="rounded-sm bg-foreground text-background hover:bg-foreground/90"
                   >
@@ -652,6 +634,7 @@ export const AIAssistant: React.FC = () => {
                     )}
                   </Button>
                 </div>
+                <AiQuotaStatus className="mt-2 block text-center" />
                 <p className="text-xs text-muted-foreground mt-2 text-center font-mono-display uppercase tracking-wider">
                   AI助手可能会出错，请谨慎参考
                 </p>

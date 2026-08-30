@@ -10,6 +10,7 @@ import com.ryan.myblog.model.vo.RagSearchResult;
 import com.ryan.myblog.ai.agent.BlogAgentService;
 import com.ryan.myblog.service.AIAssistantService;
 import com.ryan.myblog.service.AiAction;
+import com.ryan.myblog.service.AiStreamLifecycle;
 import com.ryan.myblog.service.BlogRagService;
 import com.ryan.myblog.service.BlogService;
 import com.ryan.myblog.service.CategoryService;
@@ -146,14 +147,17 @@ public class AIAssistantServiceImpl implements AIAssistantService {
         }
 
         @Override
-        public SseEmitter streamChat(AIChatRequest request) {
+        public SseEmitter streamChat(AIChatRequest request, AiStreamLifecycle lifecycle) {
                 SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
                 String requestId = newRequestId(AiAction.CHAT);
-                CompletableFuture.runAsync(() -> streamChatInternal(request, emitter, requestId));
+                emitter.onTimeout(lifecycle::onServiceFailure);
+                emitter.onError(error -> lifecycle.onSuccess());
+                CompletableFuture.runAsync(() -> streamChatInternal(request, emitter, requestId, lifecycle));
                 return emitter;
         }
 
-        private void streamChatInternal(AIChatRequest request, SseEmitter emitter, String requestId) {
+        private void streamChatInternal(AIChatRequest request, SseEmitter emitter, String requestId,
+                                        AiStreamLifecycle lifecycle) {
                 long totalStart = System.currentTimeMillis();
                 long contextMs = -1L;
                 int promptChars = 0;
@@ -164,6 +168,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                         if (isAssistantMetaQuestion(request.getQuestion())) {
                                 String answer = buildAssistantCapabilityAnswer();
+                                lifecycle.onSuccess();
                                 sendAnswerChunks(emitter, answer);
                                 sendDone(emitter, request, totalStart, false, false);
                                 logAiSuccess(requestId, AiAction.CHAT, 0, false, 0, -1, -1, 0,
@@ -172,6 +177,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         }
 
                         if (!isSupportedQuestion(request.getQuestion())) {
+                                lifecycle.onSuccess();
                                 sendSse(emitter, "status", Map.of("message", "这个问题超出助手范围"));
                                 sendAnswerChunks(emitter, OUT_OF_SCOPE_ANSWER);
                                 sendDone(emitter, request, totalStart, false, false);
@@ -184,6 +190,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 try {
                                         sendSse(emitter, "status", Map.of("message", "正在调用站内工具..."));
                                         AIChatResponse response = blogAgentService.chat(request);
+                                        lifecycle.onSuccess();
                                         sendAnswerChunks(emitter, response.getAnswer());
                                         if (response.getRelatedArticles() != null && !response.getRelatedArticles().isEmpty()) {
                                                 sendSse(emitter, "relatedArticles", Map.of("items", response.getRelatedArticles()));
@@ -202,6 +209,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
 
                         if (!isAIAvailable()) {
                                 String answer = handleWithRules(request.getQuestion(), context);
+                                lifecycle.onSuccess();
                                 sendAnswerChunks(emitter, answer);
                                 sendRelatedArticles(emitter, answer);
                                 sendDone(emitter, request, totalStart, false, false);
@@ -216,6 +224,7 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         String cachedAnswer = getCachedValue(chatCacheKey, CHAT_CACHE_TTL_SECONDS);
                         if (cachedAnswer != null) {
                                 cacheHit = true;
+                                lifecycle.onSuccess();
                                 sendSse(emitter, "status", Map.of("message", "已命中缓存，正在整理回答..."));
                                 sendAnswerChunks(emitter, cachedAnswer);
                                 sendRelatedArticles(emitter, ragResults, cachedAnswer);
@@ -230,12 +239,18 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                         StreamResult streamResult = streamAI(AiAction.CHAT, prompt, requestId, contextMs, totalStart, emitter);
                         String answer = ensureNonBlankAiResult(streamResult.answer(), "聊天回复");
                         cacheValue(chatCacheKey, answer, CHAT_CACHE_TTL_SECONDS);
+                        lifecycle.onSuccess();
                         sendRelatedArticles(emitter, ragResults, answer);
                         sendDone(emitter, request, totalStart, false, true);
 
                 } catch (Exception e) {
                         log.error("AI流式调用失败 requestId={} action={} promptChars={} cacheHit={} contextMs={} totalMs={}",
                                         requestId, AiAction.CHAT, promptChars, cacheHit, contextMs, elapsed(totalStart), e);
+                        if (isSseTransportFailure(e)) {
+                                lifecycle.onSuccess();
+                        } else {
+                                lifecycle.onServiceFailure();
+                        }
                         try {
                                 sendSse(emitter, "error", Map.of("message", "AI服务暂时不可用，请稍后再试"));
                                 emitter.complete();
@@ -243,6 +258,17 @@ public class AIAssistantServiceImpl implements AIAssistantService {
                                 emitter.completeWithError(sendError);
                         }
                 }
+        }
+
+        private boolean isSseTransportFailure(Throwable error) {
+                Throwable current = error;
+                while (current != null) {
+                        if (current instanceof IOException || "SSE发送失败".equals(current.getMessage())) {
+                                return true;
+                        }
+                        current = current.getCause();
+                }
+                return false;
         }
 
         @Override

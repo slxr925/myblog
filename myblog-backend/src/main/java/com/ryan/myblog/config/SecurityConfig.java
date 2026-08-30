@@ -54,7 +54,10 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception
                         // 未认证处理（401）
                         .authenticationEntryPoint((request, response, authException) -> {
-                            writeJsonResponse(response, HttpStatus.UNAUTHORIZED.value(), "未授权，请先登录");
+                            String message = request.getRequestURI().startsWith("/api/ai/")
+                                    ? "请先登录后使用 AI 功能"
+                                    : "未授权，请先登录";
+                            writeJsonResponse(response, HttpStatus.UNAUTHORIZED.value(), message);
                         })
                         // 无权限处理（403）
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
@@ -100,8 +103,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/cache/**").permitAll()
                         // 记录页面访问日志（允许匿名访问）
                         .requestMatchers("/api/admin/track-visit").permitAll()
-                        // 允许访问AI助手接口
-                        .requestMatchers("/api/ai/**").permitAll()
+                        // AI介绍公开，其余AI能力必须登录
+                        .requestMatchers(HttpMethod.GET, "/api/ai/introduction").permitAll()
+                        .requestMatchers("/api/ai/**").authenticated()
                         // 允许访问分享收藏夹
                         .requestMatchers("/api/collection/share/**").permitAll()
                         // WebSocket端点（认证在Handler中处理）

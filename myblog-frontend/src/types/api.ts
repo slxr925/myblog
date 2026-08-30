@@ -601,6 +601,16 @@ export interface AiUsageUserVO {
   tokenCount: number;
 }
 
+export interface AiQuotaVO {
+  date: string;
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  available: boolean;
+  unlimited: boolean;
+  resetAt: string;
+}
+
 export interface OpenAiConfigVO {
   aiEnabled: boolean;
   apiKeyConfigured: boolean;

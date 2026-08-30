@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './contexts/AuthContext'
 import { AuthModalProvider } from './contexts/AuthModalContext'
+import { AiQuotaProvider } from './contexts/AiQuotaContext'
 import { FollowProvider } from './contexts/FollowContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
@@ -211,12 +212,14 @@ const AppWrapper = () => {
           <FollowProvider>
             <WebSocketProvider>
               <AuthModalProvider>
-                <Router>
-                  <AuthErrorHandler />
-                  <Suspense fallback={<RouteFallback />}>
-                    <AppRoutes />
-                  </Suspense>
-                </Router>
+                <AiQuotaProvider>
+                  <Router>
+                    <AuthErrorHandler />
+                    <Suspense fallback={<RouteFallback />}>
+                      <AppRoutes />
+                    </Suspense>
+                  </Router>
+                </AiQuotaProvider>
               </AuthModalProvider>
             </WebSocketProvider>
           </FollowProvider>

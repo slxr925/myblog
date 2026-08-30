@@ -4,6 +4,9 @@ import com.ryan.myblog.common.Result;
 import com.ryan.myblog.exception.DistributedLockException;
 import com.ryan.myblog.exception.RateLimitException;
 import com.ryan.myblog.exception.ResourceNotFoundException;
+import com.ryan.myblog.exception.AiQuotaExceededException;
+import com.ryan.myblog.exception.AiServiceUnavailableException;
+import com.ryan.myblog.exception.DuplicateAiRequestException;
 import com.ryan.myblog.model.vo.ErrorLogVO;
 import com.ryan.myblog.service.ErrorLogService;
 import com.ryan.myblog.utils.IpUtils;
@@ -54,6 +57,25 @@ public class GlobalExceptionHandler {
     public Result<Void> handleRateLimitException(RateLimitException e) {
         log.warn("请求限流: {}", e.getMessage());
         return Result.error(429, e.getMessage());
+    }
+
+    @ExceptionHandler(AiQuotaExceededException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public Result<Void> handleAiQuotaExceededException(AiQuotaExceededException e) {
+        return Result.error(HttpStatus.TOO_MANY_REQUESTS.value(), e.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateAiRequestException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Result<Void> handleDuplicateAiRequestException(DuplicateAiRequestException e) {
+        return Result.error(HttpStatus.CONFLICT.value(), e.getMessage());
+    }
+
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Result<Void> handleAiServiceUnavailableException(AiServiceUnavailableException e) {
+        log.error("AI 服务异常", e.getCause());
+        return Result.error(HttpStatus.SERVICE_UNAVAILABLE.value(), e.getMessage());
     }
 
     /**

@@ -18,13 +18,7 @@ public class UserRoleUtils {
             return Role.USER; // 默认返回普通用户角色
         }
         
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-            org.springframework.security.core.userdetails.UserDetails userDetails = 
-                (org.springframework.security.core.userdetails.UserDetails) principal;
-            
-            // 从权限中提取角色信息
-            return userDetails.getAuthorities().stream()
+        return authentication.getAuthorities().stream()
                 .filter(authority -> authority.getAuthority().startsWith("ROLE_"))
                 .map(authority -> {
                     String roleStr = authority.getAuthority().substring(5); // 去掉"ROLE_"前缀
@@ -36,9 +30,6 @@ public class UserRoleUtils {
                 })
                 .findFirst()
                 .orElse(Role.USER);
-        }
-        
-        return Role.USER;
     }
     
     /**

@@ -16,6 +16,7 @@ import { api } from '../../utils/api'
 import { getPublicBlogPath } from '../../utils/blogLinks'
 import type { BlogDetailVO, Category, Tag } from '../../types/api'
 import { BlogStatus } from '../../types/api'
+import { AiQuotaStatus, useAiQuota } from '../../contexts/AiQuotaContext'
 
 interface BlogEditorProps {
   mode?: 'create' | 'edit'
@@ -51,6 +52,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const autoSaveTimerRef = useRef<number | null>(null)
   const lastSnapshotRef = useRef<string>('')
+  const { quota, runAiAction } = useAiQuota()
 
   const [formData, setFormData] = useState<BlogFormData>(DEFAULT_FORM)
   const [categories, setCategories] = useState<Category[]>([])
@@ -330,7 +332,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsGeneratingTitle(true)
     try {
-      const result = await api.ai.generateTitle(formData.content)
+      const result = await runAiAction((requestId) => api.ai.generateTitle(formData.content, undefined, requestId))
+      if (!result) return
       const title = (result.title || '').trim()
       if (!title) {
         toast.error('标题内容为空，请重试。')
@@ -354,7 +357,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsGeneratingSummary(true)
     try {
-      const result = await api.ai.generateSummary(formData.content)
+      const result = await runAiAction((requestId) => api.ai.generateSummary(formData.content, undefined, requestId))
+      if (!result) return
       const summary = (result.summary || '').trim()
       if (!summary) {
         toast.error('摘要内容为空，请重试。')
@@ -378,7 +382,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
 
     setIsPolishing(true)
     try {
-      const result = await api.ai.polishContent(formData.content)
+      const result = await runAiAction((requestId) => api.ai.polishContent(formData.content, undefined, requestId))
+      if (!result) return
       const polishedContent = (result.polishedContent || '').trim()
       if (!polishedContent) {
         toast.error('润色结果为空，请重试。')
@@ -457,7 +462,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                       placeholder="请输入文章标题"
                       className="h-12 flex-1 rounded-sm border-border/80 bg-background/70 text-lg font-semibold"
                     />
-                    <Button variant="outline" onClick={handleGenerateTitle} disabled={!formData.content || isGeneratingTitle}>
+                    <Button variant="outline" onClick={handleGenerateTitle} disabled={!formData.content || isGeneratingTitle || quota?.available === false}>
                       {isGeneratingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {isGeneratingTitle ? '正在生成标题...' : 'AI生成标题'}
                     </Button>
@@ -478,13 +483,14 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ mode = 'create' }) => {
                       variant="outline"
                       className="w-full md:w-auto md:self-start"
                       onClick={handleGenerateSummary}
-                      disabled={!formData.content || isGeneratingSummary}
+                      disabled={!formData.content || isGeneratingSummary || quota?.available === false}
                     >
                       {isGeneratingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {isGeneratingSummary ? '正在生成摘要...' : 'AI生成摘要'}
                     </Button>
                   </div>
                 </div>
+                <AiQuotaStatus className="block" />
               </div>
             </AdminSectionCard>
 

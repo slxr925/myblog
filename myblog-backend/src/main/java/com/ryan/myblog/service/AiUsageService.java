@@ -2,6 +2,7 @@ package com.ryan.myblog.service;
 
 import com.ryan.myblog.model.vo.AiUsageDailyVO;
 import com.ryan.myblog.model.vo.AiUsageUserVO;
+import com.ryan.myblog.model.vo.AiQuotaVO;
 
 import java.util.List;
 
@@ -10,9 +11,15 @@ import java.util.List;
  */
 public interface AiUsageService {
 
-    boolean checkAndConsume(Long userId, int estimatedTokens, int maxRequestsPerDay, int maxTokensPerDay);
+    AiQuotaReservation reserve(String requestId, Long userId, AiAction action, int estimatedTokens, boolean unlimited);
 
-    void recordUsage(Long userId, int estimatedTokens);
+    void confirm(String requestId);
+
+    boolean refund(String requestId);
+
+    AiQuotaVO getQuota(Long userId, boolean unlimited);
+
+    int refundStaleReservations();
 
     List<AiUsageDailyVO> getDailyUsage(Long userId, int days);
 

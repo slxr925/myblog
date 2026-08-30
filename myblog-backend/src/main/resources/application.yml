@@ -30,7 +30,7 @@ app:
 
   ai:
     quota:
-      max-requests-per-day: ${AI_MAX_REQUESTS_PER_DAY:50}
+      max-requests-per-day: ${AI_MAX_REQUESTS_PER_DAY:3}
       max-tokens-per-day: ${AI_MAX_TOKENS_PER_DAY:50000}
 
   rag:

@@ -16,6 +16,7 @@ import CollectButton from '../components/blog/CollectButton';
 import FollowButton from '../components/user/FollowButton';
 import PrevNextNav from '../components/blog/PrevNextNav';
 import RecommendList from '../components/blog/RecommendList';
+import { AiQuotaStatus, useAiQuota } from '../contexts/AiQuotaContext';
 
 const normalizeRecommendationSection = (
   section: RecommendationSectionVO | undefined,
@@ -50,6 +51,7 @@ const BlogDetail: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const { openAuthModal } = useAuthModal();
+  const { quota, runAiAction } = useAiQuota();
 
   const [relatedSection, setRelatedSection] = useState<RecommendationSectionVO | null>(null);
   const [previousBlog, setPreviousBlog] = useState<BlogDetailVO | null>(null);
@@ -103,7 +105,8 @@ const BlogDetail: React.FC = () => {
     if (!blog?.content) return;
     setIsGeneratingSummary(true);
     try {
-      const result = await api.ai.generateSummary(blog.content);
+      const result = await runAiAction((requestId) => api.ai.generateSummary(blog.content, undefined, requestId));
+      if (!result) return;
       const summary = (result.summary || '').trim();
       if (!summary) {
         toast.error('摘要内容为空，请重试');
@@ -124,7 +127,8 @@ const BlogDetail: React.FC = () => {
     if (!blog?.content) return;
     setIsExtractingKeywords(true);
     try {
-      const result = await api.ai.extractKeywords(blog.content);
+      const result = await runAiAction((requestId) => api.ai.extractKeywords(blog.content, undefined, requestId));
+      if (!result) return;
       const keywords = (result.keywords || [])
         .map((item) => item.trim())
         .filter((item) => item.length > 0);
@@ -415,7 +419,7 @@ const BlogDetail: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleGenerateSummary}
-                    disabled={isGeneratingSummary}
+                    disabled={isGeneratingSummary || quota?.available === false}
                     className="rounded-sm font-mono-display text-xs uppercase tracking-wider"
                   >
                     {isGeneratingSummary ? (
@@ -435,7 +439,7 @@ const BlogDetail: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleExtractKeywords}
-                    disabled={isExtractingKeywords}
+                    disabled={isExtractingKeywords || quota?.available === false}
                     className="rounded-sm font-mono-display text-xs uppercase tracking-wider"
                   >
                     {isExtractingKeywords ? (
@@ -451,6 +455,7 @@ const BlogDetail: React.FC = () => {
                     )}
                   </Button>
                 </div>
+                <AiQuotaStatus className="mb-5 block" />
 
                 {/* 摘要显示 */}
                 {aiSummary && (

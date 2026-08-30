@@ -42,6 +42,7 @@ import type {
   BlogRevisionDiffVO,
   AiUsageDailyVO,
   AiUsageUserVO,
+  AiQuotaVO,
   AiConversationVO,
   AiObservabilityStatsVO,
   AiRequestLogVO,
@@ -1181,15 +1182,17 @@ export const api = {
     },
 
     // AI聊天（需要更长超时时间）
-    chat: (params: { question: string; conversationId?: string; history?: any[] }): Promise<any> => {
+    chat: (params: { question: string; conversationId?: string; history?: any[] }, requestId?: string): Promise<any> => {
       return apiClient.post('/ai/chat', params, {
         timeout: 60000, // 60秒超时，因为AI响应较慢
+        headers: requestId ? { 'X-AI-Request-Id': requestId } : undefined,
       });
     },
 
     chatStream: async (
       params: { question: string; conversationId?: string; history?: any[] },
       handlers: AiChatStreamHandlers,
+      requestId?: string,
     ): Promise<void> => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${getBaseURL()}/ai/chat/stream`, {
@@ -1197,12 +1200,22 @@ export const api = {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(requestId ? { 'X-AI-Request-Id': requestId } : {}),
         },
         body: JSON.stringify(params),
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`AI stream request failed: ${response.status}`);
+        let message = `AI stream request failed: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          message = errorBody?.message || message;
+        } catch {
+          // 保留默认错误信息
+        }
+        const error = new Error(message) as Error & { status?: number };
+        error.status = response.status;
+        throw error;
       }
 
       const reader = response.body.getReader();
@@ -1257,31 +1270,39 @@ export const api = {
     },
 
     // 生成文章标题（需要更长超时时间）
-    generateTitle: (content: string, style?: string): Promise<{ title: string }> => {
+    generateTitle: (content: string, style?: string, requestId?: string): Promise<{ title: string }> => {
       return apiClient.post('/ai/generate-title', { content, style }, {
         timeout: 60000,
+        headers: requestId ? { 'X-AI-Request-Id': requestId } : undefined,
       });
     },
 
     // 润色文章内容（需要更长超时时间）
-    polishContent: (content: string, style?: string): Promise<{ polishedContent: string }> => {
+    polishContent: (content: string, style?: string, requestId?: string): Promise<{ polishedContent: string }> => {
       return apiClient.post('/ai/polish-content', { content, style }, {
         timeout: 60000,
+        headers: requestId ? { 'X-AI-Request-Id': requestId } : undefined,
       });
     },
 
     // 生成文章摘要（需要更长超时时间）
-    generateSummary: (content: string, style?: string): Promise<{ summary: string }> => {
+    generateSummary: (content: string, style?: string, requestId?: string): Promise<{ summary: string }> => {
       return apiClient.post('/ai/generate-summary', { content, style }, {
         timeout: 60000,
+        headers: requestId ? { 'X-AI-Request-Id': requestId } : undefined,
       });
     },
 
     // 提取文章关键词（需要更长超时时间）
-    extractKeywords: (content: string, style?: string): Promise<{ keywords: string[] }> => {
+    extractKeywords: (content: string, style?: string, requestId?: string): Promise<{ keywords: string[] }> => {
       return apiClient.post('/ai/extract-keywords', { content, style }, {
         timeout: 60000,
+        headers: requestId ? { 'X-AI-Request-Id': requestId } : undefined,
       });
+    },
+
+    getQuota: (): Promise<AiQuotaVO> => {
+      return apiClient.get('/ai/quota') as Promise<AiQuotaVO>;
     },
 
     getConversations: (params?: PageParams): Promise<PageResult<AiConversationVO>> => {

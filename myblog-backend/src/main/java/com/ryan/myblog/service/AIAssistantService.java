@@ -26,7 +26,7 @@ public interface AIAssistantService {
      * @param request 用户问题
      * @return SSE emitter
      */
-    SseEmitter streamChat(AIChatRequest request);
+    SseEmitter streamChat(AIChatRequest request, AiStreamLifecycle lifecycle);
 
     /**
      * 获取助手介绍信息
