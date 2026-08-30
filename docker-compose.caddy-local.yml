@@ -1,0 +1,34 @@
+services:
+  frontend:
+    environment:
+      VITE_API_BASE_URL: /api
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: myblog-caddy-local
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - ./caddy/routes.caddy:/etc/caddy/routes.caddy:ro
+      - caddy_local_data:/data
+      - caddy_local_config:/config
+    depends_on:
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_started
+    networks:
+      - myblog-network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:2019/config/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  caddy_local_data:
+  caddy_local_config:

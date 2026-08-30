@@ -54,11 +54,15 @@ import type {
 // 创建axios实例
 // 根据环境自动选择API地址
 export const getBaseURL = () => {
+  const configuredBaseURL = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configuredBaseURL) {
+    return configuredBaseURL;
+  }
   // 开发环境直接访问后端
   if (import.meta.env.DEV) {
     return 'http://localhost:8081/api';
   }
-  // 生产环境使用相对路径，通过Nginx反向代理
+  // 生产环境使用相对路径，通过 Caddy 反向代理
   return '/api';
 };
 
@@ -1394,8 +1398,5 @@ export const api = {
 };
 
 export const getRssFeedUrl = () => {
-  if (import.meta.env.DEV) {
-    return 'http://localhost:8081/api/blog/rss.xml';
-  }
-  return '/api/blog/rss.xml';
+  return `${getBaseURL()}/blog/rss.xml`;
 };

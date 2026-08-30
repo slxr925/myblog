@@ -1,0 +1,33 @@
+{
+	email ranxu0925@gmail.com
+}
+
+import routes.caddy
+
+http://ryansblog.club, http://www.ryansblog.club {
+	redir https://www.ryansblog.club{uri} permanent
+}
+
+https://ryansblog.club {
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	redir https://www.ryansblog.club{uri} permanent
+}
+
+https://www.ryansblog.club {
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	import app_routes
+
+	handle {
+		@static_assets path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
+		header @static_assets Cache-Control "public, max-age=604800, immutable"
+
+		@html_requests {
+			not path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
+		}
+		header @html_requests Cache-Control "no-cache, no-store, must-revalidate"
+
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

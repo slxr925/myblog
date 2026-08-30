@@ -2,6 +2,7 @@ package com.ryan.myblog.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ryan.myblog.common.Result;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,6 +66,8 @@ public class SecurityConfig {
                         }))
                 // 配置请求授权
                 .authorizeHttpRequests(auth -> auth
+                        // SSE 由已认证的初始请求启动；完成后的异步分发不应重复鉴权。
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         // 允许所有OPTIONS请求（CORS预检）
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 允许健康检查和监控端点（用于Docker健康检查）

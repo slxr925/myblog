@@ -189,9 +189,13 @@ if [ "$DEPLOY_MODE" = "incremental" ]; then
     echo "增量更新 backend（保留基础设施容器）..."
     docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d kafka elasticsearch
     docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d --no-deps --force-recreate backend
-    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d frontend nginx
+    # 首次切换 Caddy 时移除仍占用 80 端口的旧外层 Nginx 容器。
+    if docker ps -a --format '{{.Names}}' | grep -q '^myblog-nginx$'; then
+        docker rm -f myblog-nginx
+    fi
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d caddy
 else
-    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d
+    docker-compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d --remove-orphans
 fi
 
 echo "等待服务启动..."
@@ -238,13 +242,14 @@ else
     fi
 done
 
-# 检查前端
+# 检查 Caddy 网关
 echo ""
-echo "检查前端服务..."
-if docker exec myblog-frontend wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health &>/dev/null; then
-    echo -e "${GREEN}✓ 前端服务健康${NC}"
+echo "检查 Caddy 网关..."
+if docker exec myblog-caddy wget --quiet --spider http://127.0.0.1:2019/config/ &>/dev/null; then
+    echo -e "${GREEN}✓ Caddy 网关健康${NC}"
 else
-    echo -e "${YELLOW}⚠ 前端服务检查失败，但容器运行中${NC}"
+    echo -e "${RED}✗ Caddy 网关检查失败${NC}"
+    exit 1
 fi
 
 # 11. 清理老备份（保留 3 天内）
@@ -267,10 +272,8 @@ echo "容器状态:"
 docker-compose -f docker-compose.prod.yml ps
 echo ""
 echo "访问地址:"
-echo "  博客首页: http://$(hostname -I | awk '{print $1}' || echo ${SERVER_IP})"
-echo "  前端直连: http://$(hostname -I | awk '{print $1}' || echo ${SERVER_IP}):3000"
-echo "  后端API: http://$(hostname -I | awk '{print $1}' || echo ${SERVER_IP}):8081"
-echo "  API文档: http://$(hostname -I | awk '{print $1}' || echo ${SERVER_IP}):8081/doc.html"
+echo "  博客首页: https://www.ryansblog.club"
+echo "  API文档: https://www.ryansblog.club/doc.html"
 echo ""
 echo "管理命令:"
 echo "  查看日志: cd ${PROJECT_ROOT}/deploy && ./logs.sh"

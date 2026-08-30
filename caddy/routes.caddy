@@ -1,0 +1,40 @@
+(app_routes) {
+	encode zstd gzip
+
+	request_body {
+		max_size 10MB
+	}
+
+	header {
+		-Server
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	handle /health {
+		respond "healthy" 200
+	}
+
+	handle /actuator/* {
+		respond 403
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8081
+	}
+
+	handle /uploads/* {
+		reverse_proxy backend:8081
+	}
+
+	handle /ws/* {
+		reverse_proxy backend:8081
+	}
+
+	@api_docs path /swagger-ui* /v3/api-docs* /doc.html
+	handle @api_docs {
+		reverse_proxy backend:8081
+	}
+
+}

@@ -130,9 +130,9 @@ echo ""
 echo -e "${BLUE}=== 步骤 4.5: 上传部署脚本和配置 ===${NC}"
 
 if [ "$USE_SCP" = true ]; then
-    echo "上传: deploy/*.sh, database/migrations, docker-compose.prod.yml 和 Dockerfile.prod"
+    echo "上传: deploy/*.sh, Caddy 配置, database/migrations, docker-compose.prod.yml 和 Dockerfile.prod"
     # 确保远程目录存在
-    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy ${SERVER_PATH}/deploy/prod ${SERVER_PATH}/myblog-backend/database/migrations"
+    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/deploy ${SERVER_PATH}/deploy/prod ${SERVER_PATH}/caddy ${SERVER_PATH}/myblog-backend/database/migrations"
     
     # 上传脚本
     if scp deploy/prod/*.sh ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/deploy/; then
@@ -170,6 +170,14 @@ if [ "$USE_SCP" = true ]; then
         echo -e "${RED}✗ docker-compose配置上传失败${NC}"
         exit 1
     fi
+
+    # 上传 Caddy HTTPS 网关配置
+    if scp caddy/Caddyfile caddy/routes.caddy ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/caddy/; then
+        echo -e "${GREEN}✓ Caddy配置上传成功${NC}"
+    else
+        echo -e "${RED}✗ Caddy配置上传失败${NC}"
+        exit 1
+    fi
     
     # 上传Dockerfile.prod
     if scp myblog-backend/Dockerfile.prod ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/myblog-backend/; then
@@ -179,7 +187,7 @@ if [ "$USE_SCP" = true ]; then
         exit 1
     fi
 else
-    echo -e "${YELLOW}请手动上传: deploy/*.sh, docker-compose.prod.yml 和 myblog-backend/Dockerfile.prod${NC}"
+    echo -e "${YELLOW}请手动上传: deploy/*.sh, caddy/, docker-compose.prod.yml 和 myblog-backend/Dockerfile.prod${NC}"
 fi
 echo ""
 
@@ -195,12 +203,11 @@ if [ "$USE_SCP" = true ]; then
         echo -e "${GREEN}║     🎉 部署成功！                     ║${NC}"
         echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
         echo ""
-        echo -e "${GREEN}✓ 前端访问: http://${SERVER_HOST}:3000${NC}"
-        echo -e "${GREEN}✓ 后端API: http://${SERVER_HOST}:8081${NC}"
+        echo -e "${GREEN}✓ 站点访问: https://www.ryansblog.club${NC}"
         echo ""
         echo -e "${BLUE}查看日志:${NC}"
         echo "  docker logs -f myblog-backend"
-        echo "  docker logs -f myblog-frontend"
+        echo "  docker logs -f myblog-caddy"
         echo ""
     else
         echo -e "${RED}✗ 部署失败${NC}"

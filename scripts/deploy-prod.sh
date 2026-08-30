@@ -52,7 +52,7 @@ cmd_init() {
     # 2. Create directory structure
     echo ""
     echo -e "${BLUE}Step 2: Creating directory structure...${NC}"
-    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/{deploy,myblog-backend/target,myblog-frontend/dist,data/{backend/{logs,uploads},backups}}"
+    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/{deploy,caddy,myblog-backend/target,myblog-frontend/dist,data/{backend/{logs,uploads},backups}}"
     echo -e "${GREEN}✓ Directories created${NC}"
 
     # 3. Upload configuration files
@@ -61,6 +61,11 @@ cmd_init() {
     if [ -f "docker-compose.prod.yml" ]; then
         scp docker-compose.prod.yml ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/
         echo -e "${GREEN}✓ docker-compose.prod.yml uploaded${NC}"
+    fi
+
+    if [ -f "caddy/Caddyfile" ] && [ -f "caddy/routes.caddy" ]; then
+        scp caddy/Caddyfile caddy/routes.caddy ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/caddy/
+        echo -e "${GREEN}✓ Caddy configuration uploaded${NC}"
     fi
 
     if [ -f ".env.prod" ]; then
@@ -207,6 +212,12 @@ cmd_upload() {
         scp myblog-backend/database/migrations/*.sql ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/myblog-backend/database/migrations/
     fi
 
+
+    echo "Uploading Caddy and Compose configuration..."
+    ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PATH}/caddy"
+    scp caddy/Caddyfile caddy/routes.caddy ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/caddy/
+    scp docker-compose.prod.yml ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/
+
     echo -e "${GREEN}✓ Upload complete${NC}"
 }
 
@@ -242,8 +253,8 @@ cmd_logs() {
     echo "=== Backend Logs (last 50 lines) ==="
     ssh ${SERVER_USER}@${SERVER_HOST} "docker logs --tail=50 myblog-backend"
     echo ""
-    echo "=== Frontend Logs (last 50 lines) ==="
-    ssh ${SERVER_USER}@${SERVER_HOST} "docker logs --tail=50 myblog-frontend"
+    echo "=== Caddy Logs (last 50 lines) ==="
+    ssh ${SERVER_USER}@${SERVER_HOST} "docker logs --tail=50 myblog-caddy"
 }
 
 # Check status
@@ -254,9 +265,8 @@ cmd_status() {
     ssh ${SERVER_USER}@${SERVER_HOST} "docker ps -f name=myblog"
     echo ""
     echo "=== Service URLs ==="
-    echo "  Frontend: http://${SERVER_HOST}:3000"
-    echo "  Backend:  http://${SERVER_HOST}:8081"
-    echo "  API Docs: http://${SERVER_HOST}:8081/doc.html"
+    echo "  Website:  https://www.ryansblog.club"
+    echo "  API Docs: https://www.ryansblog.club/doc.html"
 }
 
 # Main command handling
