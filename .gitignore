@@ -207,3 +207,6 @@ build-info.txt
 .claude/settings.local.json
 .claude/settings*.json
 .agents/
+.playwright-cli/
+.workbuddy/
+output/
