@@ -3,6 +3,9 @@ app:
   env:
     config-file: ${ENV_CONFIG_FILE:.env}
 
+  # 站点对外地址（用于 RSS 等绝对链接生成，务必带协议）
+  site-url: ${SITE_URL:https://www.ryansblog.club}
+
   # 缓存预热配置
   cache:
     warmup:

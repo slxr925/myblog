@@ -479,12 +479,16 @@ public class BlogController {
     /**
      * 全站 RSS Feed
      */
+    @org.springframework.beans.factory.annotation.Value("${app.site-url:}")
+    private String siteUrl;
+
     @GetMapping(value = "/rss.xml", produces = "application/rss+xml; charset=UTF-8")
     public ResponseEntity<String> getRssFeed() {
         List<BlogDetailVO> blogs = blogService.getLatestBlogs(20);
-        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String baseUrl = resolveSiteBaseUrl();
         StringBuilder xml = new StringBuilder();
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        xml.append("<?xml-stylesheet type=\"text/xsl\" href=\"rss.xsl\"?>");
         xml.append("<rss version=\"2.0\"><channel>");
         xml.append("<title>").append(escapeXml("Ryan's Blog")).append("</title>");
         xml.append("<link>").append(escapeXml(baseUrl)).append("</link>");
@@ -500,7 +504,7 @@ public class BlogController {
             xml.append("<title>").append(escapeXml(blog.getTitle())).append("</title>");
             xml.append("<link>").append(escapeXml(blogUrl)).append("</link>");
             xml.append("<guid>").append(escapeXml(blogUrl)).append("</guid>");
-            xml.append("<description>").append(escapeXml(blog.getSummary() != null ? blog.getSummary() : "")).append("</description>");
+            xml.append("<description>").append(escapeXml(resolveSummary(blog))).append("</description>");
             if (blog.getAuthorName() != null) {
                 xml.append("<author>").append(escapeXml(blog.getAuthorName())).append("</author>");
             }
@@ -519,6 +523,102 @@ public class BlogController {
                 .header(HttpHeaders.CONTENT_TYPE, "application/rss+xml; charset=UTF-8")
                 .body(xml.toString());
     }
+
+    /**
+     * RSS 浏览器样式表：让直接打开 rss.xml 时渲染为可读页面
+     */
+    @GetMapping(value = "/rss.xsl", produces = "text/xsl; charset=UTF-8")
+    public ResponseEntity<String> getRssStylesheet() {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/xsl; charset=UTF-8")
+                .body(RSS_STYLESHEET);
+    }
+
+    /**
+     * 站点绝对地址：优先使用配置的 app.site-url，否则回退到当前请求上下文
+     */
+    private String resolveSiteBaseUrl() {
+        if (siteUrl != null && !siteUrl.isBlank()) {
+            String trimmed = siteUrl.trim();
+            return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+        }
+        return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+    }
+
+    /**
+     * RSS 摘要：优先文章摘要，缺失时从正文提取纯文本兜底
+     */
+    private String resolveSummary(BlogDetailVO blog) {
+        if (blog.getSummary() != null && !blog.getSummary().isBlank()) {
+            return blog.getSummary();
+        }
+        String content = blog.getContent();
+        if (content == null || content.isBlank()) {
+            return "";
+        }
+        String plain = content
+                .replaceAll("(?s)```.*?```", " ")
+                .replaceAll("!\\[[^]]*\\]\\([^)]*\\)", " ")
+                .replaceAll("\\[([^]]*)\\]\\([^)]*\\)", "$1")
+                .replaceAll("[#>*`~_|-]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return plain.length() > 160 ? plain.substring(0, 160) + "…" : plain;
+    }
+
+    private static final String RSS_STYLESHEET = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+              <xsl:output method="html" encoding="UTF-8" indent="yes"/>
+              <xsl:template match="/">
+                <html lang="zh-CN">
+                  <head>
+                    <meta charset="UTF-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title><xsl:value-of select="rss/channel/title"/> · RSS</title>
+                    <style>
+                      * { margin: 0; padding: 0; box-sizing: border-box; }
+                      body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: #faf9f7; color: #1c1a17; line-height: 1.7; }
+                      .shell { max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+                      .kicker { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #7c5a2e; margin-bottom: 1rem; }
+                      h1 { font-size: 2rem; letter-spacing: -0.02em; }
+                      .desc { color: #6b675f; margin-top: .75rem; }
+                      .tip { margin-top: 2rem; padding: 1rem 1.25rem; border: 1px solid #e3dfd6; background: #fff; font-size: .9rem; color: #6b675f; }
+                      .tip code { background: #f0ede6; padding: .1rem .4rem; font-size: .85rem; word-break: break-all; }
+                      .item { padding: 1.75rem 0; border-bottom: 1px solid #e3dfd6; }
+                      .item h2 { font-size: 1.2rem; }
+                      .item h2 a { color: inherit; text-decoration: none; }
+                      .item h2 a:hover { color: #7c5a2e; }
+                      .meta { font-size: .8rem; color: #6b675f; margin-top: .35rem; }
+                      .summary { color: #44403a; font-size: .95rem; margin-top: .6rem; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="shell">
+                      <p class="kicker">RSS Feed</p>
+                      <h1><xsl:value-of select="rss/channel/title"/></h1>
+                      <p class="desc"><xsl:value-of select="rss/channel/description"/></p>
+                      <div class="tip">
+                        这是一个 RSS 订阅源，用于在阅读器（Feedly / Inoreader / NetNewsWire 等）中订阅。
+                        把当前地址 <code><xsl:value-of select="rss/channel/link"/>/api/blog/rss.xml</code> 粘贴到你的 RSS 阅读器即可。
+                      </div>
+                      <xsl:for-each select="rss/channel/item">
+                        <div class="item">
+                          <h2><a href="{link}"><xsl:value-of select="title"/></a></h2>
+                          <p class="meta">
+                            <xsl:value-of select="author"/>
+                            <xsl:if test="category"> · <xsl:value-of select="category"/></xsl:if>
+                            <xsl:if test="pubDate"> · <xsl:value-of select="pubDate"/></xsl:if>
+                          </p>
+                          <p class="summary"><xsl:value-of select="description"/></p>
+                        </div>
+                      </xsl:for-each>
+                    </div>
+                  </body>
+                </html>
+              </xsl:template>
+            </xsl:stylesheet>
+            """;
 
     /**
      * 搜索所有公开博客文章
