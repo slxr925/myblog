@@ -45,6 +45,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
       onClick={cycleTheme}
       className={`w-9 h-9 transition-all duration-300 hover:scale-110 ${className}`}
       title={getTitle()}
+      aria-label={getTitle()}
     >
       <div className="relative w-4 h-4">
         {getIcon()}

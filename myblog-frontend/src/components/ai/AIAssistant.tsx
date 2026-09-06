@@ -432,7 +432,7 @@ export const AIAssistant: React.FC = () => {
     <>
       {/* 悬浮球按钮 */}
       <motion.div
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-6 right-6 z-50 sm:bottom-10 sm:right-10"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -480,7 +480,7 @@ export const AIAssistant: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)]"
+            className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] sm:right-10"
           >
             <div className="bg-background border border-border rounded-sm shadow-2xl overflow-hidden">
               {/* 头部 - Editorial风格 */}

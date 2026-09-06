@@ -299,7 +299,7 @@ export const transformBlogDetailVOToBlogPost = (blog: BlogDetailVO): BlogPost =>
     content: blog.content || '',
     author: blog.authorName || '未知作者',
     date: publishDate,
-    readTime: `${Math.ceil((blog.content?.length || 0) / 500)}分钟`, // 简单估算阅读时间
+    readTime: `${Math.max(1, Math.ceil((blog.content?.length || 0) / 500))} 分钟`, // 简单估算阅读时间
     views: blog.viewCount || 0,
     likes: blog.likeCount || 0,
     comments: blog.commentCount || 0,

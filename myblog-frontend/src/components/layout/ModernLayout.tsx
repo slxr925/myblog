@@ -1,271 +1,92 @@
-import React, { Suspense, useState, lazy } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Suspense, useState, useEffect, useRef, lazy } from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 import { Button } from '../ui/button';
 import { UserMenu } from '../auth/UserMenu';
 import ThemeToggle from '../theme/ThemeToggle';
 import RealTimeSearch from '../search/RealTimeSearch';
-import { Menu, X, Home, FileText, User, Heart, FolderOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X, Home, FileText, User, Heart } from 'lucide-react';
 import NotificationBadge from '../notification/NotificationBadge';
+import { getRssFeedUrl } from '../../utils/api';
 
-const AIAssistant = lazy(() => import('../ai/AIAssistant').then((module) => ({ default: module.AIAssistant })));
+const AIAssistant = lazy(() => import('../ai/AIAssistant').then(module => ({ default: module.AIAssistant })));
 
 export const ModernLayout = () => {
   const { isAuthenticated } = useAuth();
   const { openAuthModal } = useAuthModal();
-  const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => { setIsMobileMenuOpen(false); }, [location.pathname, location.search]);
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setIsMobileMenuOpen(false); menuButton.current?.focus(); }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isMobileMenuOpen]);
 
-  const isHomePage = location.pathname === '/';
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    setIsMobileMenuOpen(false);
-  };
+  const links = [
+    { path: '/', label: '首页', icon: Home, active: location.pathname === '/' },
+    { path: '/blog', label: '文章', icon: FileText, active: location.pathname.startsWith('/blog') || location.pathname === '/search' },
+    ...(isAuthenticated ? [{ path: '/following', label: '动态', icon: Heart, active: location.pathname === '/following' }] : []),
+    { path: '/about', label: '关于', icon: User, active: location.pathname === '/about' },
+  ];
+  const navigation = (mobile = false) => links.map(({ path, label, icon: Icon, active }) => (
+    <Link key={path} to={path} aria-current={active ? 'page' : undefined} className="site-nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+      {mobile && <Icon aria-hidden="true" className="h-4 w-4" />}{label}
+    </Link>
+  ));
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground flex flex-col">
-      {/* Navbar - Editorial Minimal */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isHomePage ? 'bg-background/90 backdrop-blur-sm border-b border-border/50' : 'bg-background border-b border-border'
-        }`}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <div
-            className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => navigate('/')}
-          >
-            <div className="w-8 h-8 bg-foreground text-background flex items-center justify-center text-sm font-bold font-mono-display transition-transform group-hover:scale-105">
-              R
-            </div>
-            <span className="hidden sm:block text-lg font-bold text-foreground tracking-tight">
-              Ryan<span className="text-accent">'</span>s Blog
-            </span>
-          </div>
-
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
-            >
-              首页
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/blog')}
-              className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
-            >
-              文章
-            </Button>
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/following')}
-                className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
-              >
-                动态
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/about')}
-              className="text-foreground hover:text-primary hover:bg-transparent font-mono-display text-sm uppercase tracking-wider h-10 px-5"
-            >
-              关于
-            </Button>
-          </nav>
-
-          {/* Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            <div className="w-56">
-              <RealTimeSearch placeholder="搜索..." />
-            </div>
-
-            <div className="h-4 w-px bg-border" />
-
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-[60] focus:bg-background focus:p-3">跳到正文</a>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
+        <div className="reading-shell flex h-16 items-center justify-between gap-4">
+          <Link to="/" aria-label="Ryan’s Blog 首页" className="reading-link flex shrink-0 items-center gap-3">
+            <span className="flex h-8 w-8 items-center justify-center bg-foreground font-mono-display text-sm font-bold text-background">R</span>
+            <span className="text-base font-semibold tracking-tight">Ryan’s Blog<span className="text-accent">.</span></span>
+          </Link>
+          <nav aria-label="主导航" className="hidden items-center gap-2 lg:flex">{navigation()}</nav>
+          <div className="hidden items-center gap-5 lg:flex">
+            <div className="w-56 xl:w-72"><RealTimeSearch placeholder="搜索文章…" /></div>
             <ThemeToggle />
-
             {isAuthenticated && <NotificationBadge />}
-
-            {isAuthenticated ? (
-              <UserMenu />
-            ) : (
-              <Button
-                onClick={openAuthModal}
-                variant="outline"
-                className="h-8 px-4 text-xs font-mono-display uppercase tracking-wider rounded-sm hover:bg-muted"
-              >
-                登录
-              </Button>
-            )}
+            {isAuthenticated ? <UserMenu /> : <Button variant="outline" onClick={openAuthModal} className="px-6">登录</Button>}
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-foreground hover:bg-muted rounded-sm transition-colors"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X /> : <Menu />}
-          </button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <ThemeToggle />
+            <button ref={menuButton} type="button" className="reading-link flex h-11 w-11 items-center justify-center rounded-sm hover:bg-muted" onClick={() => setIsMobileMenuOpen(value => !value)} aria-label={isMobileMenuOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileMenuOpen} aria-controls="mobile-navigation">
+              {isMobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            </button>
+          </div>
         </div>
-      </header>
-
-      {/* Mobile Menu Overlay - Editorial Style */}
-      <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed top-16 left-0 right-0 z-40 bg-background border-b border-border shadow-lg md:hidden"
-          >
-            <div className="p-6 flex flex-col gap-4">
-              {/* Navigation Links */}
-              <nav className="flex flex-col gap-1">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleNavigation('/')}
-                  className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
-                >
-                  <Home className="w-4 h-4 mr-3" /> 首页
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleNavigation('/blog')}
-                  className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
-                >
-                  <FileText className="w-4 h-4 mr-3" /> 文章
-                </Button>
-                {isAuthenticated && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleNavigation('/following')}
-                    className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
-                  >
-                    <Heart className="w-4 h-4 mr-3" /> 动态
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  onClick={() => handleNavigation('/about')}
-                  className="justify-start w-full h-12 font-mono-display text-xs uppercase tracking-wider hover:bg-muted"
-                >
-                  <User className="w-4 h-4 mr-3" /> 关于
-                </Button>
-              </nav>
-
-              <div className="h-px bg-border" />
-
-              {/* Search */}
-              <div>
-                <RealTimeSearch placeholder="搜索文章..." />
+          <div id="mobile-navigation" className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-border bg-background lg:hidden">
+            <div className="reading-shell space-y-5 py-5">
+              <nav aria-label="移动端导航" className="grid grid-cols-2 gap-2">{navigation(true)}</nav>
+              <RealTimeSearch placeholder="搜索文章…" />
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                {isAuthenticated ? <><UserMenu /><NotificationBadge /></> : <Button className="w-full" onClick={() => { setIsMobileMenuOpen(false); openAuthModal(); }}>登录</Button>}
               </div>
-
-              {/* Theme Toggle */}
-              <div className="flex items-center justify-between py-2">
-                <span className="font-mono-display text-xs uppercase tracking-wider text-muted-foreground">
-                  主题
-                </span>
-                <ThemeToggle />
-              </div>
-
-              {/* Notifications */}
-              {isAuthenticated && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="font-mono-display text-xs uppercase tracking-wider text-muted-foreground">
-                    通知
-                  </span>
-                  <NotificationBadge />
-                </div>
-              )}
-
-              {/* Login Button */}
-              {!isAuthenticated && (
-                <Button
-                  onClick={openAuthModal}
-                  className="w-full h-12 font-mono-display text-xs uppercase tracking-wider rounded-sm"
-                >
-                  登录
-                </Button>
-              )}
-
-              {/* User Menu */}
-              {isAuthenticated && (
-                <div className="pt-4 border-t border-border">
-                  <UserMenu />
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Content */}
-      <main className="flex-1 pt-16">
-        <Outlet />
-      </main>
-
-      {/* Footer - Editorial Style */}
-      <footer className="bg-background border-t border-border py-12 mt-auto">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            {/* Logo & Tagline */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-foreground text-background flex items-center justify-center text-xs font-bold font-mono-display">
-                  R
-                </div>
-                <span className="font-bold text-foreground">Ryan's Blog</span>
-              </div>
-              <p className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground">
-                Exploring Tech & Design
-              </p>
-            </div>
-
-            {/* Copyright */}
-            <div className="text-center md:text-left">
-              <p className="text-xs font-mono-display uppercase tracking-wider text-muted-foreground">
-                © {new Date().getFullYear()} Ryan Xu. All rights reserved.
-              </p>
-            </div>
-
-            {/* Links */}
-            <div className="flex flex-wrap justify-center md:justify-end gap-4 sm:gap-6 text-sm">
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-accent transition-colors font-mono-display text-xs uppercase tracking-wider"
-              >
-                Privacy
-              </a>
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-accent transition-colors font-mono-display text-xs uppercase tracking-wider"
-              >
-                Terms
-              </a>
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-accent transition-colors font-mono-display text-xs uppercase tracking-wider"
-              >
-                Contact
-              </a>
             </div>
           </div>
+        )}
+      </header>
+      <main id="main-content" tabIndex={-1} className="flex-1 pt-16"><Outlet /></main>
+      <footer className="mt-auto border-t border-border py-8">
+        <div className="reading-shell flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="text-sm font-semibold">Ryan’s Blog</p><p className="mt-2 text-xs text-muted-foreground">记录技术，也记录思考。 © {new Date().getFullYear()} Ryan Xu</p></div>
+          <nav aria-label="页脚导航" className="flex gap-6 text-sm text-muted-foreground">
+            <Link className="hover:text-accent" to="/blog">文章归档</Link>
+            <Link className="hover:text-accent" to="/about">关于作者</Link>
+            <a className="hover:text-accent" href={getRssFeedUrl()} target="_blank" rel="noreferrer">RSS 订阅</a>
+          </nav>
         </div>
       </footer>
-
-      {/* AI助手 */}
-      <Suspense fallback={null}>
-        <AIAssistant />
-      </Suspense>
+      <Suspense fallback={null}><AIAssistant /></Suspense>
     </div>
   );
 };
-
-

@@ -184,12 +184,10 @@ const FollowingFeed: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-6">
-                {posts.map((post, index) => (
+                {posts.map((post) => (
                   <BlogListItem
                     key={post.id}
                     post={post}
-                    index={index}
-                    onClick={() => navigate(getPublicBlogPath(post))}
                   />
                 ))}
               </div>

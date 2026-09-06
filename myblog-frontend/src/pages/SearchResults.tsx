@@ -5,7 +5,6 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
 import { api } from '../utils/api';
-import { getPublicBlogPath } from '../utils/blogLinks';
 import type { BlogPost, SearchTrendVO } from '../types/api';
 import BlogListItem from '../components/BlogListItem';
 
@@ -302,8 +301,6 @@ const SearchResultsPage: React.FC = () => {
                   <BlogListItem
                     key={`${post.id}-${index}`}
                     post={post}
-                    index={index}
-                    onClick={() => navigate(getPublicBlogPath(post))}
                   />
                 ))}
               </div>

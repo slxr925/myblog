@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUpRight, CalendarRange, ChevronLeft, ChevronRight, FileText, Rss, SlidersHorizontal } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, FileText, Rss } from 'lucide-react';
 
 import BlogListItem from '../components/BlogListItem';
 import { Button } from '../components/ui/button';
 import type { BlogPost, BlogSortOption, BlogTimeRange, Category } from '../types/api';
 import { api, getRssFeedUrl, transformBlogDetailVOToBlogPost } from '../utils/api';
-import { getPublicBlogPath } from '../utils/blogLinks';
 
 const PAGE_SIZE = 12;
 
@@ -35,11 +34,12 @@ const parseTimeRange = (raw: string | null): BlogTimeRange =>
   raw === '30d' || raw === '90d' || raw === 'year' ? raw : 'all';
 
 const SearchPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -55,6 +55,7 @@ const SearchPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(false);
         const [pageResponse, categoryResponse] = await Promise.all([
           api.blog.getPage({
             page,
@@ -78,6 +79,7 @@ const SearchPage: React.FC = () => {
       } catch (error) {
         console.error('获取文章列表失败:', error);
         if (active) {
+          setError(true);
           setPosts([]);
           setTotal(0);
           setTotalPages(1);
@@ -94,7 +96,7 @@ const SearchPage: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [page, selectedCategoryId, sort, timeRange]);
+  }, [page, selectedCategoryId, sort, timeRange, retry]);
 
   const activeCategoryName = useMemo(() => {
     const current = categories.find((item) => item.id === selectedCategoryId);
@@ -147,158 +149,34 @@ const SearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-        <section className="relative overflow-hidden border border-border bg-card px-6 py-8 sm:px-8 sm:py-10">
-          <div className="pointer-events-none absolute inset-0 pattern-editorial-grid opacity-20" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-accent/10 to-transparent" />
-          <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center border border-border bg-background text-accent">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <p className="font-mono-display text-[11px] uppercase tracking-[0.3em] text-accent">Archive Index</p>
-              </div>
-              <h1 className="text-editorial-xl text-foreground">全部文章</h1>
-              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                分页浏览所有技术分享、项目实践与学习记录，用更轻的加载成本保持更快的阅读体验。
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="border border-border bg-background/80 px-4 py-4">
-                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Current Slice</p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">{total}</p>
-                <p className="mt-1 text-sm text-muted-foreground">符合当前筛选条件的文章总数</p>
-              </div>
-              <a
-                href={getRssFeedUrl()}
-                target="_blank"
-                rel="noreferrer"
-                className="group border border-border bg-background/80 px-4 py-4 transition-colors hover:border-accent/60 hover:bg-accent/10"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center border border-border bg-card text-accent">
-                      <Rss className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">RSS Feed</p>
-                      <p className="mt-1 text-sm text-muted-foreground">订阅最新文章更新</p>
-                    </div>
-                  </div>
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent" />
-                </div>
-              </a>
-            </div>
+    <div className="py-10 sm:py-12">
+      <div className="reading-shell">
+        <section className="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-8">
+          <div>
+            <p className="section-kicker mb-4">The archive</p>
+            <h1 className="text-4xl sm:text-5xl">全部文章</h1>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">技术分享、项目实践与学习记录，都在这里。</p>
           </div>
+          <a href={getRssFeedUrl()} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-accent"><Rss aria-hidden="true" className="h-4 w-4" />订阅更新</a>
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-          <div className="border border-border bg-card px-5 py-5 sm:px-6">
-            <div className="mb-4 flex items-center justify-between gap-4 border-b border-border pb-3">
-              <div>
-                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">Category Index</p>
-                <p className="mt-1 text-sm text-muted-foreground">分类来自独立索引，不受当前分页结果影响</p>
-              </div>
-              <div className="text-right">
-                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Active</p>
-                <p className="mt-1 text-sm text-foreground">{activeCategoryName}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleCategoryChange(undefined)}
-                className={`min-w-[112px] border px-4 py-3 text-left font-mono-display text-[11px] uppercase tracking-[0.22em] transition-all ${
-                  !selectedCategoryId
-                    ? 'border-accent bg-accent/10 text-accent shadow-[inset_3px_0_0_0_hsl(var(--accent))]'
-                    : 'border-border bg-background text-muted-foreground hover:border-accent/50 hover:text-foreground'
-                }`}
-              >
-                全部
+        <section aria-label="文章筛选" className="border-b border-border py-5">
+          <div role="group" aria-label="文章分类" className="flex gap-2 overflow-x-auto pb-3">
+            {[{ id: undefined, name: '全部', blogCount: undefined }, ...categories].map(category => (
+              <button key={category.id ?? 'all'} type="button" aria-pressed={selectedCategoryId === category.id} onClick={() => handleCategoryChange(category.id)} className={`min-h-11 shrink-0 rounded-sm px-4 text-sm transition-colors ${selectedCategoryId === category.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+                {category.name}{category.blogCount != null && <span className="ml-2 opacity-70">{category.blogCount}</span>}
               </button>
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => handleCategoryChange(category.id)}
-                  className={`min-w-[112px] border px-4 py-3 text-left font-mono-display text-[11px] uppercase tracking-[0.22em] transition-all ${
-                    selectedCategoryId === category.id
-                      ? 'border-accent bg-accent/10 text-accent shadow-[inset_3px_0_0_0_hsl(var(--accent))]'
-                      : 'border-border bg-background text-muted-foreground hover:border-accent/50 hover:text-foreground'
-                  }`}
-                >
-                  <span className="block truncate">{category.name}</span>
-                  <span className="mt-1 block text-[10px] normal-case tracking-normal opacity-70">
-                    {category.blogCount ?? 0} 篇
-                  </span>
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
-
-          <div className="border border-border bg-card px-5 py-5 sm:px-6">
-            <div className="mb-4 flex items-center gap-3 border-b border-border pb-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-border bg-background text-accent">
-                <SlidersHorizontal className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">Sort & Window</p>
-                <p className="mt-1 text-sm text-muted-foreground">排序与时间筛选会同步到 URL</p>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <p className="mb-2 font-mono-display text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Sort</p>
-                <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleSortChange(option.value)}
-                      className={`border px-4 py-3 text-left text-sm transition-colors ${
-                        sort === option.value
-                          ? 'border-accent bg-accent/10 text-foreground'
-                          : 'border-border bg-background text-muted-foreground hover:border-accent/50 hover:text-foreground'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center gap-2 font-mono-display text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                  <CalendarRange className="h-3.5 w-3.5" />
-                  Time Range
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {TIME_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleTimeChange(option.value)}
-                      className={`border px-4 py-3 text-left text-sm transition-colors ${
-                        timeRange === option.value
-                          ? 'border-accent bg-accent/10 text-foreground'
-                          : 'border-border bg-background text-muted-foreground hover:border-accent/50 hover:text-foreground'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <Button variant="outline" onClick={clearFilters} className="w-full rounded-none font-mono-display text-[11px] uppercase tracking-[0.22em]">
-                重置筛选
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">排序
+              <select className="filter-select" value={sort} onChange={event => handleSortChange(event.target.value as BlogSortOption)}>{SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">时间
+              <select className="filter-select" value={timeRange} onChange={event => handleTimeChange(event.target.value as BlogTimeRange)}>{TIME_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+            </label>
+            {(selectedCategoryId || sort !== 'latest' || timeRange !== 'all') && <Button variant="ghost" onClick={clearFilters}>重置筛选</Button>}
+            <p aria-live="polite" className="text-xs text-muted-foreground sm:ml-auto">{loading ? '正在查找文章…' : error ? '暂时无法获取文章' : `${activeCategoryName} · ${total} 篇`}</p>
           </div>
         </section>
 
@@ -309,24 +187,19 @@ const SearchPage: React.FC = () => {
                 <div key={index} className="h-52 animate-pulse border border-border bg-card" />
               ))}
             </div>
+          ) : error ? (
+            <div role="alert" className="border border-border bg-card px-6 py-12 text-center">
+              <h2 className="text-xl">文章暂时未能加载</h2>
+              <p className="mt-3 text-sm text-muted-foreground">请稍后再试。</p>
+              <Button variant="outline" onClick={() => setRetry(value => value + 1)} className="mt-6">重新加载</Button>
+            </div>
           ) : posts.length > 0 ? (
             <>
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-mono-display text-[11px] uppercase tracking-[0.24em] text-accent">Result Page</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    第 {page} 页，共 {Math.max(totalPages, 1)} 页
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-6">
-                {posts.map((post, index) => (
+              <div className="flex flex-col">
+                {posts.map((post) => (
                   <BlogListItem
                     key={post.id}
                     post={post}
-                    index={index}
-                    onClick={() => navigate(getPublicBlogPath(post))}
                   />
                 ))}
               </div>
