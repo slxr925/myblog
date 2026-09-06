@@ -547,12 +547,17 @@ public class BlogController {
 
     /**
      * RSS 摘要：优先文章摘要，缺失时从正文提取纯文本兜底
+     * （列表查询不含 content，需按 id 补查）
      */
     private String resolveSummary(BlogDetailVO blog) {
         if (blog.getSummary() != null && !blog.getSummary().isBlank()) {
             return blog.getSummary();
         }
         String content = blog.getContent();
+        if ((content == null || content.isBlank()) && blog.getId() != null) {
+            Blog entity = blogMapper.selectById(blog.getId());
+            content = entity != null ? entity.getContent() : null;
+        }
         if (content == null || content.isBlank()) {
             return "";
         }
