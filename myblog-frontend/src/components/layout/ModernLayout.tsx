@@ -76,6 +76,7 @@ export const ModernLayout = () => {
         )}
       </header>
       <main id="main-content" tabIndex={-1} className="flex-1 pt-16"><Outlet /></main>
+      <Suspense fallback={null}><AIAssistant /></Suspense>
       <footer className="mt-auto border-t border-border py-8">
         <div className="reading-shell flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div><p className="text-sm font-semibold">Ryan’s Blog</p><p className="mt-2 text-xs text-muted-foreground">记录技术，也记录思考。 © {new Date().getFullYear()} Ryan Xu</p></div>
@@ -86,7 +87,6 @@ export const ModernLayout = () => {
           </nav>
         </div>
       </footer>
-      <Suspense fallback={null}><AIAssistant /></Suspense>
     </div>
   );
 };

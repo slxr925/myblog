@@ -430,9 +430,15 @@ export const AIAssistant: React.FC = () => {
 
   return (
     <>
-      {/* 悬浮球按钮 */}
+      <div className="reading-shell pb-8 sm:hidden">
+        <Button variant="outline" onClick={() => setIsOpen(true)} aria-expanded={isOpen} aria-controls="ai-assistant-panel" className="h-12 w-full gap-3">
+          <Sparkles aria-hidden="true" className="h-5 w-5 text-accent" />
+          AI 阅读助手
+        </Button>
+      </div>
+      {/* Desktop floating entry */}
       <motion.div
-        className="fixed bottom-6 right-6 z-50 sm:bottom-10 sm:right-10"
+        className="fixed bottom-10 right-10 z-50 hidden sm:block"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -455,6 +461,9 @@ export const AIAssistant: React.FC = () => {
         <Button
           size="icon"
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? '关闭 AI 助手' : '打开 AI 助手'}
+          aria-expanded={isOpen}
+          aria-controls="ai-assistant-panel"
           className="relative w-14 h-14 rounded-sm bg-foreground text-background hover:bg-foreground/90 shadow-lg border-2 border-border"
         >
           {isOpen ? (
@@ -480,11 +489,14 @@ export const AIAssistant: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] sm:right-10"
+            id="ai-assistant-panel"
+            role="region"
+            aria-label="AI 阅读助手"
+            className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-96 sm:bottom-28 sm:right-10 sm:w-96"
           >
-            <div className="bg-background border border-border rounded-sm shadow-2xl overflow-hidden">
+            <div className="bg-background border border-border rounded-sm shadow-2xl overflow-hidden flex max-h-[calc(100dvh-6rem)] flex-col">
               {/* 头部 - Editorial风格 */}
-              <div className="bg-foreground text-background px-5 py-4 border-b border-border">
+              <div className="bg-foreground text-background px-5 py-4 border-b border-border shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-accent/20 flex items-center justify-center">
@@ -495,11 +507,14 @@ export const AIAssistant: React.FC = () => {
                       <p className="text-xs text-background/70">为您解答博客相关问题</p>
                     </div>
                   </div>
+                  <Button variant="ghost" size="icon" aria-label="关闭对话窗口" onClick={() => setIsOpen(false)} className="ml-2 shrink-0 text-background hover:bg-background/10 hover:text-background">
+                    <X aria-hidden="true" className="h-5 w-5" />
+                  </Button>
                 </div>
               </div>
 
               {/* 消息列表 */}
-              <div className="h-96 overflow-y-auto p-4 space-y-4 bg-card">
+              <div className="h-96 min-h-0 shrink overflow-y-auto p-4 space-y-4 bg-card">
                 {/* 未登录提示 */}
                 {!isAuthenticated ? (
                   <div className="flex flex-col items-center justify-center h-full text-center px-6">
@@ -611,7 +626,7 @@ export const AIAssistant: React.FC = () => {
               </div>
 
               {/* 输入框 */}
-              <div className="p-4 bg-background border-t border-border">
+              <div className="shrink-0 p-4 bg-background border-t border-border">
                 <div className="flex gap-2">
                   <Input
                     value={inputValue}

@@ -33,14 +33,14 @@ const BlogListItem = memo(({ post, compact = false }: BlogListItemProps) => {
     return (
         <Link
             to={getPublicBlogPath(post)}
-            className="reading-link group flex min-w-0 gap-5 border-b border-border py-6 first:pt-0 last:border-b-0"
+            className="reading-link group flex min-w-0 gap-5 border-b border-border py-7 first:pt-0 last:border-b-0"
         >
             {!compact && <ArticleCover src={post.image} category={post.categoryName} className="hidden min-h-36 w-48 shrink-0 self-stretch sm:block lg:w-56" />}
 
             {/* Content Section */}
             <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground mb-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground mb-3">
                         <div className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" />
                             <span>{post.date}</span>
@@ -60,7 +60,7 @@ const BlogListItem = memo(({ post, compact = false }: BlogListItemProps) => {
                         )}
                     </h3>
 
-                    <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 md:line-clamp-2 font-normal">
+                    <p className="text-muted-foreground text-base leading-7 line-clamp-2 font-normal">
                         {safeHighlightedExcerpt ? (
                             <span dangerouslySetInnerHTML={{ __html: safeHighlightedExcerpt }} />
                         ) : (
@@ -69,14 +69,14 @@ const BlogListItem = memo(({ post, compact = false }: BlogListItemProps) => {
                     </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 gap-3 flex-wrap">
+                <div className="flex items-center justify-between pt-5 gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-muted flex items-center justify-center text-foreground font-bold text-[10px] font-mono-display">
                             {post.author.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs md:text-sm font-medium text-foreground">{post.author}</span>
+                        <span className="text-[13px] md:text-sm font-medium text-foreground">{post.author}</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
                         <span aria-label={`${post.likes} 次点赞`} className="flex items-center gap-1">
                             <Heart className="w-3.5 h-3.5" /> {post.likes}
                         </span>

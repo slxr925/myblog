@@ -17,8 +17,8 @@ const BlogCard = memo(({ post }: BlogCardProps) => (
           <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-accent transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
         <h3 className="article-title mb-3 text-2xl font-semibold group-hover:text-accent sm:text-3xl">{post.title}</h3>
-        <p className="mb-6 line-clamp-3 text-sm leading-7 text-muted-foreground">{post.excerpt}</p>
-        <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
+        <p className="mb-6 line-clamp-3 text-base leading-7 text-muted-foreground">{post.excerpt}</p>
+        <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-5 text-[13px] text-muted-foreground">
           <span>{post.author}</span><span>{post.date}</span>
           <span className="inline-flex items-center gap-1"><Clock aria-hidden="true" className="h-3 w-3" />{post.readTime}</span>
         </div>
