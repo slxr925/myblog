@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { getPublicBlogPath } from '../utils/blogLinks';
 import ArticleCover from './ArticleCover';
-import { Calendar, Clock, Heart, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, Heart, MessageCircle, Pin } from 'lucide-react';
 import type { BlogPost } from '../types/api';
 
 interface BlogListItemProps {
@@ -41,6 +41,12 @@ const BlogListItem = memo(({ post, compact = false }: BlogListItemProps) => {
             <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground mb-3">
+                        {post.featured && (
+                            <span className="inline-flex items-center gap-1 font-medium text-accent">
+                                <Pin className="h-3.5 w-3.5" />
+                                置顶
+                            </span>
+                        )}
                         <div className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" />
                             <span>{post.date}</span>

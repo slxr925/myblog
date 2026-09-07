@@ -10,6 +10,7 @@ import { api, getRssFeedUrl, transformBlogDetailVOToBlogPost } from '../utils/ap
 const PAGE_SIZE = 12;
 
 const SORT_OPTIONS: Array<{ value: BlogSortOption; label: string }> = [
+  { value: 'pinned', label: '置顶优先' },
   { value: 'latest', label: '最新发布' },
   { value: 'popular', label: '阅读最多' },
   { value: 'liked', label: '获赞最多' },
@@ -28,7 +29,7 @@ const parsePage = (raw: string | null) => {
 };
 
 const parseSort = (raw: string | null): BlogSortOption =>
-  raw === 'popular' || raw === 'liked' ? raw : 'latest';
+  raw === 'latest' || raw === 'popular' || raw === 'liked' ? raw : 'pinned';
 
 const parseTimeRange = (raw: string | null): BlogTimeRange =>
   raw === '30d' || raw === '90d' || raw === 'year' ? raw : 'all';
@@ -143,7 +144,7 @@ const SearchPage: React.FC = () => {
   const clearFilters = () => {
     setSearchParams({
       page: '1',
-      sort: 'latest',
+      sort: 'pinned',
       timeRange: 'all',
     });
   };
@@ -175,7 +176,7 @@ const SearchPage: React.FC = () => {
             <label className="flex items-center gap-2 text-sm text-muted-foreground">时间
               <select className="filter-select" value={timeRange} onChange={event => handleTimeChange(event.target.value as BlogTimeRange)}>{TIME_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
             </label>
-            {(selectedCategoryId || sort !== 'latest' || timeRange !== 'all') && <Button variant="ghost" onClick={clearFilters}>重置筛选</Button>}
+            {(selectedCategoryId || sort !== 'pinned' || timeRange !== 'all') && <Button variant="ghost" onClick={clearFilters}>重置筛选</Button>}
             <p aria-live="polite" className="text-xs text-muted-foreground sm:ml-auto">{loading ? '正在查找文章…' : error ? '暂时无法获取文章' : `${activeCategoryName} · ${total} 篇`}</p>
           </div>
         </section>

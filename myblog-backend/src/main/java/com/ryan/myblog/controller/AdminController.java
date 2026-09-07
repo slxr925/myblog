@@ -335,6 +335,22 @@ public class AdminController {
     }
 
     /**
+     * 更新文章置顶状态
+     */
+    @PutMapping("/blogs/{blogId}/top")
+    @PreAuthorize("hasRole('ADMIN')")
+    @com.ryan.myblog.annotation.AuditLog(action = "UPDATE_TOP", resource = "BLOG")
+    public Result<Void> updateBlogTop(@PathVariable Long blogId,
+            @RequestBody Map<String, Boolean> request) {
+        Boolean isTop = request.get("isTop");
+        if (isTop == null) {
+            return Result.error("置顶状态不能为空");
+        }
+        blogService.updateBlogTop(blogId, isTop);
+        return Result.success();
+    }
+
+    /**
      * 删除文章
      */
     @DeleteMapping("/blogs/{blogId}")

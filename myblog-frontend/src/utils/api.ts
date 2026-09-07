@@ -787,6 +787,11 @@ export const api = {
       return apiClient.put(`/admin/blogs/${blogId}/status`, { status });
     },
 
+    // 置顶或取消置顶文章
+    updateBlogTop: async (blogId: number, isTop: boolean): Promise<ApiResponse<void>> => {
+      return apiClient.put(`/admin/blogs/${blogId}/top`, { isTop });
+    },
+
     // 删除文章
     deleteBlog: async (blogId: number): Promise<ApiResponse<void>> => {
       return apiClient.delete(`/admin/blogs/${blogId}`);

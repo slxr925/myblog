@@ -9,6 +9,8 @@ import {
   Eye,
   FileText,
   Loader2,
+  Pin,
+  PinOff,
   PenTool,
   Search,
   Trash2,
@@ -171,6 +173,26 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
     }
   }
 
+  const handleToggleBlogTop = async (blogId: number, currentlyTop: boolean) => {
+    try {
+      setLoadingBlogId(blogId)
+      await api.admin.updateBlogTop(blogId, !currentlyTop)
+      setMessage({
+        type: 'success',
+        text: currentlyTop ? '已取消置顶。' : '文章已置顶。',
+      })
+      await fetchBlogs()
+    } catch (error: any) {
+      console.error('更新文章置顶状态失败:', error)
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || '更新文章置顶状态失败。',
+      })
+    } finally {
+      setLoadingBlogId(null)
+    }
+  }
+
   const statusButtons = useMemo(() => ([
     { label: '全部', value: undefined },
     { label: '已发布', value: BlogStatus.PUBLISHED },
@@ -270,7 +292,7 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
 
       <AdminSectionCard
         title="文章列表"
-        description={`第 ${currentPage} / ${totalPages} 页，共 ${totalBlogs} 篇文章`}
+        description={`第 ${currentPage} / ${totalPages} 页，共 ${totalBlogs} 篇文章。置顶文章会优先显示在首页。`}
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
@@ -354,7 +376,23 @@ export const BlogManagement: React.FC<BlogManagementProps> = ({ initialStatusFil
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 xl:w-[260px] xl:justify-end">
+                  <div className="flex flex-wrap items-center gap-2 xl:w-[340px] xl:justify-end">
+                    {isPublished && (
+                      <Button
+                        size="sm"
+                        variant={blog.isTop === 1 ? 'default' : 'outline'}
+                        disabled={isActionLoading}
+                        aria-pressed={blog.isTop === 1}
+                        onClick={() => handleToggleBlogTop(Number(blog.id), blog.isTop === 1)}
+                      >
+                        {isActionLoading
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : blog.isTop === 1
+                            ? <PinOff className="h-4 w-4" />
+                            : <Pin className="h-4 w-4" />}
+                        {blog.isTop === 1 ? '取消置顶' : '置顶'}
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => navigate(`/blog/edit/${blog.id}`)}>
                       <PenTool className="h-4 w-4" />
                       编辑

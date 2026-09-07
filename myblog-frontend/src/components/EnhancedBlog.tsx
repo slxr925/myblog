@@ -13,14 +13,6 @@ const EnhancedBlog = () => {
 
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const extractBlogArray = useCallback((payload: unknown): any[] => {
-    if (Array.isArray(payload)) return payload;
-    if (payload && typeof payload === 'object') {
-      const recordPayload = payload as Record<string, unknown>;
-      return (recordPayload.records || recordPayload.content || recordPayload.data || []) as any[];
-    }
-    return [];
-  }, []);
 
   const convertBlogsToPosts = useCallback((blogData: any[]): BlogPost[] => {
     return blogData.map((blog: any) => {
@@ -66,8 +58,8 @@ const EnhancedBlog = () => {
       setLoading(true);
       setError(false);
       try {
-        const result = await api.blog.getLatest(6);
-        const blogData = extractBlogArray(result);
+        const result = await api.blog.getPage({ page: 1, size: 6, status: 1, sort: 'pinned', timeRange: 'all' });
+        const blogData = result.records || [];
         if (active) setPosts(convertBlogsToPosts(blogData));
       } catch (error) {
         if (active) setError(true);
@@ -77,7 +69,7 @@ const EnhancedBlog = () => {
     };
     fetchPosts();
     return () => { active = false; };
-  }, [extractBlogArray, convertBlogsToPosts, retry]);
+  }, [convertBlogsToPosts, retry]);
 
   const leadPost = posts.find(post => post.featured) || posts[0];
   const remainingPosts = posts.filter(post => post.id !== leadPost?.id);

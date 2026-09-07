@@ -160,7 +160,7 @@ export interface BlogRecommendationVO {
   publishTime?: string;
 }
 
-export type BlogSortOption = 'latest' | 'popular' | 'liked';
+export type BlogSortOption = 'pinned' | 'latest' | 'popular' | 'liked';
 export type BlogTimeRange = 'all' | '30d' | '90d' | 'year';
 
 export interface RecommendationSectionVO {

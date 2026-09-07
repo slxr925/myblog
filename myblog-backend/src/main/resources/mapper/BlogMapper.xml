@@ -142,6 +142,9 @@
             </choose>
         </if>
         <choose>
+            <when test="sort == 'pinned'">
+                ORDER BY b.is_top DESC, COALESCE(b.publish_time, b.create_time) DESC, b.id DESC
+            </when>
             <when test="sort == 'popular'">
                 ORDER BY b.view_count DESC, like_count DESC, COALESCE(b.publish_time, b.create_time) DESC
             </when>
@@ -149,7 +152,7 @@
                 ORDER BY like_count DESC, b.view_count DESC, COALESCE(b.publish_time, b.create_time) DESC
             </when>
             <otherwise>
-                ORDER BY b.is_top DESC, COALESCE(b.publish_time, b.create_time) DESC
+                ORDER BY COALESCE(b.publish_time, b.create_time) DESC, b.id DESC
             </otherwise>
         </choose>
     </select>

@@ -171,6 +171,11 @@ public interface BlogService {
     void updateBlogStatus(Long id, Integer status, Long operatorId);
 
     /**
+     * 置顶或取消置顶文章（仅供管理员入口调用）
+     */
+    void updateBlogTop(Long id, boolean isTop);
+
+    /**
      * 获取用户点赞的博客列表
      */
     IPage<BlogDetailVO> getLikedBlogsByUser(PageRequest pageRequest, Long userId);

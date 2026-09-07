@@ -881,6 +881,30 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
+    @Transactional
+    public void updateBlogTop(Long id, boolean isTop) {
+        Blog blog = blogMapper.selectById(id);
+        if (blog == null) {
+            throw new ResourceNotFoundException("博客不存在");
+        }
+
+        blog.setIsTop(isTop ? 1 : 0);
+        blogMapper.updateById(blog);
+
+        clearBlogCache(blog);
+        clearBlogCaches();
+        cacheConsistencyService.publishCacheInvalidation("blog:*", isTop ? "文章置顶" : "取消文章置顶");
+
+        if (isPubliclyVisible(blog) && searchService.isAvailable()) {
+            try {
+                syncBlogToElasticsearch(blog);
+            } catch (Exception e) {
+                log.error("同步文章置顶状态到Elasticsearch失败(不影响主流程): {}", id, e);
+            }
+        }
+    }
+
+    @Override
     public List<BlogListVO> searchBlogs(String keyword, Integer limit) {
         if (StringUtils.isBlank(keyword)) {
             return List.of();
@@ -1396,7 +1420,9 @@ public class BlogServiceImpl implements BlogService {
     }
 
     private String normalizeSort(String sort) {
-        if ("popular".equalsIgnoreCase(sort) || "liked".equalsIgnoreCase(sort)) {
+        if ("pinned".equalsIgnoreCase(sort)
+                || "popular".equalsIgnoreCase(sort)
+                || "liked".equalsIgnoreCase(sort)) {
             return sort.toLowerCase();
         }
         return "latest";
