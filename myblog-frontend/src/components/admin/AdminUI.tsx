@@ -184,11 +184,19 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <p className="text-xs text-muted-foreground">{activeLabel}</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={handleLogout} className="text-red-700 hover:text-red-800">
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="h-[4.5rem] w-full rounded-[0.35rem] text-red-700 hover:text-red-800"
+                >
                   <LogOut className="h-4 w-4" />
                   退出登录
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/')} className="hidden xl:inline-flex">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/')}
+                  className="hidden h-[4.5rem] w-full rounded-[0.35rem] xl:inline-flex"
+                >
                   返回前台
                 </Button>
               </div>
