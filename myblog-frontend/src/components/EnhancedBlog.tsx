@@ -58,7 +58,7 @@ const EnhancedBlog = () => {
       setLoading(true);
       setError(false);
       try {
-        const result = await api.blog.getPage({ page: 1, size: 6, status: 1, sort: 'pinned', timeRange: 'all' });
+        const result = await api.blog.getPage({ page: 1, size: 4, status: 1, sort: 'pinned', timeRange: 'all' });
         const blogData = result.records || [];
         if (active) setPosts(convertBlogsToPosts(blogData));
       } catch (error) {
@@ -111,7 +111,7 @@ const EnhancedBlog = () => {
         ) : leadPost ? (
           <div className="grid items-start gap-block lg:grid-cols-[1.05fr_1fr] lg:gap-12">
             <BlogCard post={leadPost} />
-            <div className="min-w-0">{remainingPosts.slice(0, 4).map(post => <BlogListItem key={post.id} post={post} compact />)}</div>
+            <div className="grid min-w-0 lg:h-full lg:auto-rows-fr">{remainingPosts.slice(0, 3).map(post => <BlogListItem key={post.id} post={post} compact />)}</div>
           </div>
         ) : (
           <div className="border border-dashed border-border py-16 text-center">
