@@ -80,7 +80,7 @@ const EnhancedBlog = () => {
         <div className="reading-shell grid gap-6 pb-block pt-10 sm:pt-14 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <p className="section-kicker mb-5">Ryan’s Blog / 技术与思考</p>
-            <h1 className="text-4xl leading-tight tracking-tight sm:text-5xl lg:text-6xl">在代码里探索，<br className="sm:hidden" />在文字里沉淀。</h1>
+            <h1 className="text-4xl leading-tight tracking-tight sm:text-5xl lg:text-6xl">记录技术世界里的探索与思考</h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">我是 Ryan，在这里记录技术实践、设计思考，以及解决问题的过程。</p>
           </div>
           <Link to="/about" className="reading-link inline-flex min-h-11 items-center gap-3 justify-self-start text-sm hover:text-accent">关于作者 <ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
